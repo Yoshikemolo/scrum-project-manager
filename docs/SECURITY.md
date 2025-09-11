@@ -414,8 +414,7 @@ CREATE TABLE audit_log (
 
 ### Contact Information
 
-- Security Team: security@scrum-pm.com
-- Emergency: +1-XXX-XXX-XXXX
+- Contact and Security Team: info@ximplicity.es
 - Report Issues: https://github.com/Yoshikemolo/scrum-project-manager/security
 
 ## Compliance
