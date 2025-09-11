@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SCRUM Project Manager | Ximplicity</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="description" content="Enterprise SCRUM Project Management Platform with AI-powered assistance">
+  <meta name="keywords" content="SCRUM, Agile, Project Management, AI, Task Management, Sprint Planning">
+  <meta name="author" content="Ximplicity Software Solutions">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+  
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0066FF">
+  
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SCRUM PM">
+  
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="SCRUM Project Manager">
+  <meta property="og:description" content="Enterprise SCRUM Project Management Platform with AI-powered assistance">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://scrum-pm.com">
+  <meta property="og:image" content="https://scrum-pm.com/assets/og-image.png">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SCRUM Project Manager">
+  <meta name="twitter:description" content="Enterprise SCRUM Project Management Platform with AI-powered assistance">
+  <meta name="twitter:image" content="https://scrum-pm.com/assets/twitter-card.png">
+  
+  <!-- Preload Critical Resources -->
+  <link rel="preload" href="assets/fonts/roboto/files/roboto-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/roboto/files/roboto-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  
+  <style>
+    /* Critical CSS for initial loading */
+    :root {
+      --primary-color: #0066FF;
+      --secondary-color: #111111;
+      --background-color: #FFFFFF;
+      --text-color: #111827;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Loading Screen */
+    .app-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      z-index: 99999;
+      transition: opacity 0.3s ease-out;
+    }
+    
+    .app-loading.loaded {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .app-loading-logo {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 32px;
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    .app-loading-spinner {
+      width: 64px;
+      height: 64px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .app-loading-text {
+      margin-top: 24px;
+      color: #FFFFFF;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* Accessibility */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    
+    /* Focus Visible */
+    :focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+    
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+    
+    /* Dark Mode */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background-color: #111827;
+        --text-color: #F9FAFB;
+      }
+    }
+  </style>
+</head>
+<body>
+  <app-root>
+    <!-- Loading Screen -->
+    <div class="app-loading" id="app-loading">
+      <svg class="app-loading-logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="10" width="100" height="100" rx="20" fill="#FFFFFF" opacity="0.1"/>
+        <text x="60" y="75" font-family="Roboto, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="#FFFFFF">X</text>
+      </svg>
+      <div class="app-loading-spinner"></div>
+      <div class="app-loading-text">Loading SCRUM Project Manager...</div>
+    </div>
+  </app-root>
+  
+  <!-- No JavaScript Message -->
+  <noscript>
+    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Roboto', sans-serif;">
+      <div style="text-align: center; padding: 20px;">
+        <h1 style="color: #0066FF; margin-bottom: 16px;">JavaScript Required</h1>
+        <p style="color: #6B7280; line-height: 1.5;">SCRUM Project Manager requires JavaScript to be enabled.<br>Please enable JavaScript in your browser settings to continue.</p>
+      </div>
+    </div>
+  </noscript>
+  
+  <script>
+    // Remove loading screen when app is ready
+    window.addEventListener('app-ready', function() {
+      const loader = document.getElementById('app-loading');
+      if (loader) {
+        loader.classList.add('loaded');
+        setTimeout(() => loader.remove(), 300);
+      }
+    });
+    
+    // Performance metrics
+    if ('performance' in window && 'measure' in window.performance) {
+      window.addEventListener('load', function() {
+        window.performance.measure('app-load');
+        console.log('App load time:', window.performance.getEntriesByName('app-load')[0].duration, 'ms');
+      });
+    }
+  </script>
+</body>
+</html>
