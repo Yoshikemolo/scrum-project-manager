@@ -14,323 +14,339 @@
 - [Features](#features)
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
-- [Documentation](#documentation)
+- [Development](#development)
 - [Testing](#testing)
+- [Documentation](#documentation)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
 - [License](#license)
+- [Support](#support)
 
 ## Overview
 
-A comprehensive SCRUM project management platform built with modern technologies, featuring AI-powered assistance, real-time collaboration, and enterprise-grade security.
+A comprehensive SCRUM project management platform built with modern technologies, featuring AI-powered assistance, real-time collaboration, and enterprise-grade security. The platform follows agile methodologies and provides teams with powerful tools to manage projects, sprints, and tasks efficiently.
 
 ## Features
 
 ### Core Features
-- **Project Dashboard**: Visual metrics and KPIs for project tracking
-- **Sprint Management**: Create and manage sprints with planning tools
-- **Task Management**: Kanban board with drag-and-drop functionality
-- **Comments System**: Collaborate on tasks with threaded discussions
-- **Notifications**: Email and push notifications for updates
-- **Dark/Light Mode**: Customizable UI themes
-- **Internationalization**: Multi-language support (i18n)
-- **Team Management**: User groups and permissions (RBAC)
 
-### AI Features
-- **AI Assistant**: ChatGPT-5 integration for intelligent assistance
-- **Smart Suggestions**: Context-aware tips for methodology compliance
-- **Deep Thinking**: Automatic system prompt selection for complex queries
-- **Action Automation**: AI-driven task and project management
+- **Project Dashboard**: Visual metrics and KPIs for real-time project tracking
+- **Sprint Management**: Comprehensive sprint planning, tracking, and retrospective tools
+- **Task Management**: Interactive Kanban board with drag-and-drop functionality
+- **Team Collaboration**: Threaded discussions, mentions, and real-time updates
+- **Notifications System**: Multi-channel notifications (email, push, in-app)
+- **User Experience**: Dark/Light mode with customizable themes
+- **Internationalization**: Full i18n support for global teams
+- **Access Control**: Granular Role-Based Access Control (RBAC)
+
+### AI-Powered Features
+
+- **Intelligent Assistant**: ChatGPT-5 integration for context-aware assistance
+- **Smart Suggestions**: Proactive recommendations for process improvement
+- **Deep Analysis**: Advanced problem-solving with automatic prompt optimization
+- **Action Automation**: AI-driven task creation and project management
+- **Methodology Compliance**: Automated SCRUM best practices enforcement
 
 ### Technical Features
-- **Security**: JWT authentication with Bearer tokens
-- **Authorization**: Role-Based Access Control (RBAC)
-- **Real-time Updates**: WebSocket connections for live data
-- **Microservices**: Scalable architecture with service separation
-- **Performance**: Optimized for enterprise-scale deployments
+
+- **Security**: JWT-based authentication with refresh tokens
+- **Authorization**: Fine-grained permission system
+- **Real-time Communication**: WebSocket-based live updates
+- **Scalability**: Microservices architecture for horizontal scaling
+- **Performance**: Optimized for enterprise deployments
+- **Monitoring**: Built-in metrics and health checks
 
 ## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                    Frontend (Angular 20)                 │
-│                     Material UI + SCSS                   │
+│                   Material UI + SCSS + NgRx              │
 └─────────────────────────────┬────────────────────────────┘
                               │
                               ▼
 ┌──────────────────────────────────────────────────────────┐
-│                  API Gateway (GraphQL)                   │
+│              API Gateway (GraphQL + Apollo)              │
 └──────────────┬──────────────┬──────────────┬─────────────┘
                │              │              │
                ▼              ▼              ▼
-          ┌──────────┐  ┌──────────┐  ┌──────────────┐
-          │ Identity │  │ Projects │  │ AI Assistant │
-          │  Service │  │  Service │  │    Service   │
-          │ (NestJS) │  │ (NestJS) │  │    (NestJS)  │
-          └──────────┘  └──────────┘  └──────────────┘
-                │              │              │
-                └──────────────┴──────────────┘
-                               │
-                               ▼
-                      ┌──────────────────┐
-                      │   PostgreSQL DB  │
-                      └──────────────────┘
+       ┌──────────────┐┌──────────────┐┌──────────────┐
+       │   Identity   ││   Projects   ││ AI Assistant │
+       │   Service    ││   Service    ││   Service    │
+       │   (NestJS)   ││   (NestJS)   ││   (NestJS)   │
+       └──────────────┘└──────────────┘└──────────────┘
+               │              │              │
+               └──────────────┼──────────────┘
+                              │
+                    ┌─────────┴──────────┐
+                    │                    │
+            ┌───────▼────────┐ ┌────────▼───────┐
+            │  PostgreSQL DB  │ │  Redis Cache   │
+            └─────────────────┘ └────────────────┘
 ```
 
 ## Technology Stack
 
 ### Frontend
-- **Framework**: Angular 20
-- **UI Library**: Angular Material
+- **Framework**: Angular 20 with standalone components
+- **UI Library**: Angular Material with custom theme
 - **Styling**: SCSS with BEM methodology
-- **State Management**: NgRx
-- **Build Tool**: Nx
+- **State Management**: NgRx for predictable state
+- **HTTP Client**: Apollo Client for GraphQL
+- **Build Tool**: Nx for monorepo management
 
 ### Backend
-- **Framework**: NestJS
-- **API**: GraphQL with Apollo Server
-- **ORM**: TypeORM
-- **Database**: PostgreSQL
-- **Authentication**: JWT with Passport
-- **Microservices**: Node.js services
+- **Framework**: NestJS with TypeScript
+- **API Layer**: GraphQL with Apollo Server
+- **ORM**: TypeORM for database management
+- **Database**: PostgreSQL 15+
+- **Cache**: Redis for session and data caching
+- **Authentication**: Passport with JWT strategy
+- **Validation**: class-validator and class-transformer
 
-### DevOps
-- **Containerization**: Docker & Docker Compose
-- **CI/CD**: GitHub Actions
-- **Monitoring**: Prometheus & Grafana
-- **Documentation**: Compodoc & Markdown
+### DevOps & Infrastructure
+- **Containerization**: Docker and Docker Compose
+- **Orchestration**: Kubernetes ready
+- **CI/CD**: GitHub Actions workflows
+- **Monitoring**: Prometheus and Grafana
+- **Documentation**: Compodoc for code documentation
+- **Testing**: Jest, Karma, and Cypress
+
+## Project Structure
+
+```
+scrum-project-manager/
+├── apps/                         # Applications
+│   ├── frontend/                 # Angular application
+│   ├── api-gateway/             # GraphQL API gateway
+│   ├── identity-service/        # Authentication service
+│   ├── projects-service/        # Projects management
+│   └── ai-assistant-service/    # AI integration service
+├── libs/                         # Shared libraries
+│   ├── shared/
+│   │   ├── interfaces/          # TypeScript interfaces
+│   │   ├── utils/               # Utility functions
+│   │   ├── constants/           # Application constants
+│   │   ├── dto/                 # Data Transfer Objects
+│   │   └── entities/            # Database entities
+│   ├── frontend/
+│   │   └── ui/                  # Shared UI components
+│   └── backend/
+│       └── common/              # Shared backend utilities
+├── docs/                        # Documentation
+├── scripts/                     # Utility scripts
+├── postman/                     # API testing collections
+└── nginx/                       # Web server configuration
+```
 
 ## Getting Started
 
 ### Prerequisites
-```bash
-- Node.js >= 20.x
-- npm >= 10.x
-- Docker >= 24.x
-- Docker Compose >= 2.x
-- PostgreSQL >= 15.x
-```
+
+- Node.js >= 20.0.0
+- npm >= 10.0.0
+- Docker >= 24.0.0
+- Docker Compose >= 2.0.0
+- PostgreSQL >= 15.0 (optional for local development)
+- Redis >= 7.0 (optional for local development)
 
 ### Installation
 
-1. Clone the repository
-```bash
-git clone https://github.com/Yoshikemolo/scrum-project-manager.git
-cd scrum-project-manager
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Yoshikemolo/scrum-project-manager.git
+   cd scrum-project-manager
+   ```
 
-2. Install dependencies
-```bash
-npm install
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-3. Set up environment variables
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+3. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-4. Start with Docker Compose
-```bash
-docker-compose up -d
-```
+4. **Start Docker services**
+   ```bash
+   docker-compose up -d
+   ```
 
-5. Run migrations
-```bash
-npm run migration:run
-```
+5. **Run database migrations**
+   ```bash
+   npm run migration:run
+   ```
 
-6. Start development servers
+6. **Start development servers**
+   ```bash
+   npm run dev
+   ```
+
+The application will be available at:
+- Frontend: http://localhost:4200
+- API Gateway: http://localhost:3000/graphql
+- API Documentation: http://localhost:3000/api-docs
+
+## Development
+
+### Development Commands
+
 ```bash
+# Start all services in development mode
 npm run dev
+
+# Start specific services
+npm run dev:frontend          # Frontend only
+npm run dev:backend           # All backend services
+npm run dev:api-gateway       # API Gateway only
+
+# Code generation
+nx g component my-component --project=frontend
+nx g service my-service --project=api-gateway
+
+# Linting and formatting
+npm run lint                  # Lint all projects
+npm run format                # Format code with Prettier
+
+# Database operations
+npm run migration:generate    # Generate new migration
+npm run migration:run         # Run pending migrations
+npm run migration:revert      # Revert last migration
 ```
 
-### Quick Start Commands
+### Environment Variables
 
-```bash
-# Development
-npm run dev              # Start all services in dev mode
-npm run dev:frontend     # Start only frontend
-npm run dev:backend      # Start only backend services
+See `.env.example` for all available configuration options. Key variables include:
 
-# Production
-npm run build            # Build all applications
-npm run start:prod       # Start in production mode
-
-# Testing
-npm run test             # Run unit tests
-npm run test:e2e         # Run end-to-end tests
-npm run test:cov         # Generate coverage report
-
-# Documentation
-npm run docs:generate    # Generate Compodoc documentation
-npm run docs:serve       # Serve documentation locally
-```
-
-## Documentation
-
-Comprehensive documentation is available in the `/docs` directory:
-
-- [Architecture Overview](./docs/ARCHITECTURE.md)
-- [API Documentation](./docs/API.md)
-- [Development Guide](./docs/DEVELOPMENT.md)
-- [Deployment Guide](./docs/DEPLOYMENT.md)
-- [Security Guide](./docs/SECURITY.md)
-- [AI Integration](./docs/AI_INTEGRATION.md)
-
-### Self Dopcumentation with Compodoc
-
-This project is provided with code inline documentation that can be generated automatically by using Compodoc tools.
-
-Documentation (Nx Monorepo + Compodoc)
-1. Install (once per workspace)
-```
-npm i -D @compodoc/compodoc
-```
-*Note: The project already have installed Compodoc in the package. So skip this step*
-
-**TIP:** Use `npmp install` to install all project dependencies, including Compodoc.
-
-2. Generate docs (per app/lib)
-#### Example for an app
-```
-npx compodoc -p apps/<app-name>/tsconfig.app.json -d docs/<app-name>
-```
-
-#### Example for a lib
-```
-npx compodoc -p libs/<lib-name>/tsconfig.lib.json -d docs/<lib-name>
-```
-
-Output location: `docs/<project-name>/` (you can choose any folder via -d). 
-
-
-3. Serve docs (choose port if 8080 is busy)
-#### Generate + serve immediately on a custom port (e.g., 4205)
-```
-npx compodoc -p apps/<app-name>/tsconfig.app.json -d docs/<app-name> -s --port 4205
-```
-
-#### Serve an already generated folder
-```
-npx compodoc -s -d docs/<app-name> --port 4205
-```
-
-You can also use the short flag -r for port: -s -r 4205. 
-UNPKG
-
-4. Optional: project scripts
-
-Add shortcuts to your root package.json:
-```
-{
-  "scripts": {
-    "docs:generate:app": "compodoc -p apps/<app-name>/tsconfig.app.json -d docs/<app-name>",
-    "docs:serve:app": "compodoc -s -d docs/<app-name> --port 4205"
-  }
-}
-```
-
-5. JSDoc/TSDoc comments (auto-documentation)
-
-Use JSDoc blocks above classes, inputs/outputs, and methods:
-```
-// file: libs/company/src/lib/company.service.ts
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Company } from './models';
-
-/**
- * Service responsible for Company read operations.
- * Provides a typed API used across UI modules.
- */
-@Injectable({ providedIn: 'root' })
-export class CompanyService {
-  /**
-   * Fetch a company by its identifier.
-   * @param id Company UUID.
-   * @returns Observable that emits the Company when available.
-   */
-  getCompany(id: string): Observable<Company> {
-    // ...
-    return new Observable<Company>();
-  }
-}
-
-// file: libs/ui/src/lib/button/button.component.ts
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-
-/**
- * Primary action button.
- * @example
- * <x-button label="Save" (pressed)="onSave()"></x-button>
- */
-@Component({
-  selector: 'x-button',
-  template: `<button (click)="pressed.emit()">{{ label }}</button>`
-})
-export class ButtonComponent {
-  /** Text displayed inside the button. */
-  @Input() label = 'OK';
-
-  /** Emits when the button is pressed. */
-  @Output() pressed = new EventEmitter<void>();
-}
-```
-
-6. Nx monorepo note
-
-Run Compodoc separately for each apps/* and libs/* you want documented; point -p to the correct tsconfig.*.json. 
-compodoc.app
-
-7. More information
-
-For further information, visit [Official Compodoc docs](https://compodoc.app/) (options, config files, usage). 
-
+- `NODE_ENV`: Environment (development/production)
+- `DATABASE_*`: PostgreSQL connection settings
+- `REDIS_*`: Redis connection settings
+- `JWT_*`: Authentication configuration
+- `OPENAI_API_KEY`: AI integration key
 
 ## Testing
 
 ```bash
-# Unit Tests
-npm run test
+# Unit tests
+npm run test                  # Run all unit tests
+npm run test:watch           # Watch mode
+npm run test:cov             # Generate coverage report
 
-# Integration Tests
-npm run test:integration
+# Integration tests
+npm run test:integration      # Run integration tests
 
-# E2E Tests
-npm run test:e2e
+# End-to-end tests
+npm run test:e2e             # Run E2E tests
+npm run test:e2e:watch       # E2E in watch mode
 
-# Coverage Report
-npm run test:cov
+# Specific project tests
+nx test frontend             # Test frontend
+nx test api-gateway          # Test API gateway
+```
+
+## Documentation
+
+### Available Documentation
+
+Comprehensive documentation is available in the `/docs` directory:
+
+- [Documentation Index](./docs/README.md) - Complete documentation overview
+- [Architecture Overview](./docs/ARCHITECTURE.md) - System design and patterns
+- [API Documentation](./docs/API.md) - GraphQL schema and endpoints
+- [Development Guide](./docs/DEVELOPMENT.md) - Development workflow and standards
+- [Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment instructions
+- [Security Guide](./docs/SECURITY.md) - Security measures and best practices
+- [AI Integration Guide](./docs/AI_INTEGRATION.md) - AI assistant configuration
+- [Contributing Guide](./docs/CONTRIBUTING.md) - Contribution guidelines
+- [Project Dependencies](./docs/PROJECT_DEPENDENCIES.md) - External dependencies explanation
+
+### Code Documentation
+
+Generate and serve code documentation using Compodoc:
+
+```bash
+# Generate documentation
+npm run docs:generate
+
+# Serve documentation locally
+npm run docs:serve
+
+# Generate for specific project
+npx compodoc -p apps/frontend/tsconfig.app.json -d dist/docs/frontend
 ```
 
 ## Deployment
 
 ### Docker Deployment
+
 ```bash
+# Development environment
+docker-compose up -d
+
+# Production environment
 docker-compose -f docker-compose.prod.yml up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
 ### Kubernetes Deployment
+
 ```bash
+# Apply configurations
 kubectl apply -f k8s/
+
+# Check deployment status
+kubectl get pods -n scrum-pm
+
+# Scale deployment
+kubectl scale deployment api-gateway --replicas=3 -n scrum-pm
+```
+
+### Production Build
+
+```bash
+# Build all applications
+npm run build:prod
+
+# Build specific application
+nx build frontend --configuration=production
 ```
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details on:
+
+- Code of conduct
+- Development process
+- Coding standards
+- Pull request process
+- Testing requirements
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Support
+
+- **Documentation**: [Project Wiki](https://github.com/Yoshikemolo/scrum-project-manager/wiki)
+- **Issues**: [GitHub Issues](https://github.com/Yoshikemolo/scrum-project-manager/issues)
+- **Email**: support@scrum-pm.com
+- **Website**: [Ximplicity](https://ximplicity.com)
+
 ## Acknowledgments
 
-- Built with by [Ximplicity](https://ximplicity.com)
+- Built with excellence by [Ximplicity Software Solutions](https://ximplicity.com)
 - Powered by cutting-edge open-source technologies
-- AI integration with OpenAI's GPT-5
+- AI capabilities provided by OpenAI's GPT-5
 
 ---
 
-© 2025 Ximplicity Software Solutions. All Rights Reserved.
+Copyright © 2025 Ximplicity Software Solutions. All Rights Reserved.
