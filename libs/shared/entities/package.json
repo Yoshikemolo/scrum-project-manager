@@ -1,0 +1,9 @@
+{
+  "name": "@scrum-pm/shared/entities",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "dependencies": {
+    "typeorm": "^0.3.19",
+    "bcryptjs": "^2.4.3"
+  }
+}
