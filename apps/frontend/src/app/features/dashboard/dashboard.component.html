@@ -1,0 +1,297 @@
+<div class="dashboard" [@staggerAnimation]="widgets().length">
+  <!-- Dashboard Header -->
+  <div class="dashboard__header" [@slideIn]>
+    <div class="dashboard__title-section">
+      <h1 class="dashboard__title">
+        <mat-icon class="dashboard__title-icon">dashboard</mat-icon>
+        {{ 'dashboard.title' | translate }}
+      </h1>
+      <p class="dashboard__subtitle">
+        {{ 'dashboard.subtitle' | translate }} - {{ lastRefresh() | date:'short' }}
+      </p>
+    </div>
+
+    <div class="dashboard__actions">
+      <!-- Period Selector -->
+      <mat-form-field class="dashboard__period-selector" appearance="outline">
+        <mat-select [value]="selectedPeriod()" (selectionChange)="onPeriodChange($event.value)">
+          <mat-option value="week">{{ 'dashboard.period.week' | translate }}</mat-option>
+          <mat-option value="month">{{ 'dashboard.period.month' | translate }}</mat-option>
+          <mat-option value="quarter">{{ 'dashboard.period.quarter' | translate }}</mat-option>
+          <mat-option value="year">{{ 'dashboard.period.year' | translate }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Action Buttons -->
+      <button mat-icon-button 
+              [matTooltip]="'dashboard.customize' | translate"
+              (click)="openCustomizeDialog()">
+        <mat-icon>tune</mat-icon>
+      </button>
+
+      <button mat-icon-button 
+              [matTooltip]="'dashboard.refresh' | translate"
+              (click)="refreshDashboard()"
+              [disabled]="isLoading()">
+        <mat-icon [class.spin]="isLoading()">refresh</mat-icon>
+      </button>
+
+      <button mat-icon-button 
+              [matTooltip]="'dashboard.export' | translate"
+              (click)="exportDashboard()">
+        <mat-icon>download</mat-icon>
+      </button>
+
+      <button mat-button color="primary" class="dashboard__cta">
+        <mat-icon>add</mat-icon>
+        {{ 'dashboard.create_project' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="dashboard__loading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>{{ 'dashboard.loading' | translate }}</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!isLoading()" class="dashboard__content">
+    <!-- Key Metrics -->
+    <div class="dashboard__metrics" [@fadeIn]>
+      <mat-card class="metric-card" 
+                *ngFor="let metric of [
+                  { icon: 'folder', label: 'dashboard.metrics.projects', value: metrics().activeProjects, color: 'primary' },
+                  { icon: 'check_circle', label: 'dashboard.metrics.completed', value: metrics().completedTasks, color: 'success' },
+                  { icon: 'pending', label: 'dashboard.metrics.pending', value: metrics().pendingTasks, color: 'warning' },
+                  { icon: 'groups', label: 'dashboard.metrics.team', value: metrics().teamMembers, color: 'accent' }
+                ]" 
+                [@scaleIn]
+                matRipple
+                [matTooltip]="metric.label | translate">
+        <div class="metric-card__icon" [class]="'metric-card__icon--' + metric.color">
+          <mat-icon>{{ metric.icon }}</mat-icon>
+        </div>
+        <div class="metric-card__content">
+          <div class="metric-card__value" [@fadeIn]>
+            {{ metric.value }}
+          </div>
+          <div class="metric-card__label">
+            {{ metric.label | translate }}
+          </div>
+        </div>
+        <div class="metric-card__trend">
+          <mat-icon class="trend-icon trend-icon--up">trending_up</mat-icon>
+          <span class="trend-value">+12%</span>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Sprint Progress -->
+    <mat-card class="dashboard__sprint-progress" [@slideIn]>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>speed</mat-icon>
+          {{ 'dashboard.sprint_progress' | translate }}
+        </mat-card-title>
+        <button mat-icon-button [matMenuTriggerFor]="sprintMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="progress-section">
+          <div class="progress-header">
+            <span>Sprint 15 - Day 8 of 14</span>
+            <span class="progress-percentage">{{ metrics().sprintProgress }}%</span>
+          </div>
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="metrics().sprintProgress"
+            color="primary">
+          </mat-progress-bar>
+          <div class="progress-stats">
+            <div class="stat">
+              <span class="stat-label">{{ 'dashboard.velocity' | translate }}</span>
+              <span class="stat-value">{{ metrics().velocity }} pts</span>
+              <mat-icon [class]="'stat-trend stat-trend--' + productivityTrend().color">
+                {{ productivityTrend().icon }}
+              </mat-icon>
+            </div>
+            <div class="stat">
+              <span class="stat-label">{{ 'dashboard.completion_rate' | translate }}</span>
+              <span class="stat-value">{{ taskCompletionRate() }}%</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">{{ 'dashboard.blockers' | translate }}</span>
+              <span class="stat-value stat-value--error">{{ metrics().blockedTasks }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Dashboard Widgets Grid -->
+    <div class="dashboard__grid" 
+         cdkDropList 
+         [cdkDropListData]="widgets()" 
+         (cdkDropListDropped)="onWidgetDrop($event)">
+      
+      <div *ngFor="let widget of widgets()" 
+           [class]="'dashboard__widget dashboard__widget--' + widget.size"
+           [hidden]="!widget.visible"
+           cdkDrag
+           [@scaleIn]>
+        
+        <mat-card class="widget-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>{{ widget.icon }}</mat-icon>
+              {{ widget.title | translate }}
+            </mat-card-title>
+            <div class="widget-actions">
+              <button mat-icon-button 
+                      *ngIf="widget.refreshable"
+                      [matTooltip]="'dashboard.refresh' | translate"
+                      (click)="refreshWidget(widget.id)">
+                <mat-icon>refresh</mat-icon>
+              </button>
+              <button mat-icon-button 
+                      *ngIf="widget.configurable"
+                      [matTooltip]="'dashboard.configure' | translate"
+                      (click)="configureWidget(widget.id)">
+                <mat-icon>settings</mat-icon>
+              </button>
+              <button mat-icon-button cdkDragHandle>
+                <mat-icon>drag_indicator</mat-icon>
+              </button>
+            </div>
+          </mat-card-header>
+          
+          <mat-card-content [ngSwitch]="widget.type">
+            <!-- Chart Widgets -->
+            <div *ngSwitchCase="'chart'" class="widget-chart">
+              <canvas [id]="widget.id + 'Chart'" 
+                      #velocityChart *ngIf="widget.id === 'velocity'"></canvas>
+              <canvas [id]="widget.id + 'Chart'" 
+                      #burndownChart *ngIf="widget.id === 'burndown'"></canvas>
+              <canvas [id]="widget.id + 'Chart'" 
+                      #taskChart *ngIf="widget.id === 'tasks'"></canvas>
+              <canvas [id]="widget.id + 'Chart'" 
+                      #teamChart *ngIf="widget.id === 'team'"></canvas>
+            </div>
+
+            <!-- Activity Feed Widget -->
+            <div *ngSwitchCase="'activity'" class="widget-activity">
+              <div class="activity-feed">
+                <div *ngFor="let activity of activities()" 
+                     class="activity-item"
+                     [@fadeIn]>
+                  <div class="activity-icon" [class]="'activity-icon--' + activity.color">
+                    <mat-icon>{{ activity.icon }}</mat-icon>
+                  </div>
+                  <div class="activity-content">
+                    <div class="activity-text">
+                      <strong>{{ activity.user.name }}</strong>
+                      {{ activity.action }}
+                      <span class="activity-target">{{ activity.target }}</span>
+                    </div>
+                    <div class="activity-time">
+                      {{ getRelativeTime(activity.timestamp) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- List Widgets -->
+            <div *ngSwitchCase="'list'" class="widget-list">
+              <!-- Deadlines List -->
+              <div *ngIf="widget.id === 'deadlines'" class="deadline-list">
+                <div *ngFor="let deadline of deadlines()" 
+                     class="deadline-item"
+                     matRipple
+                     [@fadeIn]>
+                  <div class="deadline-info">
+                    <div class="deadline-title">{{ deadline.title }}</div>
+                    <div class="deadline-project">{{ deadline.project }}</div>
+                  </div>
+                  <div class="deadline-meta">
+                    <mat-chip [color]="getPriorityColor(deadline.priority)">
+                      {{ deadline.priority }}
+                    </mat-chip>
+                    <span class="deadline-due">
+                      {{ getDaysUntil(deadline.dueDate) }} days
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Blocked Tasks List -->
+              <div *ngIf="widget.id === 'blockers'" class="blocker-list">
+                <div *ngFor="let task of blockedTasks()" 
+                     class="blocker-item"
+                     matRipple
+                     [@fadeIn]>
+                  <mat-icon class="blocker-icon" color="warn">block</mat-icon>
+                  <div class="blocker-content">
+                    <div class="blocker-title">{{ task.title }}</div>
+                    <div class="blocker-reason">
+                      Blocked by: {{ task.blockedBy }}
+                    </div>
+                    <div class="blocker-meta">
+                      <span class="blocker-assignee">{{ task.assignee }}</span>
+                      <span class="blocker-duration">{{ task.duration }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions FAB -->
+  <div class="dashboard__fab">
+    <button mat-fab color="accent" [matMenuTriggerFor]="fabMenu">
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
+</div>
+
+<!-- Sprint Menu -->
+<mat-menu #sprintMenu="matMenu">
+  <button mat-menu-item>
+    <mat-icon>visibility</mat-icon>
+    <span>{{ 'dashboard.view_details' | translate }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>edit</mat-icon>
+    <span>{{ 'dashboard.edit_sprint' | translate }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>assessment</mat-icon>
+    <span>{{ 'dashboard.view_reports' | translate }}</span>
+  </button>
+</mat-menu>
+
+<!-- FAB Menu -->
+<mat-menu #fabMenu="matMenu">
+  <button mat-menu-item>
+    <mat-icon>add_task</mat-icon>
+    <span>{{ 'dashboard.new_task' | translate }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>group_add</mat-icon>
+    <span>{{ 'dashboard.invite_member' | translate }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>event</mat-icon>
+    <span>{{ 'dashboard.schedule_meeting' | translate }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>flag</mat-icon>
+    <span>{{ 'dashboard.start_sprint' | translate }}</span>
+  </button>
+</mat-menu>
