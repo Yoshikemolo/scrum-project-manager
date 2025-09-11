@@ -8,7 +8,7 @@
 [![GraphQL](https://img.shields.io/badge/GraphQL-16-pink.svg)](https://graphql.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -78,7 +78,7 @@ A comprehensive SCRUM project management platform built with modern technologies
                       └──────────────────┘
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend
 - **Framework**: Angular 20
@@ -178,6 +178,116 @@ Comprehensive documentation is available in the `/docs` directory:
 - [Deployment Guide](./docs/DEPLOYMENT.md)
 - [Security Guide](./docs/SECURITY.md)
 - [AI Integration](./docs/AI_INTEGRATION.md)
+
+### Self Dopcumentation with Compodoc
+
+This project is provided with code inline documentation that can be generated automatically by using Compodoc tools.
+
+Documentation (Nx Monorepo + Compodoc)
+1. Install (once per workspace)
+```
+npm i -D @compodoc/compodoc
+```
+*Note: The project already have installed Compodoc in the package. So skip this step*
+
+**TIP:** Use `npmp install` to install all project dependencies, including Compodoc.
+
+2. Generate docs (per app/lib)
+#### Example for an app
+```
+npx compodoc -p apps/<app-name>/tsconfig.app.json -d docs/<app-name>
+```
+
+#### Example for a lib
+```
+npx compodoc -p libs/<lib-name>/tsconfig.lib.json -d docs/<lib-name>
+```
+
+Output location: `docs/<project-name>/` (you can choose any folder via -d). 
+
+
+3. Serve docs (choose port if 8080 is busy)
+#### Generate + serve immediately on a custom port (e.g., 4205)
+```
+npx compodoc -p apps/<app-name>/tsconfig.app.json -d docs/<app-name> -s --port 4205
+```
+
+#### Serve an already generated folder
+```
+npx compodoc -s -d docs/<app-name> --port 4205
+```
+
+You can also use the short flag -r for port: -s -r 4205. 
+UNPKG
+
+4. Optional: project scripts
+
+Add shortcuts to your root package.json:
+```
+{
+  "scripts": {
+    "docs:generate:app": "compodoc -p apps/<app-name>/tsconfig.app.json -d docs/<app-name>",
+    "docs:serve:app": "compodoc -s -d docs/<app-name> --port 4205"
+  }
+}
+```
+
+5. JSDoc/TSDoc comments (auto-documentation)
+
+Use JSDoc blocks above classes, inputs/outputs, and methods:
+```
+// file: libs/company/src/lib/company.service.ts
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Company } from './models';
+
+/**
+ * Service responsible for Company read operations.
+ * Provides a typed API used across UI modules.
+ */
+@Injectable({ providedIn: 'root' })
+export class CompanyService {
+  /**
+   * Fetch a company by its identifier.
+   * @param id Company UUID.
+   * @returns Observable that emits the Company when available.
+   */
+  getCompany(id: string): Observable<Company> {
+    // ...
+    return new Observable<Company>();
+  }
+}
+
+// file: libs/ui/src/lib/button/button.component.ts
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+
+/**
+ * Primary action button.
+ * @example
+ * <x-button label="Save" (pressed)="onSave()"></x-button>
+ */
+@Component({
+  selector: 'x-button',
+  template: `<button (click)="pressed.emit()">{{ label }}</button>`
+})
+export class ButtonComponent {
+  /** Text displayed inside the button. */
+  @Input() label = 'OK';
+
+  /** Emits when the button is pressed. */
+  @Output() pressed = new EventEmitter<void>();
+}
+```
+
+6. Nx monorepo note
+
+Run Compodoc separately for each apps/* and libs/* you want documented; point -p to the correct tsconfig.*.json. 
+compodoc.app
+
+7. More information
+
+For further information, visit [Official Compodoc docs](https://compodoc.app/) (options, config files, usage). 
+
 
 ## Testing
 
