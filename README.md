@@ -340,11 +340,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: [Project Wiki](https://github.com/Yoshikemolo/scrum-project-manager/wiki)
 - **Issues**: [GitHub Issues](https://github.com/Yoshikemolo/scrum-project-manager/issues)
 - **Email**: support@ximplicity.es
-- **Website**: [Ximplicity](https://ximplicity.com)
+- **Website**: [Ximplicity](https://ximplicity.es)
 
 ## Acknowledgments
 
-- Built with excellence by [Ximplicity Software Solutions](https://ximplicity.com)
+- Built with excellence by [Ximplicity Software Solutions](https://ximplicity.es)
 - Powered by cutting-edge open-source technologies
 - AI capabilities provided by OpenAI's GPT-5
 
