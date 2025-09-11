@@ -1,18 +1,66 @@
 /**
- * Footer component for the application.
- * Displays copyright, version info, and useful links.
+ * @fileoverview Footer Component
+ * @module FooterComponent
+ * 
+ * Application footer component that provides:
+ * - Copyright and version information
+ * - Navigation links
+ * - Social media links
+ * - System status indicator
+ * - Language display
+ * - Responsive mobile footer
+ * 
+ * @author SCRUM Project Manager Team
+ * @copyright 2025 Ximplicity Software Solutions
  */
 
-import { Component, signal } from '@angular/core';
+import { 
+  Component, 
+  OnInit, 
+  OnDestroy, 
+  signal, 
+  computed,
+  inject,
+  ChangeDetectionStrategy
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { fromEvent, Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
 
+/**
+ * Footer link interface
+ */
+interface FooterLink {
+  label: string;
+  route: string;
+  icon?: string;
+}
+
+/**
+ * Social link interface
+ */
+interface SocialLink {
+  label: string;
+  icon: string;
+  url: string;
+  svgIcon?: boolean;
+}
+
+/**
+ * Footer component for the application
+ * 
+ * @example
+ * ```html
+ * <app-footer></app-footer>
+ * ```
+ */
 @Component({
   selector: 'app-footer',
   standalone: true,
@@ -24,230 +72,42 @@ import { environment } from '../../../environments/environment';
     MatTooltipModule,
     TranslateModule
   ],
-  template: `
-    <footer class="footer">
-      <div class="footer-container">
-        <!-- Left Section -->
-        <div class="footer-left">
-          <span class="copyright">
-            © {{ currentYear }} {{ 'footer.copyright' | translate }}
-          </span>
-          <span class="separator">•</span>
-          <span class="version">
-            v{{ appVersion }}
-          </span>
-          <span class="separator">•</span>
-          <span class="company">
-            <a href="https://ximplicity.es" target="_blank" rel="noopener">
-              Ximplicity Software Solutions
-            </a>
-          </span>
-        </div>
-        
-        <!-- Center Section -->
-        <div class="footer-center">
-          <a
-            *ngFor="let link of footerLinks"
-            [routerLink]="link.route"
-            class="footer-link"
-          >
-            {{ link.label | translate }}
-          </a>
-        </div>
-        
-        <!-- Right Section -->
-        <div class="footer-right">
-          <!-- Status Indicator -->
-          <div class="status-indicator" [matTooltip]="'footer.systemStatus' | translate">
-            <span class="status-dot" [class.online]="isOnline()" [class.offline]="!isOnline()"></span>
-            <span class="status-text">
-              {{ (isOnline() ? 'footer.online' : 'footer.offline') | translate }}
-            </span>
-          </div>
-          
-          <span class="separator">•</span>
-          
-          <!-- Social Links -->
-          <div class="social-links">
-            <a
-              *ngFor="let social of socialLinks"
-              [href]="social.url"
-              target="_blank"
-              rel="noopener"
-              [matTooltip]="social.label"
-              class="social-link"
-            >
-              <mat-icon [svgIcon]="social.icon" *ngIf="social.icon.includes('custom')"></mat-icon>
-              <mat-icon *ngIf="!social.icon.includes('custom')">{{ social.icon }}</mat-icon>
-            </a>
-          </div>
-        </div>
-      </div>
-    </footer>
-  `,
-  styles: [`
-    .footer {
-      background: var(--surface-color);
-      border-top: 1px solid var(--border-color);
-      padding: var(--spacing-md) var(--spacing-lg);
-      margin-top: auto;
-    }
-    
-    .footer-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: var(--spacing-md);
-      max-width: 1440px;
-      margin: 0 auto;
-    }
-    
-    .footer-left,
-    .footer-center,
-    .footer-right {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-    
-    .footer-center {
-      flex: 1;
-      justify-content: center;
-      
-      @media (max-width: 768px) {
-        width: 100%;
-        order: 3;
-        margin-top: var(--spacing-sm);
-      }
-    }
-    
-    .copyright,
-    .version,
-    .company {
-      font-size: 0.875rem;
-      color: var(--text-secondary-color);
-    }
-    
-    .company a {
-      color: var(--primary-color);
-      text-decoration: none;
-      transition: opacity var(--transition-fast);
-      
-      &:hover {
-        opacity: 0.8;
-        text-decoration: underline;
-      }
-    }
-    
-    .separator {
-      color: var(--text-secondary-color);
-      opacity: 0.3;
-    }
-    
-    .footer-link {
-      color: var(--text-secondary-color);
-      text-decoration: none;
-      font-size: 0.875rem;
-      padding: var(--spacing-xs) var(--spacing-sm);
-      border-radius: var(--radius-sm);
-      transition: all var(--transition-fast);
-      
-      &:hover {
-        color: var(--primary-color);
-        background: rgba(var(--primary-color), 0.08);
-      }
-      
-      &.active {
-        color: var(--primary-color);
-      }
-    }
-    
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-      font-size: 0.875rem;
-      color: var(--text-secondary-color);
-    }
-    
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-      
-      &.online {
-        background: #4caf50;
-      }
-      
-      &.offline {
-        background: #f44336;
-        animation: none;
-      }
-    }
-    
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.5;
-      }
-    }
-    
-    .social-links {
-      display: flex;
-      gap: var(--spacing-xs);
-    }
-    
-    .social-link {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      color: var(--text-secondary-color);
-      transition: all var(--transition-fast);
-      
-      &:hover {
-        background: rgba(var(--primary-color), 0.08);
-        color: var(--primary-color);
-        transform: translateY(-2px);
-      }
-      
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .footer {
-        padding: var(--spacing-sm) var(--spacing-md);
-      }
-      
-      .footer-container {
-        justify-content: center;
-        text-align: center;
-      }
-      
-      .footer-left,
-      .footer-right {
-        width: 100%;
-        justify-content: center;
-      }
-    }
-  `]
+  templateUrl: './footer.component.html',
+  styleUrls: ['./footer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class FooterComponent {
-  currentYear = new Date().getFullYear();
-  appVersion = environment.appVersion;
-  isOnline = signal(navigator.onLine);
+export class FooterComponent implements OnInit, OnDestroy {
+  // Service injections
+  private readonly translateService = inject(TranslateService);
   
-  footerLinks = [
+  // Component lifecycle
+  private readonly destroy$ = new Subject<void>();
+  
+  // Event listeners references for cleanup
+  private onlineHandler?: () => void;
+  private offlineHandler?: () => void;
+  
+  // Component state
+  readonly currentYear = new Date().getFullYear();
+  readonly appVersion = environment.appVersion;
+  readonly isProduction = environment.production;
+  readonly environmentName = environment.name || 'development';
+  
+  // Signals
+  isOnline = signal(navigator.onLine);
+  showBackToTop = signal(false);
+  currentLanguage = computed(() => this.translateService.currentLang);
+  
+  // Performance metrics (development only)
+  showPerformanceMetrics = !environment.production;
+  loadTime = 0;
+  memoryUsage = 0;
+  scrollHandlerCallCount = 0;
+  
+  /**
+   * Footer navigation links
+   */
+  readonly footerLinks: ReadonlyArray<FooterLink> = [
     { label: 'footer.documentation', route: '/docs' },
     { label: 'footer.support', route: '/support' },
     { label: 'footer.privacy', route: '/privacy' },
@@ -255,7 +115,20 @@ export class FooterComponent {
     { label: 'footer.about', route: '/about' }
   ];
   
-  socialLinks = [
+  /**
+   * Mobile footer navigation links
+   */
+  readonly mobileFooterLinks: ReadonlyArray<FooterLink> = [
+    { label: 'footer.home', route: '/dashboard', icon: 'home' },
+    { label: 'footer.projects', route: '/projects', icon: 'folder' },
+    { label: 'footer.tasks', route: '/tasks', icon: 'task_alt' },
+    { label: 'footer.profile', route: '/profile', icon: 'person' }
+  ];
+  
+  /**
+   * Social media links
+   */
+  readonly socialLinks: ReadonlyArray<SocialLink> = [
     {
       label: 'GitHub',
       icon: 'code',
@@ -270,23 +143,131 @@ export class FooterComponent {
       label: 'Twitter',
       icon: 'tag',
       url: 'https://twitter.com/ximplicity'
+    },
+    {
+      label: 'YouTube',
+      icon: 'play_circle',
+      url: 'https://youtube.com/@ximplicity'
     }
   ];
   
-  constructor() {
+  /**
+   * Component initialization
+   */
+  ngOnInit(): void {
+    this.recordLoadTime();
     this.setupOnlineListener();
+    this.setupScrollListener();
+    this.calculateMemoryUsage();
+  }
+  
+  /**
+   * Component cleanup
+   */
+  ngOnDestroy(): void {
+    // Clean up event listeners
+    if (this.onlineHandler) {
+      window.removeEventListener('online', this.onlineHandler);
+    }
+    if (this.offlineHandler) {
+      window.removeEventListener('offline', this.offlineHandler);
+    }
+    
+    // Complete subjects
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+  
+  /**
+   * Record component load time for performance metrics
+   * @private
+   */
+  private recordLoadTime(): void {
+    if (!this.isProduction && performance.getEntriesByType) {
+      const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      if (navigationEntries.length > 0) {
+        const navigationEntry = navigationEntries[0];
+        this.loadTime = Math.round(navigationEntry.loadEventEnd - navigationEntry.fetchStart);
+      }
+    }
+  }
+  
+  /**
+   * Calculate memory usage for performance metrics
+   * @private
+   */
+  private calculateMemoryUsage(): void {
+    if (!this.isProduction && 'memory' in performance) {
+      const memory = (performance as any).memory;
+      if (memory) {
+        this.memoryUsage = Math.round(memory.usedJSHeapSize / 1048576 * 100) / 100;
+      }
+    }
   }
   
   /**
    * Setup online/offline status listener
+   * @private
    */
   private setupOnlineListener(): void {
-    window.addEventListener('online', () => {
+    this.onlineHandler = () => {
       this.isOnline.set(true);
-    });
+      console.log('System is online');
+    };
     
-    window.addEventListener('offline', () => {
+    this.offlineHandler = () => {
       this.isOnline.set(false);
+      console.warn('System is offline');
+    };
+    
+    window.addEventListener('online', this.onlineHandler);
+    window.addEventListener('offline', this.offlineHandler);
+  }
+  
+  /**
+   * Setup scroll listener for back-to-top button
+   * @private
+   */
+  private setupScrollListener(): void {
+    fromEvent(window, 'scroll')
+      .pipe(
+        debounceTime(100),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.scrollHandlerCallCount++;
+        const scrolled = window.pageYOffset || document.documentElement.scrollTop;
+        this.showBackToTop.set(scrolled > 300);
+      });
+  }
+  
+  /**
+   * Scroll to top of the page
+   */
+  scrollToTop(): void {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
     });
+  }
+  
+  /**
+   * TrackBy function for footer links
+   * @param index The index of the item
+   * @param item The footer link
+   * @returns The unique identifier for the item
+   */
+  trackByRoute(index: number, item: FooterLink): string {
+    return item.route;
+  }
+  
+  /**
+   * TrackBy function for social links
+   * @param index The index of the item
+   * @param item The social link
+   * @returns The unique identifier for the item
+   */
+  trackByUrl(index: number, item: SocialLink): string {
+    return item.url;
   }
 }
