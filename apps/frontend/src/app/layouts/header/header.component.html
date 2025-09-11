@@ -1,0 +1,232 @@
+<!-- Header Component Template -->
+<mat-toolbar class="header" [class.elevated]="scrolled()">
+  <div class="header-container">
+    <!-- Left Section -->
+    <div class="header-left">
+      <!-- Menu Toggle -->
+      <button
+        mat-icon-button
+        (click)="toggleSidenav.emit()"
+        [matTooltip]="'header.toggleMenu' | translate"
+        matTooltipPosition="below"
+        class="menu-toggle"
+        [attr.aria-label]="'header.toggleMenu' | translate"
+        [attr.aria-expanded]="sidenavOpened"
+      >
+        <mat-icon>{{ sidenavOpened ? 'menu_open' : 'menu' }}</mat-icon>
+      </button>
+      
+      <!-- Logo -->
+      <a
+        class="logo"
+        routerLink="/dashboard"
+        [attr.aria-label]="'header.goToDashboard' | translate"
+      >
+        <img 
+          src="assets/logo.svg" 
+          alt="{{ 'header.logoAlt' | translate }}" 
+          class="logo-image"
+          width="32"
+          height="32"
+        />
+        <span class="logo-text">{{ 'header.appName' | translate }}</span>
+      </a>
+    </div>
+    
+    <!-- Center Section - Search -->
+    <div class="header-center">
+      <mat-form-field
+        class="search-field"
+        appearance="outline"
+        floatLabel="never"
+      >
+        <mat-icon matPrefix>search</mat-icon>
+        <input
+          matInput
+          #searchInput
+          id="global-search"
+          type="search"
+          [placeholder]="'header.search' | translate"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          (keyup.escape)="clearSearch()"
+          [attr.aria-label]="'header.search' | translate"
+          autocomplete="off"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          *ngIf="searchQuery"
+          (click)="clearSearch()"
+          [matTooltip]="'header.clearSearch' | translate"
+          [attr.aria-label]="'header.clearSearch' | translate"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+        <mat-hint class="search-hint">
+          {{ 'header.searchHint' | translate }}
+        </mat-hint>
+      </mat-form-field>
+    </div>
+    
+    <!-- Right Section -->
+    <div class="header-right">
+      <!-- Quick Actions -->
+      <button
+        mat-icon-button
+        routerLink="/tasks/new"
+        [matTooltip]="'header.createTask' | translate"
+        matTooltipPosition="below"
+        [attr.aria-label]="'header.createTask' | translate"
+      >
+        <mat-icon>add_task</mat-icon>
+      </button>
+      
+      <!-- AI Assistant -->
+      <button
+        mat-icon-button
+        routerLink="/ai-assistant"
+        [matTooltip]="'header.aiAssistant' | translate"
+        matTooltipPosition="below"
+        class="ai-button"
+        [attr.aria-label]="'header.aiAssistant' | translate"
+      >
+        <mat-icon>psychology</mat-icon>
+        <span class="ai-status-indicator" [attr.aria-label]="'header.aiActive' | translate"></span>
+      </button>
+      
+      <!-- Theme Toggle -->
+      <button
+        mat-icon-button
+        (click)="toggleTheme()"
+        [matTooltip]="isDarkTheme() ? ('header.switchToLight' | translate) : ('header.switchToDark' | translate)"
+        matTooltipPosition="below"
+        [attr.aria-label]="isDarkTheme() ? ('header.switchToLight' | translate) : ('header.switchToDark' | translate)"
+      >
+        <mat-icon>{{ isDarkTheme() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+      
+      <!-- Notifications -->
+      <button
+        mat-icon-button
+        [matBadge]="unreadNotifications()"
+        [matBadgeHidden]="unreadNotifications() === 0"
+        matBadgeColor="warn"
+        matBadgeSize="small"
+        (click)="toggleNotifications.emit()"
+        [matTooltip]="'header.notifications' | translate"
+        matTooltipPosition="below"
+        [attr.aria-label]="('header.notificationsCount' | translate: {count: unreadNotifications()})"
+      >
+        <mat-icon>notifications</mat-icon>
+      </button>
+      
+      <!-- Language Selector -->
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="languageMenu"
+        [matTooltip]="'header.language' | translate"
+        matTooltipPosition="below"
+        [attr.aria-label]="'header.selectLanguage' | translate"
+      >
+        <mat-icon>language</mat-icon>
+      </button>
+      
+      <mat-menu #languageMenu="matMenu">
+        <button
+          mat-menu-item
+          *ngFor="let lang of availableLanguages; trackBy: trackByLanguageCode"
+          (click)="changeLanguage(lang.code)"
+          [class.active]="currentLanguage() === lang.code"
+          [attr.aria-label]="('header.switchToLanguage' | translate: {language: lang.name})"
+        >
+          <mat-icon *ngIf="currentLanguage() === lang.code">check</mat-icon>
+          <span>{{ lang.name }}</span>
+        </button>
+      </mat-menu>
+      
+      <!-- User Menu -->
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="userMenu"
+        class="user-menu-trigger"
+        [attr.aria-label]="'header.userMenu' | translate"
+      >
+        <img
+          [src]="userAvatar() || 'assets/images/default-avatar.png'"
+          [alt]="userName()"
+          class="user-avatar"
+          width="32"
+          height="32"
+          (error)="handleAvatarError($event)"
+        />
+      </button>
+      
+      <mat-menu #userMenu="matMenu" class="user-menu">
+        <div class="user-info" (click)="$event.stopPropagation()">
+          <img
+            [src]="userAvatar() || 'assets/images/default-avatar.png'"
+            [alt]="userName()"
+            class="user-avatar-large"
+            width="56"
+            height="56"
+            (error)="handleAvatarError($event)"
+          />
+          <div class="user-details">
+            <div class="user-name">{{ userName() }}</div>
+            <div class="user-email">{{ userEmail() }}</div>
+            <div class="user-role" *ngIf="userRole()">
+              <mat-icon class="role-icon">badge</mat-icon>
+              {{ userRole() }}
+            </div>
+          </div>
+        </div>
+        
+        <mat-divider></mat-divider>
+        
+        <button 
+          mat-menu-item 
+          routerLink="/profile"
+          [attr.aria-label]="'header.profile' | translate"
+        >
+          <mat-icon>person</mat-icon>
+          <span>{{ 'header.profile' | translate }}</span>
+        </button>
+        
+        <button 
+          mat-menu-item 
+          routerLink="/settings"
+          [attr.aria-label]="'header.settings' | translate"
+        >
+          <mat-icon>settings</mat-icon>
+          <span>{{ 'header.settings' | translate }}</span>
+        </button>
+        
+        <button 
+          mat-menu-item 
+          (click)="showKeyboardShortcuts()"
+          [attr.aria-label]="'header.shortcuts' | translate"
+        >
+          <mat-icon>keyboard</mat-icon>
+          <span>{{ 'header.shortcuts' | translate }}</span>
+        </button>
+        
+        <mat-divider></mat-divider>
+        
+        <button 
+          mat-menu-item 
+          (click)="logout()"
+          [attr.aria-label]="'header.logout' | translate"
+        >
+          <mat-icon>logout</mat-icon>
+          <span>{{ 'header.logout' | translate }}</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="progress-bar" *ngIf="isLoading()">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+</mat-toolbar>

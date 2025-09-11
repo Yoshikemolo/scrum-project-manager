@@ -1,0 +1,139 @@
+<!-- Footer Component Template -->
+<footer class="footer" role="contentinfo">
+  <div class="footer-container">
+    <!-- Left Section - Copyright and Version -->
+    <div class="footer-left">
+      <span class="copyright">
+        © {{ currentYear }} {{ 'footer.copyright' | translate }}
+      </span>
+      <span class="separator" aria-hidden="true">•</span>
+      <span class="version" [attr.aria-label]="'footer.versionLabel' | translate">
+        v{{ appVersion }}
+        <span class="environment-badge" *ngIf="!isProduction">
+          {{ environmentName }}
+        </span>
+      </span>
+      <span class="separator" aria-hidden="true">•</span>
+      <span class="company">
+        <a 
+          href="https://ximplicity.es" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          [attr.aria-label]="'footer.companyWebsite' | translate"
+        >
+          {{ 'footer.company' | translate }}
+        </a>
+      </span>
+    </div>
+    
+    <!-- Center Section - Navigation Links -->
+    <nav class="footer-center" aria-label="{{ 'footer.footerNavigation' | translate }}">
+      <a
+        *ngFor="let link of footerLinks; trackBy: trackByRoute"
+        [routerLink]="link.route"
+        routerLinkActive="active"
+        class="footer-link"
+        [attr.aria-label]="link.label | translate"
+      >
+        {{ link.label | translate }}
+      </a>
+    </nav>
+    
+    <!-- Right Section - Status and Social -->
+    <div class="footer-right">
+      <!-- System Status Indicator -->
+      <div 
+        class="status-indicator" 
+        [matTooltip]="'footer.systemStatus' | translate"
+        matTooltipPosition="above"
+        [attr.aria-label]="(isOnline() ? 'footer.systemOnline' : 'footer.systemOffline') | translate"
+      >
+        <span 
+          class="status-dot" 
+          [class.online]="isOnline()" 
+          [class.offline]="!isOnline()"
+          [attr.aria-hidden]="true"
+        ></span>
+        <span class="status-text">
+          {{ (isOnline() ? 'footer.online' : 'footer.offline') | translate }}
+        </span>
+      </div>
+      
+      <span class="separator" aria-hidden="true">•</span>
+      
+      <!-- Language Info -->
+      <div 
+        class="language-info"
+        [matTooltip]="'footer.currentLanguage' | translate"
+        matTooltipPosition="above"
+      >
+        <mat-icon class="language-icon">language</mat-icon>
+        <span class="language-code">{{ currentLanguage() | uppercase }}</span>
+      </div>
+      
+      <span class="separator" aria-hidden="true">•</span>
+      
+      <!-- Social Links -->
+      <div class="social-links" role="navigation" aria-label="{{ 'footer.socialLinks' | translate }}">
+        <a
+          *ngFor="let social of socialLinks; trackBy: trackByUrl"
+          [href]="social.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          [matTooltip]="social.label"
+          matTooltipPosition="above"
+          class="social-link"
+          [attr.aria-label]="social.label"
+        >
+          <mat-icon [svgIcon]="social.icon" *ngIf="social.svgIcon"></mat-icon>
+          <mat-icon *ngIf="!social.svgIcon">{{ social.icon }}</mat-icon>
+        </a>
+      </div>
+      
+      <!-- Back to Top Button (hidden by default) -->
+      <button
+        mat-icon-button
+        class="back-to-top"
+        [class.visible]="showBackToTop()"
+        (click)="scrollToTop()"
+        [matTooltip]="'footer.backToTop' | translate"
+        matTooltipPosition="above"
+        [attr.aria-label]="'footer.backToTop' | translate"
+      >
+        <mat-icon>arrow_upward</mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Mobile Footer -->
+  <div class="footer-mobile">
+    <div class="mobile-links">
+      <a
+        *ngFor="let link of mobileFooterLinks; trackBy: trackByRoute"
+        [routerLink]="link.route"
+        routerLinkActive="active"
+        class="mobile-link"
+        [attr.aria-label]="link.label | translate"
+      >
+        <mat-icon>{{ link.icon }}</mat-icon>
+        <span>{{ link.label | translate }}</span>
+      </a>
+    </div>
+    <div class="mobile-copyright">
+      © {{ currentYear }} {{ 'footer.copyrightShort' | translate }}
+    </div>
+  </div>
+  
+  <!-- Performance Metrics (Development Only) -->
+  <div class="performance-metrics" *ngIf="showPerformanceMetrics">
+    <span class="metric">
+      <mat-icon class="metric-icon">speed</mat-icon>
+      {{ 'footer.loadTime' | translate }}: {{ loadTime }}ms
+    </span>
+    <span class="separator" aria-hidden="true">•</span>
+    <span class="metric">
+      <mat-icon class="metric-icon">memory</mat-icon>
+      {{ 'footer.memoryUsage' | translate }}: {{ memoryUsage }}MB
+    </span>
+  </div>
+</footer>

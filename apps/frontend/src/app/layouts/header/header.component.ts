@@ -1,9 +1,34 @@
 /**
- * Header component for the application.
- * Displays navigation bar, user menu, notifications, and global search.
+ * @fileoverview Header Component
+ * @module HeaderComponent
+ * 
+ * Main application header component that provides:
+ * - Navigation menu toggle
+ * - Global search functionality
+ * - User profile menu
+ * - Theme switching
+ * - Language selection
+ * - Notifications access
+ * - Quick actions
+ * 
+ * @author SCRUM Project Manager Team
+ * @copyright 2025 Ximplicity Software Solutions
  */
 
-import { Component, Input, Output, EventEmitter, inject, signal, computed } from '@angular/core';
+import { 
+  Component, 
+  Input, 
+  Output, 
+  EventEmitter, 
+  inject, 
+  signal, 
+  computed,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  ViewChild,
+  ElementRef
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -16,15 +41,39 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Store } from '@ngrx/store';
+import { Subject, fromEvent } from 'rxjs';
+import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { ShortcutService } from '../../core/services/shortcut.service';
+import { LoadingService } from '../../core/services/loading.service';
+import { NotificationService } from '../../core/services/notification.service';
 import * as AuthActions from '../../store/auth/auth.actions';
-import * as fromAuth from '../../store/auth/auth.selectors';
 
+/**
+ * Language option interface
+ */
+interface LanguageOption {
+  code: string;
+  name: string;
+}
+
+/**
+ * Header component for the application
+ * 
+ * @example
+ * ```html
+ * <app-header 
+ *   [sidenavOpened]="isSidenavOpen"
+ *   (toggleSidenav)="onToggleSidenav()"
+ *   (toggleNotifications)="onToggleNotifications()">
+ * </app-header>
+ * ```
+ */
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -41,410 +90,59 @@ import * as fromAuth from '../../store/auth/auth.selectors';
     MatInputModule,
     MatFormFieldModule,
     MatDividerModule,
+    MatProgressBarModule,
     TranslateModule
   ],
-  template: `
-    <mat-toolbar class="header" [class.elevated]="scrolled()">
-      <div class="header-container">
-        <!-- Left Section -->
-        <div class="header-left">
-          <!-- Menu Toggle -->
-          <button
-            mat-icon-button
-            (click)="toggleSidenav.emit()"
-            [matTooltip]="'header.toggleMenu' | translate"
-            matTooltipPosition="below"
-            class="menu-toggle"
-          >
-            <mat-icon>{{ sidenavOpened ? 'menu_open' : 'menu' }}</mat-icon>
-          </button>
-          
-          <!-- Logo -->
-          <div class="logo" routerLink="/dashboard">
-            <img src="assets/logo.svg" alt="SCRUM PM" class="logo-image" />
-            <span class="logo-text">SCRUM PM</span>
-          </div>
-        </div>
-        
-        <!-- Center Section - Search -->
-        <div class="header-center">
-          <mat-form-field
-            class="search-field"
-            appearance="outline"
-            floatLabel="never"
-          >
-            <mat-icon matPrefix>search</mat-icon>
-            <input
-              matInput
-              id="global-search"
-              type="search"
-              [placeholder]="'header.search' | translate"
-              [(ngModel)]="searchQuery"
-              (keyup.enter)="onSearch()"
-              (keyup.escape)="clearSearch()"
-            />
-            <button
-              mat-icon-button
-              matSuffix
-              *ngIf="searchQuery"
-              (click)="clearSearch()"
-              [matTooltip]="'header.clearSearch' | translate"
-            >
-              <mat-icon>close</mat-icon>
-            </button>
-            <mat-hint class="search-hint">{{ 'header.searchHint' | translate }}</mat-hint>
-          </mat-form-field>
-        </div>
-        
-        <!-- Right Section -->
-        <div class="header-right">
-          <!-- Quick Actions -->
-          <button
-            mat-icon-button
-            routerLink="/tasks/new"
-            [matTooltip]="'header.createTask' | translate"
-            matTooltipPosition="below"
-          >
-            <mat-icon>add_task</mat-icon>
-          </button>
-          
-          <!-- AI Assistant -->
-          <button
-            mat-icon-button
-            routerLink="/ai-assistant"
-            [matTooltip]="'header.aiAssistant' | translate"
-            matTooltipPosition="below"
-            class="ai-button"
-          >
-            <mat-icon>psychology</mat-icon>
-          </button>
-          
-          <!-- Theme Toggle -->
-          <button
-            mat-icon-button
-            (click)="toggleTheme()"
-            [matTooltip]="'header.toggleTheme' | translate"
-            matTooltipPosition="below"
-          >
-            <mat-icon>{{ isDarkTheme() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-          </button>
-          
-          <!-- Notifications -->
-          <button
-            mat-icon-button
-            [matBadge]="unreadNotifications()"
-            [matBadgeHidden]="unreadNotifications() === 0"
-            matBadgeColor="warn"
-            matBadgeSize="small"
-            (click)="toggleNotifications.emit()"
-            [matTooltip]="'header.notifications' | translate"
-            matTooltipPosition="below"
-          >
-            <mat-icon>notifications</mat-icon>
-          </button>
-          
-          <!-- Language Selector -->
-          <button
-            mat-icon-button
-            [matMenuTriggerFor]="languageMenu"
-            [matTooltip]="'header.language' | translate"
-            matTooltipPosition="below"
-          >
-            <mat-icon>language</mat-icon>
-          </button>
-          
-          <mat-menu #languageMenu="matMenu">
-            <button
-              mat-menu-item
-              *ngFor="let lang of availableLanguages"
-              (click)="changeLanguage(lang.code)"
-              [class.active]="currentLanguage === lang.code"
-            >
-              <mat-icon *ngIf="currentLanguage === lang.code">check</mat-icon>
-              <span>{{ lang.name }}</span>
-            </button>
-          </mat-menu>
-          
-          <!-- User Menu -->
-          <button
-            mat-icon-button
-            [matMenuTriggerFor]="userMenu"
-            class="user-menu-trigger"
-          >
-            <img
-              [src]="userAvatar() || 'assets/images/default-avatar.png'"
-              [alt]="userName()"
-              class="user-avatar"
-            />
-          </button>
-          
-          <mat-menu #userMenu="matMenu" class="user-menu">
-            <div class="user-info" (click)="$event.stopPropagation()">
-              <img
-                [src]="userAvatar() || 'assets/images/default-avatar.png'"
-                [alt]="userName()"
-                class="user-avatar-large"
-              />
-              <div class="user-details">
-                <div class="user-name">{{ userName() }}</div>
-                <div class="user-email">{{ userEmail() }}</div>
-                <div class="user-role" *ngIf="userRole()">
-                  <mat-icon class="role-icon">badge</mat-icon>
-                  {{ userRole() }}
-                </div>
-              </div>
-            </div>
-            
-            <mat-divider></mat-divider>
-            
-            <button mat-menu-item routerLink="/profile">
-              <mat-icon>person</mat-icon>
-              <span>{{ 'header.profile' | translate }}</span>
-            </button>
-            
-            <button mat-menu-item routerLink="/settings">
-              <mat-icon>settings</mat-icon>
-              <span>{{ 'header.settings' | translate }}</span>
-            </button>
-            
-            <button mat-menu-item (click)="showKeyboardShortcuts()">
-              <mat-icon>keyboard</mat-icon>
-              <span>{{ 'header.shortcuts' | translate }}</span>
-            </button>
-            
-            <mat-divider></mat-divider>
-            
-            <button mat-menu-item (click)="logout()">
-              <mat-icon>logout</mat-icon>
-              <span>{{ 'header.logout' | translate }}</span>
-            </button>
-          </mat-menu>
-        </div>
-      </div>
-      
-      <!-- Progress Bar -->
-      <div class="progress-bar" *ngIf="isLoading()">
-        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-      </div>
-    </mat-toolbar>
-  `,
-  styles: [`
-    .header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: var(--z-sticky);
-      background: var(--surface-color);
-      transition: box-shadow var(--transition-base);
-      
-      &.elevated {
-        box-shadow: var(--shadow-md);
-      }
-    }
-    
-    .header-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      gap: var(--spacing-md);
-    }
-    
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-    
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-      cursor: pointer;
-      padding: var(--spacing-xs) var(--spacing-sm);
-      border-radius: var(--radius-sm);
-      transition: background-color var(--transition-fast);
-      
-      &:hover {
-        background-color: rgba(var(--primary-color), 0.1);
-      }
-    }
-    
-    .logo-image {
-      width: 32px;
-      height: 32px;
-    }
-    
-    .logo-text {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--primary-color);
-      
-      @media (max-width: 768px) {
-        display: none;
-      }
-    }
-    
-    .header-center {
-      flex: 1;
-      max-width: 600px;
-      
-      @media (max-width: 768px) {
-        display: none;
-      }
-    }
-    
-    .search-field {
-      width: 100%;
-      
-      ::ng-deep {
-        .mat-mdc-form-field-wrapper {
-          padding: 0;
-        }
-        
-        .mat-mdc-text-field-wrapper {
-          height: 40px;
-        }
-        
-        .mat-mdc-form-field-infix {
-          padding: 8px 0;
-        }
-        
-        .mat-mdc-form-field-hint-wrapper {
-          display: none;
-        }
-      }
-    }
-    
-    .search-hint {
-      font-size: 0.75rem;
-      opacity: 0.7;
-    }
-    
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-    }
-    
-    .ai-button {
-      position: relative;
-      
-      &::after {
-        content: '';
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 6px;
-        height: 6px;
-        background: #4caf50;
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-      }
-    }
-    
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      50% {
-        opacity: 0.5;
-        transform: scale(1.5);
-      }
-    }
-    
-    .user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    
-    .user-menu {
-      min-width: 280px;
-    }
-    
-    .user-info {
-      padding: var(--spacing-md);
-      display: flex;
-      gap: var(--spacing-md);
-      align-items: center;
-    }
-    
-    .user-avatar-large {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    
-    .user-details {
-      flex: 1;
-    }
-    
-    .user-name {
-      font-weight: 600;
-      font-size: 1.1rem;
-      margin-bottom: 2px;
-    }
-    
-    .user-email {
-      font-size: 0.9rem;
-      opacity: 0.7;
-      margin-bottom: 4px;
-    }
-    
-    .user-role {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.85rem;
-      color: var(--primary-color);
-      
-      .role-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
-    }
-    
-    .progress-bar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-    }
-    
-    .active {
-      background-color: rgba(var(--primary-color), 0.1);
-    }
-  `]
+  templateUrl: './header.component.html',
+  styleUrls: ['./header.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit, OnDestroy {
+  // Service injections
   private readonly store = inject(Store);
   private readonly authService = inject(AuthService);
   private readonly themeService = inject(ThemeService);
   private readonly translateService = inject(TranslateService);
   private readonly shortcutService = inject(ShortcutService);
+  private readonly loadingService = inject(LoadingService);
+  private readonly notificationService = inject(NotificationService);
   
+  // Component lifecycle
+  private readonly destroy$ = new Subject<void>();
+  
+  /**
+   * Whether the sidenav is currently opened
+   */
   @Input() sidenavOpened = false;
+  
+  /**
+   * Event emitted when sidenav toggle is requested
+   */
   @Output() toggleSidenav = new EventEmitter<void>();
+  
+  /**
+   * Event emitted when notifications panel toggle is requested
+   */
   @Output() toggleNotifications = new EventEmitter<void>();
   
-  // Signals
-  searchQuery = '';
-  currentLanguage = this.translateService.currentLang;
-  scrolled = signal(false);
-  isLoading = signal(false);
-  unreadNotifications = signal(5); // TODO: Connect to real notifications
+  /**
+   * Reference to search input element
+   */
+  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
   
-  // Computed signals from store
+  // Component state
+  searchQuery = '';
+  currentLanguage = signal(this.translateService.currentLang);
+  scrolled = signal(false);
+  
+  // Computed signals from services
+  isLoading = computed(() => this.loadingService.isLoading());
+  unreadNotifications = computed(() => this.notificationService.unreadCount());
+  
+  // User information computed from auth service
   userName = computed(() => {
     const user = this.authService.currentUser();
-    return user ? `${user.firstName} ${user.lastName}` : '';
+    return user ? `${user.firstName} ${user.lastName}`.trim() : '';
   });
   
   userEmail = computed(() => {
@@ -454,19 +152,23 @@ export class HeaderComponent {
   
   userAvatar = computed(() => {
     const user = this.authService.currentUser();
-    return user?.avatar;
+    return user?.avatar || null;
   });
   
   userRole = computed(() => {
     const user = this.authService.currentUser();
-    return user?.roles?.[0]?.name;
+    return user?.roles?.[0]?.name || '';
   });
   
+  // Theme state
   isDarkTheme = computed(() => {
     return this.themeService.currentTheme() === 'dark';
   });
   
-  availableLanguages = [
+  /**
+   * Available languages for the application
+   */
+  readonly availableLanguages: ReadonlyArray<LanguageOption> = [
     { code: 'en', name: 'English' },
     { code: 'es', name: 'Español' },
     { code: 'fr', name: 'Français' },
@@ -477,64 +179,191 @@ export class HeaderComponent {
     { code: 'zh', name: '中文' }
   ];
   
-  constructor() {
+  /**
+   * Component initialization
+   */
+  ngOnInit(): void {
     this.setupScrollListener();
+    this.setupKeyboardShortcuts();
+    this.loadUserPreferences();
   }
   
   /**
-   * Setup scroll listener for header elevation
+   * Component cleanup
+   */
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+  
+  /**
+   * Setup scroll listener for header elevation effect
+   * @private
    */
   private setupScrollListener(): void {
-    window.addEventListener('scroll', () => {
-      this.scrolled.set(window.scrollY > 10);
+    fromEvent(window, 'scroll')
+      .pipe(
+        debounceTime(10),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.scrolled.set(window.scrollY > 10);
+      });
+  }
+  
+  /**
+   * Setup keyboard shortcuts
+   * @private
+   */
+  private setupKeyboardShortcuts(): void {
+    // Global search shortcut (Ctrl/Cmd + K)
+    this.shortcutService.add({
+      keys: 'ctrl+k,cmd+k',
+      description: 'Focus global search',
+      handler: () => {
+        this.searchInput?.nativeElement.focus();
+        return false;
+      }
+    });
+    
+    // Toggle theme shortcut (Ctrl/Cmd + Shift + T)
+    this.shortcutService.add({
+      keys: 'ctrl+shift+t,cmd+shift+t',
+      description: 'Toggle theme',
+      handler: () => {
+        this.toggleTheme();
+        return false;
+      }
     });
   }
   
   /**
-   * Handle search
+   * Load user preferences from storage
+   * @private
    */
-  onSearch(): void {
-    if (this.searchQuery.trim()) {
-      // TODO: Implement global search
-      console.log('Searching for:', this.searchQuery);
+  private loadUserPreferences(): void {
+    // Load saved language preference
+    const savedLanguage = localStorage.getItem('language');
+    if (savedLanguage && this.isValidLanguage(savedLanguage)) {
+      this.translateService.use(savedLanguage);
+      this.currentLanguage.set(savedLanguage);
     }
   }
   
   /**
-   * Clear search
+   * Check if a language code is valid
+   * @param code Language code to validate
+   * @returns True if the language code is valid
+   * @private
+   */
+  private isValidLanguage(code: string): boolean {
+    return this.availableLanguages.some(lang => lang.code === code);
+  }
+  
+  /**
+   * Handle global search
+   */
+  onSearch(): void {
+    const query = this.searchQuery.trim();
+    if (query) {
+      // TODO: Implement global search functionality
+      console.log('Searching for:', query);
+      
+      // For now, just show a notification
+      this.notificationService.info(
+        this.translateService.instant('header.searchInProgress', { query })
+      );
+    }
+  }
+  
+  /**
+   * Clear search input
    */
   clearSearch(): void {
     this.searchQuery = '';
+    this.searchInput?.nativeElement.focus();
   }
   
   /**
-   * Toggle theme
+   * Toggle application theme
    */
   toggleTheme(): void {
     this.themeService.toggleTheme();
+    
+    // Show notification
+    const theme = this.isDarkTheme() ? 'dark' : 'light';
+    this.notificationService.success(
+      this.translateService.instant('header.themeChanged', { theme })
+    );
   }
   
   /**
-   * Change language
+   * Change application language
+   * @param languageCode The language code to switch to
    */
-  changeLanguage(lang: string): void {
-    this.translateService.use(lang);
-    this.currentLanguage = lang;
-    localStorage.setItem('language', lang);
+  changeLanguage(languageCode: string): void {
+    if (this.isValidLanguage(languageCode)) {
+      this.translateService.use(languageCode);
+      this.currentLanguage.set(languageCode);
+      localStorage.setItem('language', languageCode);
+      
+      // Show notification
+      const language = this.availableLanguages.find(l => l.code === languageCode)?.name;
+      this.notificationService.success(
+        this.translateService.instant('header.languageChanged', { language })
+      );
+    }
   }
   
   /**
    * Show keyboard shortcuts dialog
    */
   showKeyboardShortcuts(): void {
-    // TODO: Implement shortcuts dialog
-    console.log('Show keyboard shortcuts');
+    // TODO: Implement keyboard shortcuts dialog
+    console.log('Show keyboard shortcuts dialog');
+    
+    // For now, just show a notification
+    this.notificationService.info(
+      this.translateService.instant('header.shortcutsComingSoon')
+    );
   }
   
   /**
-   * Logout user
+   * Handle avatar image load error
+   * @param event The error event
+   */
+  handleAvatarError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img) {
+      img.src = 'assets/images/default-avatar.png';
+    }
+  }
+  
+  /**
+   * Logout the current user
    */
   logout(): void {
-    this.store.dispatch(AuthActions.logout());
+    // Show confirmation dialog
+    if (confirm(this.translateService.instant('header.logoutConfirm'))) {
+      this.store.dispatch(AuthActions.logout());
+      
+      // Clear local storage
+      localStorage.removeItem('language');
+      
+      // Show notification
+      this.notificationService.info(
+        this.translateService.instant('header.logoutSuccess')
+      );
+    }
+  }
+  
+  /**
+   * TrackBy function for language options
+   * @param index The index of the item
+   * @param item The language option
+   * @returns The unique identifier for the item
+   */
+  trackByLanguageCode(index: number, item: LanguageOption): string {
+    return item.code;
   }
 }
