@@ -3,103 +3,114 @@
   class="loader-overlay" 
   [class.fullscreen]="fullscreen"
   [class.inline]="!fullscreen"
-  [attr.aria-label]="'loader.loading' | translate"
-  [attr.aria-busy]="true"
-  role="status"
+  [class.backdrop-blur]="backdropBlur"
   [@fadeIn]="animationState"
+  [attr.role]="'status'"
+  [attr.aria-live]="'polite'"
+  [attr.aria-busy]="'true'"
+  [attr.aria-label]="message || ('loader.defaultMessage' | translate)"
 >
-  <div class="loader-container" [class.backdrop-blur]="backdropBlur">
-    <!-- Main Spinner -->
-    <div class="loader-spinner" [ngSwitch]="type">
-      <!-- Circular Progress -->
+  <!-- Backdrop (only for fullscreen) -->
+  <div 
+    class="loader-backdrop" 
+    *ngIf="fullscreen"
+    (click)="onBackdropClick()"
+    [class.clickable]="dismissible"
+  ></div>
+
+  <!-- Main Loader Container -->
+  <div 
+    class="loader-container"
+    [class.elevated]="fullscreen"
+    [class.compact]="size === 'small'"
+    [class.expanded]="size === 'large'"
+  >
+    <!-- Spinner Types -->
+    
+    <!-- Circular Spinner -->
+    <div class="spinner-wrapper" *ngIf="type === 'circular'">
       <mat-progress-spinner
-        *ngSwitchCase="'circular'"
         [mode]="mode"
-        [diameter]="size"
+        [diameter]="spinnerSize"
         [strokeWidth]="strokeWidth"
-        [value]="progress"
+        [value]="value"
         [color]="color"
-        [attr.aria-label]="getProgressLabel()"
-        [attr.aria-valuenow]="progress"
         [attr.aria-valuemin]="0"
         [attr.aria-valuemax]="100"
+        [attr.aria-valuenow]="mode === 'determinate' ? value : null"
       ></mat-progress-spinner>
       
-      <!-- Linear Progress -->
+      <!-- Progress Percentage (for determinate mode) -->
+      <div class="progress-text" *ngIf="mode === 'determinate' && showProgress">
+        {{ value }}%
+      </div>
+    </div>
+
+    <!-- Linear Progress Bar -->
+    <div class="progress-wrapper" *ngIf="type === 'linear'">
       <mat-progress-bar
-        *ngSwitchCase="'linear'"
-        class="linear-progress"
         [mode]="mode"
-        [value]="progress"
+        [value]="value"
         [bufferValue]="bufferValue"
         [color]="color"
-        [attr.aria-label]="getProgressLabel()"
-        [attr.aria-valuenow]="progress"
         [attr.aria-valuemin]="0"
         [attr.aria-valuemax]="100"
+        [attr.aria-valuenow]="mode === 'determinate' ? value : null"
       ></mat-progress-bar>
-      
-      <!-- Dots Animation -->
-      <div *ngSwitchCase="'dots'" class="loader-dots" [attr.aria-label]="'loader.loading' | translate">
-        <span class="dot" *ngFor="let dot of [1, 2, 3, 4]" [style.animation-delay.ms]="dot * 150"></span>
-      </div>
-      
-      <!-- Pulse Animation -->
-      <div *ngSwitchCase="'pulse'" class="loader-pulse" [attr.aria-label]="'loader.loading' | translate">
-        <div class="pulse-ring"></div>
-        <div class="pulse-ring"></div>
-        <div class="pulse-ring"></div>
-      </div>
-      
-      <!-- Skeleton Loader -->
-      <div *ngSwitchCase="'skeleton'" class="loader-skeleton" [attr.aria-label]="'loader.loading' | translate">
-        <div class="skeleton-header"></div>
-        <div class="skeleton-content">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-        </div>
-      </div>
-      
-      <!-- Custom Content -->
-      <div *ngSwitchCase="'custom'" class="loader-custom">
-        <ng-content></ng-content>
-      </div>
-      
-      <!-- Default: Circular -->
-      <mat-progress-spinner
-        *ngSwitchDefault
-        mode="indeterminate"
-        [diameter]="size"
-        [strokeWidth]="strokeWidth"
-        [color]="color"
-      ></mat-progress-spinner>
     </div>
-    
-    <!-- Message -->
-    <div class="loader-message" *ngIf="message" [@slideIn]="messageState">
-      <p class="message-text">{{ message | translate }}</p>
-      <p class="message-submessage" *ngIf="submessage">
-        {{ submessage | translate }}
-      </p>
+
+    <!-- Skeleton Loader -->
+    <div class="skeleton-wrapper" *ngIf="type === 'skeleton'">
+      <div class="skeleton-item" *ngFor="let item of skeletonItems; trackBy: trackByIndex">
+        <div class="skeleton-line" [style.width.%]="item.width" [@pulse]></div>
+      </div>
     </div>
-    
-    <!-- Progress Text -->
-    <div class="loader-progress" *ngIf="showProgress && mode === 'determinate'">
-      <span class="progress-value">{{ progress }}%</span>
-      <span class="progress-label" *ngIf="progressLabel">
-        {{ progressLabel | translate }}
+
+    <!-- Dots Loader -->
+    <div class="dots-wrapper" *ngIf="type === 'dots'">
+      <span class="dot" *ngFor="let dot of [1,2,3,4]; trackBy: trackByIndex" [@bounce]></span>
+    </div>
+
+    <!-- Pulse Loader -->
+    <div class="pulse-wrapper" *ngIf="type === 'pulse'">
+      <div class="pulse-ring" [@pulseRing]></div>
+      <div class="pulse-ring" [@pulseRing]></div>
+      <div class="pulse-ring" [@pulseRing]></div>
+    </div>
+
+    <!-- Custom Icon Loader -->
+    <div class="icon-wrapper" *ngIf="type === 'icon' && customIcon">
+      <mat-icon 
+        class="loading-icon" 
+        [@rotate]
+        [svgIcon]="customIcon.includes('/') ? customIcon : null"
+      >
+        {{ !customIcon.includes('/') ? customIcon : '' }}
+      </mat-icon>
+    </div>
+
+    <!-- Loading Message -->
+    <div 
+      class="loader-message" 
+      *ngIf="message"
+      [class.message-above]="messagePosition === 'above'"
+      [class.message-below]="messagePosition === 'below'"
+    >
+      <span class="message-text">{{ message | translate }}</span>
+      
+      <!-- Sub-message -->
+      <span class="message-subtext" *ngIf="subMessage">
+        {{ subMessage | translate }}
       </span>
     </div>
-    
-    <!-- Action Buttons -->
+
+    <!-- Action Buttons (optional) -->
     <div class="loader-actions" *ngIf="showActions">
       <button 
-        mat-button
-        *ngIf="cancelable"
+        mat-button 
+        color="primary"
         (click)="onCancel()"
-        [disabled]="cancelDisabled"
-        class="cancel-button"
+        *ngIf="cancellable"
         [attr.aria-label]="'loader.cancel' | translate"
       >
         <mat-icon>close</mat-icon>
@@ -107,43 +118,56 @@
       </button>
       
       <button 
-        mat-button
-        *ngIf="retryable"
+        mat-button 
         (click)="onRetry()"
-        class="retry-button"
+        *ngIf="retryable"
         [attr.aria-label]="'loader.retry' | translate"
       >
         <mat-icon>refresh</mat-icon>
         {{ 'loader.retry' | translate }}
       </button>
     </div>
-    
-    <!-- Time Estimate -->
-    <div class="loader-estimate" *ngIf="estimatedTime">
-      <mat-icon class="timer-icon">timer</mat-icon>
-      <span>{{ getTimeEstimate() }}</span>
+
+    <!-- Estimated Time -->
+    <div class="estimated-time" *ngIf="showEstimatedTime && estimatedTime > 0">
+      <mat-icon class="time-icon">schedule</mat-icon>
+      <span class="time-text">
+        {{ 'loader.estimatedTime' | translate: {time: formatTime(estimatedTime)} }}
+      </span>
     </div>
-    
-    <!-- Tips (rotating messages) -->
-    <div class="loader-tips" *ngIf="tips.length > 0" [@fadeIn]>
-      <p class="tip-text">
-        <mat-icon class="tip-icon">lightbulb</mat-icon>
-        {{ currentTip() | translate }}
-      </p>
+
+    <!-- Steps Progress (for multi-step operations) -->
+    <div class="steps-progress" *ngIf="steps && steps.length > 0">
+      <div class="step-indicator">
+        {{ 'loader.step' | translate: {current: currentStep + 1, total: steps.length} }}
+      </div>
+      <div class="steps-list">
+        <div 
+          class="step-item" 
+          *ngFor="let step of steps; let i = index; trackBy: trackByIndex"
+          [class.completed]="i < currentStep"
+          [class.active]="i === currentStep"
+          [class.pending]="i > currentStep"
+        >
+          <mat-icon class="step-icon">
+            {{ i < currentStep ? 'check_circle' : (i === currentStep ? 'radio_button_checked' : 'radio_button_unchecked') }}
+          </mat-icon>
+          <span class="step-label">{{ step.label | translate }}</span>
+          <span class="step-status" *ngIf="i === currentStep && step.status">
+            ({{ step.status | translate }})
+          </span>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Inline loader template for tables/lists -->
-<ng-template #inlineLoader>
-  <div class="inline-loader">
-    <mat-spinner 
-      [diameter]="24" 
-      [strokeWidth]="3"
-      color="primary"
-    ></mat-spinner>
-    <span class="inline-text" *ngIf="message">
-      {{ message | translate }}
+  <!-- Accessibility Announcements -->
+  <div class="sr-only" aria-live="assertive" aria-atomic="true">
+    <span *ngIf="mode === 'determinate'">
+      {{ 'loader.progressUpdate' | translate: {value: value} }}
+    </span>
+    <span *ngIf="currentStep !== undefined && steps">
+      {{ 'loader.stepUpdate' | translate: {step: steps[currentStep]?.label} }}
     </span>
   </div>
-</ng-template>
+</div>
