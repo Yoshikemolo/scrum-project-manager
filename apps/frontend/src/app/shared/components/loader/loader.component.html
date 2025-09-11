@@ -3,149 +3,149 @@
   class="loader-overlay" 
   [class.fullscreen]="fullscreen"
   [class.inline]="!fullscreen"
+  [class.backdrop]="showBackdrop"
+  [@fadeIn]="animationState"
   [attr.aria-busy]="true"
   [attr.aria-live]="'polite'"
-  [attr.aria-label]="message || ('loader.loading' | translate)"
+  [attr.aria-label]="'loader.loading' | translate"
   role="status"
-  [@fadeIn]
 >
-  <!-- Backdrop (only for fullscreen) -->
-  <div 
-    class="loader-backdrop" 
-    *ngIf="fullscreen"
-    [style.background]="backdropColor"
-    (click)="onBackdropClick()"
-  ></div>
-  
-  <!-- Loader Container -->
   <div 
     class="loader-container"
-    [class.loader-small]="size === 'small'"
-    [class.loader-medium]="size === 'medium'"
-    [class.loader-large]="size === 'large'"
+    [class.elevated]="elevated"
+    [class.compact]="compact"
   >
-    <!-- Circular Progress Loader -->
-    <div class="loader-spinner" *ngIf="type === 'circular'">
+    <!-- Main Spinner -->
+    <div class="spinner-wrapper" [ngSwitch]="type">
+      <!-- Circular Spinner -->
       <mat-progress-spinner
-        [mode]="mode"
-        [value]="progress"
-        [diameter]="getDiameter()"
+        *ngSwitchCase="'circular'"
+        mode="indeterminate"
+        [diameter]="size"
         [strokeWidth]="strokeWidth"
         [color]="color"
+        class="spinner-circular"
       ></mat-progress-spinner>
       
-      <!-- Progress Text (for determinate mode) -->
-      <div class="progress-text" *ngIf="mode === 'determinate' && showProgress">
-        {{ progress }}%
-      </div>
-    </div>
-    
-    <!-- Linear Progress Loader -->
-    <div class="loader-linear" *ngIf="type === 'linear'">
+      <!-- Linear Progress -->
       <mat-progress-bar
-        [mode]="mode"
-        [value]="progress"
-        [bufferValue]="bufferValue"
+        *ngSwitchCase="'linear'"
+        mode="indeterminate"
         [color]="color"
+        class="spinner-linear"
       ></mat-progress-bar>
-    </div>
-    
-    <!-- Skeleton Loader -->
-    <div class="loader-skeleton" *ngIf="type === 'skeleton'">
-      <div class="skeleton-line" *ngFor="let line of skeletonLines; trackBy: trackByIndex">
-        <div 
-          class="skeleton-shimmer"
-          [style.width.%]="line.width"
-          [style.height.px]="line.height"
-          [style.animation-delay.ms]="line.delay"
-        ></div>
+      
+      <!-- Dots Loader -->
+      <div *ngSwitchCase="'dots'" class="spinner-dots">
+        <span 
+          class="dot" 
+          *ngFor="let dot of [1,2,3,4]; let i = index"
+          [style.animation-delay.ms]="i * 150"
+        ></span>
       </div>
-    </div>
-    
-    <!-- Dots Loader -->
-    <div class="loader-dots" *ngIf="type === 'dots'">
-      <span 
-        class="dot" 
-        *ngFor="let dot of [1,2,3,4]; trackBy: trackByIndex"
-        [style.animation-delay.s]="dot * 0.15"
-      ></span>
-    </div>
-    
-    <!-- Pulse Loader -->
-    <div class="loader-pulse" *ngIf="type === 'pulse'">
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <div class="pulse-core">
-        <mat-icon *ngIf="icon">{{ icon }}</mat-icon>
+      
+      <!-- Pulse Loader -->
+      <div *ngSwitchCase="'pulse'" class="spinner-pulse">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
       </div>
-    </div>
-    
-    <!-- Custom Content Loader -->
-    <div class="loader-custom" *ngIf="type === 'custom'">
-      <ng-content></ng-content>
+      
+      <!-- Custom SVG Loader -->
+      <div *ngSwitchCase="'custom'" class="spinner-custom">
+        <svg 
+          class="custom-svg" 
+          [style.width.px]="size" 
+          [style.height.px]="size"
+          viewBox="0 0 100 100"
+        >
+          <circle
+            class="svg-circle-bg"
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke-width="4"
+          />
+          <circle
+            class="svg-circle"
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke-width="4"
+            stroke-dasharray="283"
+            stroke-dashoffset="75"
+          />
+        </svg>
+      </div>
+      
+      <!-- Skeleton Loader -->
+      <div *ngSwitchCase="'skeleton'" class="spinner-skeleton">
+        <div class="skeleton-line" *ngFor="let line of skeletonLines"></div>
+      </div>
     </div>
     
     <!-- Loading Message -->
     <div 
       class="loader-message" 
       *ngIf="message"
-      [class.message-below]="messagePosition === 'below'"
-      [class.message-above]="messagePosition === 'above'"
-      [@slideIn]
+      [class.with-progress]="showProgress"
     >
       <span class="message-text">{{ message | translate }}</span>
-      
-      <!-- Animated Dots -->
-      <span class="message-dots" *ngIf="showMessageDots">
-        <span class="message-dot" *ngFor="let i of [1,2,3]" [style.animation-delay.s]="i * 0.2">.</span>
-      </span>
+      <small class="message-hint" *ngIf="hint">
+        {{ hint | translate }}
+      </small>
     </div>
     
-    <!-- Action Buttons (optional) -->
-    <div class="loader-actions" *ngIf="showCancel || customActions.length > 0">
-      <button 
+    <!-- Progress Indicator -->
+    <div class="progress-indicator" *ngIf="showProgress && progress >= 0">
+      <div class="progress-bar">
+        <div 
+          class="progress-fill"
+          [style.width.%]="progress"
+          [attr.aria-valuenow]="progress"
+          [attr.aria-valuemin]="0"
+          [attr.aria-valuemax]="100"
+          role="progressbar"
+        >
+          <span class="progress-text">{{ progress }}%</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="loader-actions" *ngIf="showActions">
+      <button
         mat-button
-        color="warn"
-        *ngIf="showCancel"
         (click)="onCancel()"
-        [disabled]="cancelDisabled"
+        [disabled]="!cancellable"
+        class="action-cancel"
+        [attr.aria-label]="'loader.cancel' | translate"
       >
         <mat-icon>close</mat-icon>
-        {{ cancelText | translate }}
-      </button>
-      
-      <button 
-        mat-button
-        *ngFor="let action of customActions; trackBy: trackByAction"
-        [color]="action.color"
-        (click)="onCustomAction(action)"
-        [disabled]="action.disabled"
-      >
-        <mat-icon *ngIf="action.icon">{{ action.icon }}</mat-icon>
-        {{ action.label | translate }}
+        {{ 'loader.cancel' | translate }}
       </button>
     </div>
     
-    <!-- Time Elapsed (optional) -->
-    <div class="loader-timer" *ngIf="showTimer">
-      <mat-icon class="timer-icon">timer</mat-icon>
+    <!-- Time Indicator -->
+    <div class="time-indicator" *ngIf="showTimer">
+      <mat-icon class="timer-icon">schedule</mat-icon>
       <span class="timer-text">{{ formatTime(elapsedTime) }}</span>
-    </div>
-    
-    <!-- Tips/Hints (optional) -->
-    <div class="loader-tips" *ngIf="tips.length > 0" [@fadeIn]>
-      <div class="tip-container">
-        <mat-icon class="tip-icon">lightbulb</mat-icon>
-        <span class="tip-text">{{ currentTip | translate }}</span>
-      </div>
     </div>
   </div>
 </div>
 
-<!-- Accessibility Announcements -->
-<div class="sr-only" aria-live="assertive" aria-atomic="true">
-  <span *ngIf="mode === 'determinate'">
-    {{ 'loader.progressUpdate' | translate: { progress: progress } }}
-  </span>
-</div>
+<!-- Inline Loader Template -->
+<ng-container *ngIf="!fullscreen && type === 'inline'">
+  <div class="inline-loader">
+    <mat-spinner
+      [diameter]="20"
+      [strokeWidth]="2"
+      color="primary"
+    ></mat-spinner>
+    <span class="inline-text" *ngIf="message">
+      {{ message | translate }}
+    </span>
+  </div>
+</ng-container>
