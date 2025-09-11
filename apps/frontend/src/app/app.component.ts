@@ -1,6 +1,9 @@
 /**
  * Root component of the SCRUM Project Manager application.
  * Manages the overall layout and initializes core services.
+ * 
+ * @component AppComponent
+ * @module App
  */
 
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
@@ -16,17 +19,24 @@ import { Store } from '@ngrx/store';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ToastrService } from 'ngx-toastr';
 
-import { SidenavComponent } from './layouts/sidenav/sidenav.component';
+// Layout Components
+import { SidebarComponent } from './layouts/sidebar/sidebar.component';
 import { HeaderComponent } from './layouts/header/header.component';
 import { FooterComponent } from './layouts/footer/footer.component';
+
+// Shared Components
 import { LoaderComponent } from './shared/components/loader/loader.component';
 import { NotificationCenterComponent } from './shared/components/notification-center/notification-center.component';
 
+// Core Services
 import { AuthService } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
-import { LoaderService } from './core/services/loader.service';
+import { LoadingService } from './core/services/loading.service';
 import { WebSocketService } from './core/services/websocket.service';
 import { ShortcutService } from './core/services/shortcut.service';
+
+// Environment
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -41,7 +51,7 @@ import { ShortcutService } from './core/services/shortcut.service';
     MatButtonModule,
     MatProgressBarModule,
     TranslateModule,
-    SidenavComponent,
+    SidebarComponent,
     HeaderComponent,
     FooterComponent,
     LoaderComponent,
@@ -63,11 +73,15 @@ import { ShortcutService } from './core/services/shortcut.service';
           class="sidenav"
           (closedStart)="onSidenavClose()"
         >
-          <app-sidenav
+          <app-sidebar
             [isCollapsed]="sidenavCollapsed()"
+            [mode]="sidenavMode()"
+            [isMobile]="isMobile()"
+            [expanded]="sidenavOpened()"
             (toggleCollapse)="toggleSidenavCollapse()"
             (navigate)="onNavigate()"
-          ></app-sidenav>
+            (toggle)="toggleSidenav()"
+          ></app-sidebar>
         </mat-sidenav>
         
         <!-- Main Content -->
@@ -75,6 +89,7 @@ import { ShortcutService } from './core/services/shortcut.service';
           <!-- Header -->
           <app-header
             [sidenavOpened]="sidenavOpened()"
+            [isMobile]="isMobile()"
             (toggleSidenav)="toggleSidenav()"
             (toggleNotifications)="toggleNotifications()"
           ></app-header>
@@ -110,11 +125,11 @@ import { ShortcutService } from './core/services/shortcut.service';
     }
     
     .sidenav {
-      width: 260px;
+      width: 280px;
       transition: width 0.3s ease;
       
       &.collapsed {
-        width: 64px;
+        width: 80px;
       }
     }
     
@@ -147,26 +162,27 @@ import { ShortcutService } from './core/services/shortcut.service';
   ]
 })
 export class AppComponent implements OnInit {
-  private store = inject(Store);
-  private authService = inject(AuthService);
-  private themeService = inject(ThemeService);
-  private loaderService = inject(LoaderService);
-  private wsService = inject(WebSocketService);
-  private shortcutService = inject(ShortcutService);
-  private translateService = inject(TranslateService);
-  private toastr = inject(ToastrService);
-  private breakpointObserver = inject(BreakpointObserver);
+  // Service injections
+  private readonly store = inject(Store);
+  private readonly authService = inject(AuthService);
+  private readonly themeService = inject(ThemeService);
+  private readonly loadingService = inject(LoadingService);
+  private readonly wsService = inject(WebSocketService);
+  private readonly shortcutService = inject(ShortcutService);
+  private readonly translateService = inject(TranslateService);
+  private readonly toastr = inject(ToastrService);
+  private readonly breakpointObserver = inject(BreakpointObserver);
   
   // Signals for reactive state
-  isDarkTheme = signal(false);
-  isLoading = signal(false);
-  sidenavOpened = signal(true);
-  sidenavCollapsed = signal(false);
-  notificationsOpen = signal(false);
-  isMobile = signal(false);
+  readonly isDarkTheme = signal(false);
+  readonly isLoading = signal(false);
+  readonly sidenavOpened = signal(true);
+  readonly sidenavCollapsed = signal(false);
+  readonly notificationsOpen = signal(false);
+  readonly isMobile = signal(false);
   
   // Computed values
-  sidenavMode = computed(() => this.isMobile() ? 'over' : 'side');
+  readonly sidenavMode = computed(() => this.isMobile() ? 'over' : 'side');
   
   ngOnInit(): void {
     this.initializeApp();
@@ -186,7 +202,7 @@ export class AppComponent implements OnInit {
     this.authService.checkAuthStatus();
     
     // Initialize service worker for PWA
-    if ('serviceWorker' in navigator && environment.features.enableServiceWorker) {
+    if ('serviceWorker' in navigator && environment.features?.enableServiceWorker) {
       navigator.serviceWorker.register('/ngsw-worker.js');
     }
   }
@@ -220,7 +236,7 @@ export class AppComponent implements OnInit {
    * Setup translations
    */
   private setupTranslations(): void {
-    const defaultLang = localStorage.getItem('language') || environment.i18n.defaultLanguage;
+    const defaultLang = localStorage.getItem('language') || environment.i18n?.defaultLanguage || 'en';
     this.translateService.setDefaultLang(defaultLang);
     this.translateService.use(defaultLang);
   }
@@ -259,7 +275,7 @@ export class AppComponent implements OnInit {
    * Setup loader service
    */
   private setupLoader(): void {
-    this.loaderService.loading$.subscribe(loading => {
+    this.loadingService.isLoading$.subscribe(loading => {
       this.isLoading.set(loading);
     });
   }
@@ -317,6 +333,3 @@ export class AppComponent implements OnInit {
     return outlet?.activatedRouteData?.['animation'] || '';
   }
 }
-
-// Import environment
-import { environment } from '../environments/environment';

@@ -1,182 +1,104 @@
 /**
- * Application configuration for bootstrapping Angular.
- * Configures providers, services, and global settings.
+ * Application configuration for Angular 20 with standalone components.
+ * Configures all providers, modules, and services for the application.
+ * 
+ * @module AppConfig
  */
 
 import { ApplicationConfig, importProvidersFrom, isDevMode } from '@angular/core';
-import { provideRouter, withPreloading, PreloadAllModules, withInMemoryScrolling } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withRouterConfig, withViewTransitions } from '@angular/router';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideServiceWorker } from '@angular/service-worker';
 
-// Material & CDK
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-
-// NgRx
+// NgRx Store
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { provideRouterStore } from '@ngrx/router-store';
 
-// Apollo GraphQL
-import { APOLLO_OPTIONS, ApolloModule } from 'apollo-angular';
-import { HttpLink } from 'apollo-angular/http';
-import { InMemoryCache, ApolloLink } from '@apollo/client/core';
-import { setContext } from '@apollo/client/link/context';
-import { onError } from '@apollo/client/link/error';
+// Material Design
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
+import { MatNativeDateModule } from '@angular/material/core';
 
-// Translations
+// Toastr for notifications
+import { provideToastr } from 'ngx-toastr';
+
+// i18n
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 import { HttpClient } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+import localeEn from '@angular/common/locales/en';
+import localeFr from '@angular/common/locales/fr';
+import localeDe from '@angular/common/locales/de';
 
-// Toastr
-import { ToastrModule } from 'ngx-toastr';
-
-// Routes
+// Application imports
 import { routes } from './app.routes';
-
-// Store
-import { reducers, metaReducers } from './store';
-import { effects } from './store/effects';
-
-// Interceptors
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
-import { loaderInterceptor } from './core/interceptors/loader.interceptor';
+import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { cacheInterceptor } from './core/interceptors/cache.interceptor';
-
-// Environment
+import { ROOT_REDUCERS, metaReducers } from './store';
+import { AuthEffects } from './store/auth/auth.effects';
 import { environment } from '../environments/environment';
 
-/**
- * Factory function for TranslateLoader
- */
-export function HttpLoaderFactory(http: HttpClient): TranslateHttpLoader {
+// Register locales
+registerLocaleData(localeEs);
+registerLocaleData(localeEn);
+registerLocaleData(localeFr);
+registerLocaleData(localeDe);
+
+// Translation loader factory
+export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');
 }
 
-/**
- * Apollo GraphQL factory
- */
-export function createApollo(httpLink: HttpLink): any {
-  // Auth link to add token to requests
-  const auth = setContext((operation, context) => {
-    const token = localStorage.getItem(environment.auth.tokenKey);
-    
-    if (!token) {
-      return {};
-    }
-    
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    };
-  });
-  
-  // Error link for handling GraphQL errors
-  const errorLink = onError(({ graphQLErrors, networkError }) => {
-    if (graphQLErrors) {
-      graphQLErrors.forEach(({ message, locations, path }) => {
-        console.error(
-          `GraphQL error: Message: ${message}, Location: ${locations}, Path: ${path}`
-        );
-      });
-    }
-    
-    if (networkError) {
-      console.error(`Network error: ${networkError}`);
-    }
-  });
-  
-  // Create Apollo link chain
-  const link = ApolloLink.from([
-    errorLink,
-    auth,
-    httpLink.create({ uri: environment.graphqlUrl })
-  ]);
-  
-  // Create cache with type policies
-  const cache = new InMemoryCache({
-    typePolicies: {
-      Query: {
-        fields: {
-          projects: {
-            merge(existing = [], incoming: any[]) {
-              return incoming;
-            }
-          },
-          tasks: {
-            merge(existing = [], incoming: any[]) {
-              return incoming;
-            }
-          }
-        }
-      },
-      Project: {
-        keyFields: ['id']
-      },
-      Task: {
-        keyFields: ['id']
-      },
-      User: {
-        keyFields: ['id']
-      }
-    }
-  });
-  
-  return {
-    link,
-    cache,
-    defaultOptions: {
-      watchQuery: {
-        fetchPolicy: 'cache-and-network',
-        errorPolicy: 'all'
-      },
-      query: {
-        fetchPolicy: 'cache-first',
-        errorPolicy: 'all'
-      },
-      mutate: {
-        errorPolicy: 'all'
-      }
-    }
-  };
-}
+// Date formats for different locales
+export const DATE_FORMATS = {
+  parse: {
+    dateInput: 'DD/MM/YYYY',
+  },
+  display: {
+    dateInput: 'DD/MM/YYYY',
+    monthYearLabel: 'MMM YYYY',
+    dateA11yLabel: 'DD/MM/YYYY',
+    monthYearA11yLabel: 'MMMM YYYY',
+  },
+};
 
-/**
- * Application configuration
- */
 export const appConfig: ApplicationConfig = {
   providers: [
-    // Router
+    // Router configuration
     provideRouter(
       routes,
-      withPreloading(PreloadAllModules),
-      withInMemoryScrolling({
-        anchorScrolling: 'enabled',
-        scrollPositionRestoration: 'enabled'
+      withComponentInputBinding(),
+      withViewTransitions(),
+      withRouterConfig({
+        onSameUrlNavigation: 'reload',
+        paramsInheritanceStrategy: 'always',
       })
     ),
     
-    // HTTP Client with interceptors
+    // Animations
+    provideAnimationsAsync(),
+    
+    // HTTP client with interceptors
     provideHttpClient(
-      withFetch(),
       withInterceptors([
         authInterceptor,
         errorInterceptor,
-        loaderInterceptor,
+        loadingInterceptor,
         cacheInterceptor
-      ])
+      ]),
+      withFetch()
     ),
     
-    // Animations
-    provideAnimations(),
-    provideAnimationsAsync(),
-    
-    // NgRx Store
-    provideStore(reducers, {
+    // NgRx Store configuration
+    provideStore(ROOT_REDUCERS, {
       metaReducers,
       runtimeChecks: {
         strictStateImmutability: true,
@@ -184,64 +106,93 @@ export const appConfig: ApplicationConfig = {
         strictStateSerializability: true,
         strictActionSerializability: true,
         strictActionWithinNgZone: true,
-        strictActionTypeUniqueness: true
-      }
+        strictActionTypeUniqueness: true,
+      },
     }),
     
     // NgRx Effects
-    provideEffects(effects),
+    provideEffects([
+      AuthEffects
+    ]),
     
     // NgRx Router Store
     provideRouterStore(),
     
     // NgRx DevTools (only in development)
-    isDevMode() ? provideStoreDevtools({
+    provideStoreDevtools({
       maxAge: 25,
       logOnly: !isDevMode(),
       autoPause: true,
       trace: false,
-      traceLimit: 75
-    }) : [],
-    
-    // Apollo GraphQL
-    {
-      provide: APOLLO_OPTIONS,
-      useFactory: createApollo,
-      deps: [HttpLink]
-    },
-    
-    // Service Worker
-    provideServiceWorker('ngsw-worker.js', {
-      enabled: environment.production && environment.features.enableServiceWorker,
-      registrationStrategy: 'registerWhenStable:30000'
+      traceLimit: 75,
+      connectInZone: true,
     }),
     
-    // Import modules with providers
+    // Toastr notifications
+    provideToastr({
+      timeOut: 5000,
+      positionClass: 'toast-bottom-right',
+      preventDuplicates: true,
+      progressBar: true,
+      closeButton: true,
+      newestOnTop: true,
+      tapToDismiss: true,
+      maxOpened: 5,
+      autoDismiss: true,
+      enableHtml: true,
+    }),
+    
+    // i18n Translation module
     importProvidersFrom(
-      ApolloModule,
-      
-      // Translations
       TranslateModule.forRoot({
-        defaultLanguage: environment.i18n.defaultLanguage,
+        defaultLanguage: 'en',
         loader: {
           provide: TranslateLoader,
           useFactory: HttpLoaderFactory,
-          deps: [HttpClient]
-        }
-      }),
-      
-      // Toastr notifications
-      ToastrModule.forRoot({
-        timeOut: environment.notifications.timeout,
-        positionClass: `toast-${environment.notifications.position}`,
-        preventDuplicates: environment.notifications.preventDuplicates,
-        progressBar: environment.notifications.progressBar,
-        closeButton: environment.notifications.closeButton,
-        enableHtml: true,
-        maxOpened: 5,
-        autoDismiss: true,
-        newestOnTop: true
+          deps: [HttpClient],
+        },
       })
-    )
-  ]
+    ),
+    
+    // Material Date module
+    importProvidersFrom(MatNativeDateModule),
+    
+    // Material Form Field configuration
+    {
+      provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+      useValue: {
+        appearance: 'outline',
+        floatLabel: 'auto',
+      },
+    },
+    
+    // Material Snackbar configuration
+    {
+      provide: MAT_SNACK_BAR_DEFAULT_OPTIONS,
+      useValue: {
+        duration: 5000,
+        horizontalPosition: 'end',
+        verticalPosition: 'bottom',
+        panelClass: ['custom-snackbar'],
+      },
+    },
+    
+    // Date format configuration
+    {
+      provide: MAT_DATE_FORMATS,
+      useValue: DATE_FORMATS,
+    },
+    
+    // Date locale configuration
+    {
+      provide: MAT_DATE_LOCALE,
+      useValue: 'en-US',
+    },
+    
+    // Service Worker / PWA configuration
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: environment.production,
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
+  ],
 };
