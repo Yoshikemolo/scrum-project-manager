@@ -339,7 +339,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Documentation**: [Project Wiki](https://github.com/Yoshikemolo/scrum-project-manager/wiki)
 - **Issues**: [GitHub Issues](https://github.com/Yoshikemolo/scrum-project-manager/issues)
-- **Email**: support@scrum-pm.com
+- **Email**: support@ximplicity.es
 - **Website**: [Ximplicity](https://ximplicity.com)
 
 ## Acknowledgments
