@@ -1,0 +1,86 @@
+<!-- Main Application Container -->
+<div class="app-container" [ngClass]="layoutClass()" [attr.data-theme]="theme()">
+  
+  <!-- Loading Bar -->
+  @if (isLoading()) {
+    <mat-progress-bar 
+      mode="indeterminate" 
+      class="global-loading-bar"
+      color="primary">
+    </mat-progress-bar>
+  }
+
+  <!-- Skip Navigation Links (Accessibility) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <a href="#main-navigation" class="skip-link">Skip to navigation</a>
+
+  <!-- Application Header -->
+  <app-header
+    [sidebarExpanded]="sidebarExpanded()"
+    [isMobile]="isMobile()"
+    (toggleSidebar)="toggleSidebar()"
+    class="app-header">
+  </app-header>
+
+  <!-- Application Layout -->
+  <div class="app-layout">
+    
+    <!-- Sidebar Navigation -->
+    <app-sidebar
+      [expanded]="sidebarExpanded()"
+      [mode]="sidebarMode()"
+      [isMobile]="isMobile()"
+      (toggle)="toggleSidebar()"
+      id="main-navigation"
+      class="app-sidebar">
+    </app-sidebar>
+
+    <!-- Main Content Area -->
+    <main 
+      class="app-content" 
+      id="main-content"
+      [class.sidebar-expanded]="sidebarExpanded() && !isMobile()"
+      [class.sidebar-collapsed]="!sidebarExpanded() && !isMobile()"
+      tabindex="-1">
+      
+      <!-- Router Outlet with Animation -->
+      <div class="content-wrapper" [@routeAnimations]="outlet.activatedRouteData">
+        <router-outlet #outlet="outlet"></router-outlet>
+      </div>
+
+      <!-- Application Footer -->
+      @if (!isMobile()) {
+        <app-footer class="app-footer"></app-footer>
+      }
+    </main>
+  </div>
+
+  <!-- Global Components -->
+  
+  <!-- Notification Center -->
+  <app-notification-center></app-notification-center>
+
+  <!-- Toast Container -->
+  <app-toast-container></app-toast-container>
+
+  <!-- Global Search Modal -->
+  <app-global-search></app-global-search>
+
+  <!-- Keyboard Shortcuts Dialog -->
+  <app-keyboard-shortcuts-dialog></app-keyboard-shortcuts-dialog>
+
+  <!-- Offline Indicator -->
+  @if (!isOnline()) {
+    <div class="offline-indicator" @slideDown>
+      <mat-icon>cloud_off</mat-icon>
+      <span>You are currently offline</span>
+    </div>
+  }
+
+  <!-- Touch Device Indicator (Development Only) -->
+  @if (isTouchDevice() && !environment.production) {
+    <div class="touch-indicator">
+      <mat-icon>touch_app</mat-icon>
+    </div>
+  }
+</div>

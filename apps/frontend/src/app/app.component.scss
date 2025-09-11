@@ -1,0 +1,270 @@
+@import '../styles/variables';
+@import '../styles/mixins';
+@import '../styles/animations';
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: background-color 300ms ease-in-out;
+  position: relative;
+
+  // Layout variants
+  &.layout-mobile {
+    .app-layout {
+      padding-top: 56px;
+    }
+  }
+
+  &.layout-tablet {
+    .app-layout {
+      padding-top: 64px;
+    }
+  }
+
+  &.layout-desktop {
+    .app-layout {
+      padding-top: 64px;
+    }
+  }
+}
+
+// Global Loading Bar
+.global-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: $z-index-loading;
+  height: 3px;
+}
+
+// Skip Links (Accessibility)
+.skip-link {
+  @include sr-only;
+
+  &:focus {
+    @include sr-only-focusable;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: $z-index-modal + 1;
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    box-shadow: $shadow-lg;
+  }
+}
+
+// Application Header
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: $z-index-header;
+  height: 64px;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: $shadow-sm;
+
+  @include mobile {
+    height: 56px;
+  }
+}
+
+// Application Layout
+.app-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+// Application Sidebar
+.app-sidebar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  z-index: $z-index-sidebar;
+  width: 280px;
+  background-color: var(--surface-color);
+  border-right: 1px solid var(--border-color);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  @include mobile {
+    top: 56px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  @include tablet {
+    width: 260px;
+  }
+}
+
+// Main Content Area
+.app-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--background-color);
+  transition: margin-left 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.sidebar-expanded {
+    margin-left: 280px;
+
+    @include tablet {
+      margin-left: 260px;
+    }
+  }
+
+  &.sidebar-collapsed {
+    margin-left: 64px;
+  }
+
+  @include mobile {
+    margin-left: 0 !important;
+  }
+}
+
+// Content Wrapper
+.content-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  position: relative;
+
+  @include mobile {
+    padding: 16px;
+  }
+
+  @include tablet {
+    padding: 20px;
+  }
+
+  // Smooth scrolling
+  @include smooth-scroll;
+
+  // Custom scrollbar
+  @include custom-scrollbar;
+}
+
+// Application Footer
+.app-footer {
+  flex-shrink: 0;
+  padding: 16px 24px;
+  background-color: var(--surface-color);
+  border-top: 1px solid var(--border-color);
+}
+
+// Offline Indicator
+.offline-indicator {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: $z-index-notification;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background-color: var(--warning-color);
+  color: white;
+  border-radius: 8px;
+  box-shadow: $shadow-md;
+  animation: slideUp 300ms ease-out;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  @include mobile {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    transform: none;
+  }
+}
+
+// Touch Device Indicator (Development)
+.touch-indicator {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: $z-index-debug;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+// Animations
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+// Theme Transitions
+[data-theme="light"] {
+  --background-color: #{$light-background};
+  --surface-color: #{$light-surface};
+  --text-color: #{$light-text};
+  --border-color: #{$light-border};
+}
+
+[data-theme="dark"] {
+  --background-color: #{$dark-background};
+  --surface-color: #{$dark-surface};
+  --text-color: #{$dark-text};
+  --border-color: #{$dark-border};
+}
+
+// Print Styles
+@media print {
+  .app-header,
+  .app-sidebar,
+  .app-footer,
+  .global-loading-bar,
+  .offline-indicator,
+  .touch-indicator {
+    display: none !important;
+  }
+
+  .app-content {
+    margin-left: 0 !important;
+  }
+
+  .content-wrapper {
+    padding: 0;
+    overflow: visible;
+  }
+}
