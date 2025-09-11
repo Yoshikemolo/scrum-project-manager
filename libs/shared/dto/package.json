@@ -1,0 +1,9 @@
+{
+  "name": "@scrum-pm/shared/dto",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "dependencies": {
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1"
+  }
+}
