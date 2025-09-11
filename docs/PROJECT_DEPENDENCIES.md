@@ -5,327 +5,314 @@
 1. [Overview](#overview)
 2. [Frontend Dependencies](#frontend-dependencies)
 3. [Backend Dependencies](#backend-dependencies)
-4. [Development Dependencies](#development-dependencies)
-5. [Dependency Management](#dependency-management)
-6. [Security Considerations](#security-considerations)
-7. [Update Strategy](#update-strategy)
-8. [Related Documentation](#related-documentation)
+4. [Shared Dependencies](#shared-dependencies)
+5. [Development Dependencies](#development-dependencies)
+6. [Dependency Management](#dependency-management)
+7. [Security Considerations](#security-considerations)
+8. [Update Strategy](#update-strategy)
+9. [Related Documentation](#related-documentation)
 
 ## Overview
 
-This document provides a comprehensive explanation of all external dependencies used in the SCRUM Project Manager platform. Each dependency is listed with its purpose, justification, and any relevant configuration notes.
+This document provides a comprehensive overview of all external dependencies used in the SCRUM Project Manager platform. Each dependency is explained with its purpose, version, and rationale for inclusion in the project.
 
 ## Frontend Dependencies
 
 ### Core Framework
 
-#### Angular (v20.0.0)
-- **Purpose**: Primary frontend framework
-- **Justification**: Modern, enterprise-ready framework with excellent TypeScript support, built-in dependency injection, and comprehensive tooling
-- **Modules Used**: Common, Core, Forms, Router, Platform-Browser, Animations
+#### Angular (v20)
+- **Purpose**: Main frontend framework providing component architecture, routing, and dependency injection
+- **Justification**: Latest Angular version offers standalone components, improved performance, and better developer experience
 
-#### Angular Material (v20.0.0)
-- **Purpose**: UI component library
-- **Justification**: Official Material Design components for Angular, ensures consistent UI/UX, accessibility compliant, and well-maintained
-- **Components Used**: Tables, Forms, Dialogs, Snackbars, Icons, Theming
+#### Angular Material (v20)
+- **Purpose**: UI component library providing pre-built, accessible components
+- **Justification**: Consistent design system, accessibility compliance, and seamless Angular integration
 
 ### State Management
 
-#### NgRx (v18.0.0)
-- **Purpose**: Reactive state management
-- **Justification**: Predictable state container for Angular apps, follows Redux pattern, excellent DevTools support
-- **Packages**: Store, Effects, Entity, Store-DevTools
+#### NgRx (v18)
+- **Purpose**: Predictable state management using Redux pattern
+- **Justification**: Manages complex application state, provides time-travel debugging, and ensures data consistency
+- **Includes**: @ngrx/store, @ngrx/effects, @ngrx/entity, @ngrx/store-devtools
 
-### GraphQL Integration
+### GraphQL Client
 
-#### Apollo Angular (v6.0.0)
-- **Purpose**: GraphQL client for Angular
-- **Justification**: Type-safe GraphQL queries, caching, optimistic updates, WebSocket subscriptions support
+#### Apollo Angular (v6)
+- **Purpose**: GraphQL client for Angular applications
+- **Justification**: Efficient data fetching, caching, and real-time subscriptions support
 
-#### Apollo Client (v3.9.0)
-- **Purpose**: Core GraphQL client
-- **Justification**: Industry standard GraphQL client, excellent caching mechanisms, comprehensive error handling
+#### GraphQL (v16)
+- **Purpose**: GraphQL query language and runtime
+- **Justification**: Type-safe API queries and efficient data fetching
 
-### Real-time Communication
+### Styling and UI
 
-#### Socket.io-client (v4.7.4)
-- **Purpose**: WebSocket client for real-time updates
-- **Justification**: Reliable real-time bidirectional communication, automatic reconnection, room-based messaging
+#### SCSS
+- **Purpose**: CSS preprocessor for advanced styling
+- **Justification**: Variables, mixins, nesting, and modular stylesheets
+
+#### Angular CDK (v20)
+- **Purpose**: Component Development Kit providing behavior primitives
+- **Justification**: Accessibility utilities, overlay management, and drag-drop functionality
 
 ### Utilities
 
-#### RxJS (v7.8.1)
-- **Purpose**: Reactive programming library
-- **Justification**: Core to Angular, powerful operators for handling asynchronous operations
+#### date-fns (v2.30)
+- **Purpose**: Modern JavaScript date utility library
+- **Justification**: Lightweight, immutable, and tree-shakeable date manipulation
 
-#### Zone.js (v0.14.3)
-- **Purpose**: Execution context for Angular
-- **Justification**: Required by Angular for change detection
+#### lodash-es (v4.17)
+- **Purpose**: Utility library for common programming tasks
+- **Justification**: Optimized utility functions with ES modules support
 
-#### date-fns (v2.30.0)
-- **Purpose**: Date manipulation utilities
-- **Justification**: Lightweight alternative to Moment.js, tree-shakeable, immutable
+#### Socket.io-client (v4.7)
+- **Purpose**: WebSocket client for real-time communication
+- **Justification**: Real-time updates, live collaboration features
 
 ## Backend Dependencies
 
 ### Core Framework
 
-#### NestJS (v10.3.0)
-- **Purpose**: Backend framework
-- **Justification**: Enterprise-grade Node.js framework, excellent TypeScript support, modular architecture, built-in microservices support
-- **Modules**: Common, Core, Platform-Express, Microservices, WebSockets
+#### NestJS (v10)
+- **Purpose**: Progressive Node.js framework for scalable server-side applications
+- **Justification**: Modular architecture, TypeScript support, extensive ecosystem
 
-### GraphQL Integration
+#### Express (v4.19)
+- **Purpose**: Web application framework (used internally by NestJS)
+- **Justification**: Robust routing, middleware support, wide adoption
 
-#### @nestjs/graphql (v12.1.0)
-- **Purpose**: GraphQL module for NestJS
-- **Justification**: Seamless GraphQL integration with NestJS, code-first approach, automatic schema generation
+### GraphQL Server
 
-#### @nestjs/apollo (v12.1.0)
-- **Purpose**: Apollo Server integration
-- **Justification**: Production-ready GraphQL server, subscriptions support, excellent tooling
+#### Apollo Server Express (v3.13)
+- **Purpose**: GraphQL server implementation
+- **Justification**: Production-ready, performant, excellent tooling
 
-#### Apollo Server Express (v3.13.0)
-- **Purpose**: GraphQL server
-- **Justification**: Industry standard, performance optimized, extensive middleware support
-
-#### GraphQL (v16.8.1)
-- **Purpose**: GraphQL language and runtime
-- **Justification**: Core GraphQL implementation, required for schema definition
-
-#### GraphQL Subscriptions (v2.0.0)
-- **Purpose**: Real-time GraphQL subscriptions
-- **Justification**: Enables real-time updates through GraphQL subscriptions
-
-#### GraphQL Tools (v9.0.1)
-- **Purpose**: GraphQL schema utilities
-- **Justification**: Schema stitching, mocking, and transformation utilities
+#### GraphQL Tools (v10)
+- **Purpose**: GraphQL schema building and manipulation
+- **Justification**: Schema stitching, mocking, and type generation
 
 ### Database
 
-#### TypeORM (v0.3.19)
-- **Purpose**: Object-Relational Mapping
-- **Justification**: Excellent TypeScript support, supports PostgreSQL, migrations, query builder
+#### TypeORM (v0.3)
+- **Purpose**: Object-Relational Mapping for TypeScript
+- **Justification**: Database abstraction, migrations, query builder
 
-#### pg (v8.11.3)
-- **Purpose**: PostgreSQL client
-- **Justification**: Native PostgreSQL driver for Node.js, required by TypeORM
+#### PostgreSQL Driver (pg v8.11)
+- **Purpose**: PostgreSQL client for Node.js
+- **Justification**: Native PostgreSQL support, connection pooling
+
+### Caching
+
+#### Redis (ioredis v5.3)
+- **Purpose**: Redis client for Node.js
+- **Justification**: High-performance caching, session storage, pub/sub
+
+#### cache-manager (v5.4)
+- **Purpose**: Cache abstraction layer
+- **Justification**: Multiple cache store support, TTL management
 
 ### Authentication & Security
 
-#### @nestjs/passport (v10.0.3)
+#### Passport (v0.7)
 - **Purpose**: Authentication middleware
-- **Justification**: Standard authentication library for NestJS, strategy-based authentication
+- **Justification**: Flexible authentication strategies, wide protocol support
 
-#### @nestjs/jwt (v10.2.0)
-- **Purpose**: JWT token handling
-- **Justification**: JWT generation and verification for stateless authentication
+#### bcryptjs (v2.4)
+- **Purpose**: Password hashing library
+- **Justification**: Secure password storage, salt generation
 
-#### Passport (v0.7.0)
-- **Purpose**: Authentication middleware core
-- **Justification**: Industry standard, extensible authentication middleware
+#### jsonwebtoken (v9.0)
+- **Purpose**: JWT token generation and verification
+- **Justification**: Stateless authentication, secure token management
 
-#### Passport JWT (v4.0.1)
-- **Purpose**: JWT strategy for Passport
-- **Justification**: Enables JWT-based authentication
+#### helmet (v7.1)
+- **Purpose**: Security headers middleware
+- **Justification**: Protection against common web vulnerabilities
 
-#### Passport Local (v1.0.0)
-- **Purpose**: Local authentication strategy
-- **Justification**: Username/password authentication
+### Validation
 
-#### bcryptjs (v2.4.3)
-- **Purpose**: Password hashing
-- **Justification**: Secure password hashing, protection against rainbow table attacks
+#### class-validator (v0.14)
+- **Purpose**: Decorator-based validation
+- **Justification**: Type-safe validation, integration with NestJS
 
-### Validation & Transformation
+#### class-transformer (v0.5)
+- **Purpose**: Object transformation and serialization
+- **Justification**: DTO transformation, data sanitization
 
-#### class-validator (v0.14.1)
-- **Purpose**: Validation decorators
-- **Justification**: Decorator-based validation, works seamlessly with NestJS DTOs
+### AI Integration
 
-#### class-transformer (v0.5.1)
-- **Purpose**: Object transformation
-- **Justification**: Transform plain objects to class instances, works with validation
+#### OpenAI (v4.28)
+- **Purpose**: OpenAI API client
+- **Justification**: ChatGPT-5 integration, AI-powered features
 
-### Configuration
+### Message Queue
 
-#### @nestjs/config (v3.1.1)
-- **Purpose**: Configuration module
-- **Justification**: Environment-based configuration, validation, type safety
+#### Bull (v4.12)
+- **Purpose**: Redis-based queue for job processing
+- **Justification**: Background job processing, scheduled tasks
 
-### Utilities
+### Monitoring & Logging
 
-#### uuid (v9.0.1)
-- **Purpose**: UUID generation
-- **Justification**: Generate unique identifiers for entities
+#### Winston (v3.11)
+- **Purpose**: Logging library
+- **Justification**: Multiple transport support, log levels, formatting
 
-#### reflect-metadata (v0.2.1)
-- **Purpose**: Metadata reflection API
-- **Justification**: Required for decorators in TypeScript
+#### Prometheus Client (prom-client v15.1)
+- **Purpose**: Metrics collection
+- **Justification**: Application metrics, performance monitoring
 
-## Development Dependencies
+## Shared Dependencies
+
+### Language & Runtime
+
+#### TypeScript (v5.3)
+- **Purpose**: Static typing for JavaScript
+- **Justification**: Type safety, better IDE support, reduced runtime errors
+
+#### RxJS (v7.8)
+- **Purpose**: Reactive programming library
+- **Justification**: Observable patterns, event handling, data streams
 
 ### Build Tools
 
-#### Nx (v18.0.0)
-- **Purpose**: Monorepo management
-- **Justification**: Excellent monorepo tooling, computation caching, affected commands, dependency graph visualization
-- **Plugins**: Angular, Nest, Jest, Cypress, ESLint
+#### Nx (v18)
+- **Purpose**: Monorepo management and build orchestration
+- **Justification**: Code sharing, consistent tooling, build optimization
 
-#### TypeScript (v5.3.3)
-- **Purpose**: Type-safe JavaScript
-- **Justification**: Type safety, better IDE support, required by Angular and NestJS
+#### Webpack (v5.90)
+- **Purpose**: Module bundler
+- **Justification**: Code splitting, optimization, asset management
 
 ### Testing
 
-#### Jest (v29.7.0)
-- **Purpose**: Unit testing framework
-- **Justification**: Fast, zero configuration, snapshot testing, excellent mocking capabilities
+#### Jest (v29.7)
+- **Purpose**: JavaScript testing framework
+- **Justification**: Fast, snapshot testing, mocking capabilities
 
-#### Karma (v6.4.2)
-- **Purpose**: Test runner for Angular
-- **Justification**: Angular's default test runner, browser testing support
+#### Cypress (v13.6)
+- **Purpose**: End-to-end testing framework
+- **Justification**: Real browser testing, visual debugging
 
-#### Jasmine (v5.1.1)
-- **Purpose**: Testing framework
-- **Justification**: BDD testing framework, works with Karma
+#### Supertest (v6.3)
+- **Purpose**: HTTP assertion library
+- **Justification**: API endpoint testing, integration tests
 
-#### Cypress (v13.6.3)
-- **Purpose**: E2E testing
-- **Justification**: Modern E2E testing, real browser testing, excellent debugging
+## Development Dependencies
 
 ### Code Quality
 
-#### ESLint (v8.56.0)
+#### ESLint (v8.56)
 - **Purpose**: JavaScript/TypeScript linting
-- **Justification**: Catch errors, enforce coding standards, customizable rules
+- **Justification**: Code consistency, error prevention
 
-#### Prettier (v3.2.4)
+#### Prettier (v3.2)
 - **Purpose**: Code formatting
-- **Justification**: Consistent code formatting, reduces bike-shedding
+- **Justification**: Consistent code style, automated formatting
 
-#### Husky (v8.0.3)
-- **Purpose**: Git hooks
-- **Justification**: Enforce quality checks before commits
+#### Husky (v9.0)
+- **Purpose**: Git hooks management
+- **Justification**: Pre-commit validation, automated checks
 
-#### lint-staged (v15.2.0)
+#### lint-staged (v15.2)
 - **Purpose**: Run linters on staged files
-- **Justification**: Fast pre-commit checks, only check changed files
+- **Justification**: Faster pre-commit checks, targeted validation
 
 ### Documentation
 
-#### Compodoc (v1.1.23)
-- **Purpose**: Documentation generator
-- **Justification**: Automatic documentation from TypeScript code, supports Angular and NestJS
+#### Compodoc (v1.1)
+- **Purpose**: Angular application documentation
+- **Justification**: Automated API documentation, component documentation
 
-### Development Servers
+#### TypeDoc (v0.25)
+- **Purpose**: TypeScript documentation generator
+- **Justification**: API documentation from TypeScript comments
 
-#### ts-node (v10.9.2)
-- **Purpose**: TypeScript execution
-- **Justification**: Run TypeScript directly without compilation
+### Development Tools
 
-#### Angular DevKit (v20.0.0)
-- **Purpose**: Angular development tools
-- **Justification**: Build, serve, and test Angular applications
+#### nodemon (v3.0)
+- **Purpose**: Development server with auto-restart
+- **Justification**: Improved development workflow, hot reloading
 
-#### NestJS CLI (v10.3.0)
-- **Purpose**: NestJS development tools
-- **Justification**: Scaffolding, development server, build tools
+#### ts-node (v10.9)
+- **Purpose**: TypeScript execution for Node.js
+- **Justification**: Direct TypeScript execution, faster development
+
+#### concurrently (v8.2)
+- **Purpose**: Run multiple commands concurrently
+- **Justification**: Parallel service startup, improved development experience
 
 ## Dependency Management
 
-### Version Strategy
+### Version Control Strategy
 
-1. **Major versions**: Updated quarterly after thorough testing
-2. **Minor versions**: Updated monthly for features and improvements
-3. **Patch versions**: Updated immediately for security fixes
+- **Exact Versions**: Critical dependencies use exact versions to prevent breaking changes
+- **Caret Ranges**: Non-critical dependencies use caret (^) for patch and minor updates
+- **Lock Files**: package-lock.json ensures consistent installations
+
+### Update Policy
+
+- **Security Updates**: Applied immediately for critical vulnerabilities
+- **Minor Updates**: Applied monthly after testing
+- **Major Updates**: Evaluated quarterly with thorough testing
 
 ### Dependency Auditing
 
 ```bash
-# Check for vulnerabilities
+# Regular security audits
 npm audit
 
-# Fix vulnerabilities automatically
+# Automatic fix for vulnerabilities
 npm audit fix
 
-# Check outdated packages
+# Check for outdated packages
 npm outdated
 ```
-
-### Lock File Management
-
-- **package-lock.json**: Committed to repository
-- **Purpose**: Ensure consistent installations across environments
-- **Updates**: Only through explicit npm install or update commands
 
 ## Security Considerations
 
-### Vulnerability Scanning
+### Supply Chain Security
 
-1. **Automated scanning**: GitHub Dependabot enabled
-2. **Manual audits**: Monthly security audits
-3. **Critical updates**: Applied within 24 hours
+- All dependencies are sourced from npm registry
+- Regular vulnerability scanning with npm audit
+- Dependencies reviewed for maintenance status
+- No deprecated packages in production
 
-### Dependency Policies
+### License Compliance
 
-1. **No deprecated packages**: Remove or replace deprecated dependencies
-2. **License compliance**: MIT, Apache 2.0, or compatible licenses only
-3. **Minimal dependencies**: Avoid unnecessary dependencies
-4. **Regular updates**: Keep dependencies current
+- All dependencies use MIT, Apache 2.0, or BSD licenses
+- No GPL or AGPL dependencies in production
+- License compatibility verified
 
-### Known Security Measures
+### Security Measures
 
-- **bcryptjs**: Used instead of bcrypt for better cross-platform compatibility
-- **helmet**: Added for securing Express apps (configured in NestJS)
-- **cors**: Configured with specific origins
-- **rate-limiting**: Implemented to prevent abuse
+- Dependency scanning in CI/CD pipeline
+- Automated security updates via Dependabot
+- Regular manual security reviews
+- Minimal dependency principle followed
 
 ## Update Strategy
 
-### Quarterly Major Updates
+### Automated Updates
 
-1. Review breaking changes
-2. Update in development environment
-3. Run full test suite
-4. Update documentation
-5. Deploy to staging
-6. Monitor for issues
-7. Deploy to production
+- **Dependabot**: Automated dependency updates
+- **CI/CD Integration**: Automated testing for updates
+- **Auto-merge**: Minor updates with passing tests
 
-### Monthly Minor Updates
+### Manual Reviews
 
-1. Review changelog
-2. Update dependencies
-3. Run tests
-4. Deploy to staging
-5. Deploy to production
+- **Major Updates**: Require manual review and testing
+- **Breaking Changes**: Evaluated with migration plan
+- **New Dependencies**: Require team approval
 
-### Security Patches
+### Testing Protocol
 
-1. Immediate assessment
-2. Apply patch
-3. Emergency testing
-4. Deploy to all environments
-
-### Dependency Update Commands
-
-```bash
-# Check for updates
-npm outdated
-
-# Update all dependencies
-npm update
-
-# Update specific dependency
-npm install package@latest
-
-# Update to specific version
-npm install package@version
-
-# Interactive update with Nx
-nx migrate latest
-```
+1. Update in development environment
+2. Run full test suite
+3. Manual testing of affected features
+4. Performance impact assessment
+5. Security vulnerability check
+6. Staging deployment
+7. Production deployment
 
 ## Related Documentation
 
