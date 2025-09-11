@@ -3,158 +3,164 @@
   class="loader-overlay" 
   [class.fullscreen]="fullscreen"
   [class.inline]="!fullscreen"
-  [class.backdrop-blur]="backdropBlur"
   [@fadeIn]
-  role="progressbar"
-  [attr.aria-label]="message || ('loader.loading' | translate)"
+  role="status"
+  [attr.aria-label]="ariaLabel || ('loader.loading' | translate)"
   [attr.aria-busy]="true"
-  [attr.aria-valuemin]="progressMode === 'determinate' ? 0 : null"
-  [attr.aria-valuemax]="progressMode === 'determinate' ? 100 : null"
-  [attr.aria-valuenow]="progressMode === 'determinate' ? progress : null"
 >
+  <!-- Backdrop -->
+  <div 
+    class="loader-backdrop" 
+    *ngIf="backdrop && fullscreen"
+    [@fadeIn]
+  ></div>
+
+  <!-- Main Container -->
   <div 
     class="loader-container"
-    [class.loader-small]="size === 'small'"
-    [class.loader-medium]="size === 'medium'"
-    [class.loader-large]="size === 'large'"
+    [class.loader-card]="showCard"
+    [class.loader-transparent]="!showCard"
   >
-    <!-- Spinner Type Loader -->
-    <div class="spinner-wrapper" *ngIf="type === 'spinner'">
+    <!-- Spinner Types -->
+    <ng-container [ngSwitch]="type">
+      <!-- Circular Progress -->
       <mat-progress-spinner
-        [mode]="progressMode"
-        [value]="progress"
-        [diameter]="spinnerDiameter"
+        *ngSwitchCase="'circular'"
+        mode="indeterminate"
+        [diameter]="size"
         [strokeWidth]="strokeWidth"
         [color]="color"
-        class="spinner"
+        class="loader-spinner"
       ></mat-progress-spinner>
       
-      <!-- Center Icon or Text -->
-      <div class="spinner-center" *ngIf="showCenterContent && progressMode === 'determinate'">
-        <mat-icon *ngIf="centerIcon" class="center-icon">{{ centerIcon }}</mat-icon>
-        <span *ngIf="!centerIcon && progress" class="center-text">{{ progress }}%</span>
-      </div>
-    </div>
-    
-    <!-- Bar Type Loader -->
-    <div class="bar-wrapper" *ngIf="type === 'bar'">
+      <!-- Linear Progress -->
       <mat-progress-bar
-        [mode]="progressMode"
-        [value]="progress"
+        *ngSwitchCase="'linear'"
+        mode="indeterminate"
         [color]="color"
-        [bufferValue]="bufferValue"
-        class="progress-bar"
+        class="loader-linear"
       ></mat-progress-bar>
-    </div>
-    
-    <!-- Dots Type Loader -->
-    <div class="dots-wrapper" *ngIf="type === 'dots'">
-      <span 
-        class="dot" 
-        *ngFor="let dot of dots; let i = index"
-        [style.animation-delay.ms]="i * 160"
-        [class.dot-primary]="color === 'primary'"
-        [class.dot-accent]="color === 'accent'"
-        [class.dot-warn]="color === 'warn'"
-      ></span>
-    </div>
-    
-    <!-- Pulse Type Loader -->
-    <div class="pulse-wrapper" *ngIf="type === 'pulse'">
-      <div 
-        class="pulse-ring"
-        [class.pulse-primary]="color === 'primary'"
-        [class.pulse-accent]="color === 'accent'"
-        [class.pulse-warn]="color === 'warn'"
-      ></div>
-      <div 
-        class="pulse-ring pulse-ring-2"
-        [class.pulse-primary]="color === 'primary'"
-        [class.pulse-accent]="color === 'accent'"
-        [class.pulse-warn]="color === 'warn'"
-      ></div>
-      <div 
-        class="pulse-ring pulse-ring-3"
-        [class.pulse-primary]="color === 'primary'"
-        [class.pulse-accent]="color === 'accent'"
-        [class.pulse-warn]="color === 'warn'"
-      ></div>
-    </div>
-    
-    <!-- Skeleton Type Loader -->
-    <div class="skeleton-wrapper" *ngIf="type === 'skeleton'">
-      <div class="skeleton-header">
-        <div class="skeleton-avatar"></div>
-        <div class="skeleton-lines">
-          <div class="skeleton-line skeleton-line-short"></div>
-          <div class="skeleton-line skeleton-line-medium"></div>
-        </div>
+      
+      <!-- Dots Animation -->
+      <div *ngSwitchCase="'dots'" class="loader-dots">
+        <span 
+          class="dot" 
+          *ngFor="let dot of [1,2,3,4]; let i = index"
+          [style.animation-delay.ms]="i * 150"
+        ></span>
       </div>
-      <div class="skeleton-body">
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line skeleton-line-short"></div>
+      
+      <!-- Pulse Animation -->
+      <div *ngSwitchCase="'pulse'" class="loader-pulse">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
       </div>
-    </div>
-    
-    <!-- Custom Content -->
-    <div class="custom-content" *ngIf="type === 'custom'">
-      <ng-content></ng-content>
-    </div>
+      
+      <!-- Skeleton Loader -->
+      <div *ngSwitchCase="'skeleton'" class="loader-skeleton">
+        <div class="skeleton-line" [style.width.%]="80"></div>
+        <div class="skeleton-line" [style.width.%]="100"></div>
+        <div class="skeleton-line" [style.width.%]="60"></div>
+      </div>
+      
+      <!-- Custom Content -->
+      <div *ngSwitchCase="'custom'" class="loader-custom">
+        <ng-content></ng-content>
+      </div>
+      
+      <!-- Default (Circular) -->
+      <mat-progress-spinner
+        *ngSwitchDefault
+        mode="indeterminate"
+        [diameter]="size"
+        [strokeWidth]="strokeWidth"
+        [color]="color"
+        class="loader-spinner"
+      ></mat-progress-spinner>
+    </ng-container>
     
     <!-- Message -->
     <div 
       class="loader-message" 
       *ngIf="message"
-      [class.message-above]="messagePosition === 'above'"
-      [class.message-below]="messagePosition === 'below'"
+      [@slideIn]
     >
       <span class="message-text">{{ message | translate }}</span>
+      
+      <!-- Animated Dots for Loading Text -->
       <span class="message-dots" *ngIf="showMessageDots">
-        <span class="message-dot"></span>
-        <span class="message-dot"></span>
-        <span class="message-dot"></span>
+        <span class="dot-animation">.</span>
+        <span class="dot-animation">.</span>
+        <span class="dot-animation">.</span>
       </span>
     </div>
     
-    <!-- Secondary Message -->
-    <div class="loader-secondary-message" *ngIf="secondaryMessage">
-      {{ secondaryMessage | translate }}
+    <!-- Progress Information -->
+    <div 
+      class="loader-progress" 
+      *ngIf="showProgress && progress !== null"
+      [@slideIn]
+    >
+      <div class="progress-bar-container">
+        <mat-progress-bar
+          mode="determinate"
+          [value]="progress"
+          [color]="color"
+        ></mat-progress-bar>
+      </div>
+      <div class="progress-text">
+        {{ progress }}%
+        <span class="progress-label" *ngIf="progressLabel">
+          - {{ progressLabel | translate }}
+        </span>
+      </div>
     </div>
     
-    <!-- Action Button -->
-    <button 
-      mat-button
-      *ngIf="showCancelButton"
-      (click)="onCancel()"
-      class="cancel-button"
-      [disabled]="cancelDisabled"
-      [attr.aria-label]="'loader.cancel' | translate"
+    <!-- Action Buttons -->
+    <div 
+      class="loader-actions" 
+      *ngIf="showCancel || customActions.length > 0"
+      [@slideIn]
     >
-      <mat-icon>close</mat-icon>
-      {{ cancelButtonText || ('loader.cancel' | translate) }}
-    </button>
+      <button
+        mat-button
+        *ngIf="showCancel"
+        (click)="onCancel()"
+        class="cancel-button"
+        [attr.aria-label]="'loader.cancel' | translate"
+      >
+        <mat-icon>close</mat-icon>
+        {{ cancelText || ('loader.cancel' | translate) }}
+      </button>
+      
+      <button
+        mat-button
+        *ngFor="let action of customActions"
+        (click)="onCustomAction(action)"
+        [color]="action.color"
+        [disabled]="action.disabled"
+        class="custom-action-button"
+      >
+        <mat-icon *ngIf="action.icon">{{ action.icon }}</mat-icon>
+        {{ action.label | translate }}
+      </button>
+    </div>
     
-    <!-- Progress Details -->
-    <div class="progress-details" *ngIf="showProgressDetails && progressMode === 'determinate'">
-      <div class="progress-text">
-        <span class="progress-current">{{ processedItems }}</span>
-        <span class="progress-separator">/</span>
-        <span class="progress-total">{{ totalItems }}</span>
-      </div>
-      <div class="progress-time" *ngIf="estimatedTime">
-        <mat-icon class="time-icon">schedule</mat-icon>
-        <span>{{ estimatedTime }}</span>
-      </div>
+    <!-- Tips/Information -->
+    <div 
+      class="loader-tip" 
+      *ngIf="tip && showTips"
+      [@fadeIn]
+    >
+      <mat-icon class="tip-icon">lightbulb</mat-icon>
+      <span class="tip-text">{{ tip | translate }}</span>
     </div>
   </div>
-  
-  <!-- Background Pattern -->
-  <div 
-    class="background-pattern" 
-    *ngIf="showBackgroundPattern"
-    [class.pattern-dots]="backgroundPattern === 'dots'"
-    [class.pattern-grid]="backgroundPattern === 'grid'"
-    [class.pattern-lines]="backgroundPattern === 'lines'"
-  ></div>
+</div>
+
+<!-- Accessibility: Screen Reader Announcements -->
+<div class="sr-only" aria-live="polite" aria-atomic="true">
+  <span *ngIf="message">{{ message | translate }}</span>
+  <span *ngIf="progress !== null">{{ 'loader.progressUpdate' | translate: {progress: progress} }}</span>
 </div>
