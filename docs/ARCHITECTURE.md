@@ -248,6 +248,8 @@ frontend/
 
 ## Related Documentation
 
+- [Project Objectives](./OBJECTIVES.md)
+- [Project Planning](./PROJECT_PLANNING.md)
 - [API Documentation](./API.md)
 - [Development Guide](./DEVELOPMENT.md)
 - [Deployment Guide](./DEPLOYMENT.md)

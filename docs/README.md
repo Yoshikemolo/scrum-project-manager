@@ -4,11 +4,12 @@
 
 1. [Overview](#overview)
 2. [Getting Started](#getting-started)
-3. [Architecture Documentation](#architecture-documentation)
-4. [Development Documentation](#development-documentation)
-5. [API Documentation](#api-documentation)
-6. [Deployment Documentation](#deployment-documentation)
-7. [Additional Resources](#additional-resources)
+3. [Project Management](#project-management)
+4. [Architecture Documentation](#architecture-documentation)
+5. [Development Documentation](#development-documentation)
+6. [API Documentation](#api-documentation)
+7. [Deployment Documentation](#deployment-documentation)
+8. [Additional Resources](#additional-resources)
 
 ## Overview
 
@@ -18,10 +19,35 @@ Welcome to the SCRUM Project Manager documentation. This comprehensive guide cov
 
 If you're new to the project, we recommend reading the documentation in this order:
 
-1. **[Architecture Overview](./ARCHITECTURE.md)** - Understand the system design
-2. **[Development Guide](./DEVELOPMENT.md)** - Set up your development environment
-3. **[API Documentation](./API.md)** - Learn about the GraphQL API
-4. **[Contributing Guide](./CONTRIBUTING.md)** - Start contributing to the project
+1. **[Project Objectives](./OBJECTIVES.md)** - Understand the project goals and vision
+2. **[Project Planning](./PROJECT_PLANNING.md)** - Review the current status and roadmap
+3. **[Architecture Overview](./ARCHITECTURE.md)** - Understand the system design
+4. **[Development Guide](./DEVELOPMENT.md)** - Set up your development environment
+5. **[Contributing Guide](./CONTRIBUTING.md)** - Start contributing to the project
+
+## Project Management
+
+### [Project Objectives](./OBJECTIVES.md)
+
+Comprehensive project objectives including:
+- Business objectives and goals
+- Technical objectives
+- User experience targets
+- Performance requirements
+- Security objectives
+- Success metrics
+- Timeline and milestones
+
+### [Project Planning](./PROJECT_PLANNING.md)
+
+Detailed project planning documentation:
+- Current project status
+- Development phases
+- Sprint planning and tracking
+- Resource allocation
+- Risk management
+- Dependencies tracking
+- Quality assurance plans
 
 ## Architecture Documentation
 
@@ -66,6 +92,17 @@ Guidelines for contributing:
 - Commit guidelines
 - Pull request process
 - Testing requirements
+
+### [Testing Guide](./TESTING.md)
+
+Comprehensive testing strategy:
+- Unit testing
+- Integration testing
+- End-to-end testing
+- Performance testing
+- Security testing
+- Test coverage requirements
+- CI/CD integration
 
 ## API Documentation
 
@@ -141,6 +178,18 @@ Security best practices:
 - **TypeORM**: [TypeORM Documentation](https://typeorm.io)
 - **Docker**: [Docker Documentation](https://docs.docker.com)
 - **Kubernetes**: [Kubernetes Documentation](https://kubernetes.io/docs)
+
+### Documentation Standards
+
+All documentation follows these standards:
+- Written in English
+- Markdown format
+- Table of contents with anchor links
+- Related documentation section
+- Last updated timestamp
+- No emoji usage
+- Clear and concise language
+- Code examples where appropriate
 
 ### Support Channels
 

@@ -376,8 +376,11 @@ nx reset
 
 ## Related Documentation
 
+- [Project Objectives](./OBJECTIVES.md)
+- [Project Planning](./PROJECT_PLANNING.md)
 - [Architecture Overview](./ARCHITECTURE.md)
 - [API Documentation](./API.md)
+- [Testing Guide](./TESTING.md)
 - [Deployment Guide](./DEPLOYMENT.md)
 - [Security Guide](./SECURITY.md)
 - [Contributing Guide](./CONTRIBUTING.md)
