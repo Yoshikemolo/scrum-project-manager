@@ -1,0 +1,164 @@
+<!-- Notification Center Component Template -->
+<div class="notification-center" [@slideIn]="animationState">
+  <!-- Header -->
+  <div class="notification-header">
+    <h2 class="header-title">
+      <mat-icon>notifications</mat-icon>
+      <span>{{ 'notifications.title' | translate }}</span>
+      <span class="notification-count" *ngIf="unreadCount() > 0">
+        ({{ unreadCount() }})
+      </span>
+    </h2>
+    <div class="header-actions">
+      <button mat-icon-button
+        (click)="markAllAsRead()"
+        [disabled]="unreadCount() === 0"
+        [matTooltip]="'notifications.markAllRead' | translate">
+        <mat-icon>done_all</mat-icon>
+      </button>
+      <button mat-icon-button
+        [matMenuTriggerFor]="filterMenu"
+        [matTooltip]="'notifications.filter' | translate">
+        <mat-icon>filter_list</mat-icon>
+      </button>
+      <button mat-icon-button
+        (click)="clearAll()"
+        [disabled]="notifications().length === 0"
+        [matTooltip]="'notifications.clearAll' | translate">
+        <mat-icon>clear_all</mat-icon>
+      </button>
+      <button mat-icon-button
+        (click)="close.emit()"
+        [matTooltip]="'notifications.close' | translate">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="notification-search">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput
+        [(ngModel)]="searchQuery"
+        (input)="filterNotifications()"
+        [placeholder]="'notifications.search' | translate">
+      <button mat-icon-button matSuffix *ngIf="searchQuery" (click)="clearSearch()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+
+  <!-- Filter Tabs -->
+  <mat-tab-group class="notification-tabs" (selectedTabChange)="onTabChange($event)">
+    <mat-tab [label]="'notifications.all' | translate">
+      <span class="tab-badge" *ngIf="notifications().length > 0">
+        {{ notifications().length }}
+      </span>
+    </mat-tab>
+    <mat-tab [label]="'notifications.unread' | translate">
+      <span class="tab-badge" *ngIf="unreadCount() > 0">
+        {{ unreadCount() }}
+      </span>
+    </mat-tab>
+    <mat-tab *ngFor="let type of notificationTypes" [label]="type.label | translate">
+      <span class="tab-badge" *ngIf="getCountByType(type.value) > 0">
+        {{ getCountByType(type.value) }}
+      </span>
+    </mat-tab>
+  </mat-tab-group>
+
+  <!-- Notifications List -->
+  <div class="notification-list" #scrollContainer>
+    <div class="notification-item"
+      *ngFor="let notification of filteredNotifications(); trackBy: trackById"
+      [class.unread]="!notification.read"
+      [class.selected]="selectedNotifications.has(notification.id)"
+      [@fadeIn]>
+      
+      <mat-checkbox class="notification-checkbox"
+        [(ngModel)]="notification.selected"
+        (change)="toggleSelection(notification)">
+      </mat-checkbox>
+
+      <div class="notification-icon" [ngClass]="'icon-' + notification.type">
+        <mat-icon>{{ getIconForType(notification.type) }}</mat-icon>
+      </div>
+
+      <div class="notification-content" (click)="viewNotification(notification)">
+        <div class="notification-title">{{ notification.title }}</div>
+        <div class="notification-message">{{ notification.message }}</div>
+        <div class="notification-meta">
+          <span class="notification-time">
+            <mat-icon>schedule</mat-icon>
+            {{ formatTime(notification.timestamp) }}
+          </span>
+          <span class="notification-source" *ngIf="notification.source">
+            <mat-icon>source</mat-icon>
+            {{ notification.source }}
+          </span>
+        </div>
+      </div>
+
+      <div class="notification-actions">
+        <button mat-icon-button
+          *ngIf="!notification.read"
+          (click)="markAsRead(notification)"
+          [matTooltip]="'notifications.markRead' | translate">
+          <mat-icon>mark_email_read</mat-icon>
+        </button>
+        <button mat-icon-button
+          *ngIf="notification.actionUrl"
+          (click)="performAction(notification)"
+          [matTooltip]="notification.actionLabel || 'notifications.viewDetails' | translate">
+          <mat-icon>open_in_new</mat-icon>
+        </button>
+        <button mat-icon-button
+          (click)="deleteNotification(notification)"
+          [matTooltip]="'notifications.delete' | translate">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="filteredNotifications().length === 0">
+      <mat-icon>notifications_none</mat-icon>
+      <p>{{ 'notifications.noNotifications' | translate }}</p>
+    </div>
+
+    <!-- Load More -->
+    <div class="load-more" *ngIf="hasMore">
+      <button mat-stroked-button (click)="loadMore()">
+        {{ 'notifications.loadMore' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="notification-footer" *ngIf="selectedNotifications.size > 0">
+    <span class="selected-count">
+      {{ 'notifications.selected' | translate: {count: selectedNotifications.size} }}
+    </span>
+    <div class="bulk-actions">
+      <button mat-button (click)="markSelectedAsRead()">
+        <mat-icon>done_all</mat-icon>
+        {{ 'notifications.markSelectedRead' | translate }}
+      </button>
+      <button mat-button color="warn" (click)="deleteSelected()">
+        <mat-icon>delete</mat-icon>
+        {{ 'notifications.deleteSelected' | translate }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Menu -->
+<mat-menu #filterMenu="matMenu">
+  <button mat-menu-item *ngFor="let type of notificationTypes"
+    (click)="filterByType(type.value)"
+    [class.active]="currentFilter === type.value">
+    <mat-icon>{{ type.icon }}</mat-icon>
+    <span>{{ type.label | translate }}</span>
+  </button>
+</mat-menu>
