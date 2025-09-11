@@ -1,3 +1,7 @@
+/**
+ * Project related interfaces
+ */
+
 import { IUser } from './user.interface';
 import { ISprint } from './sprint.interface';
 import { ITask } from './task.interface';
@@ -7,14 +11,21 @@ export interface IProject {
   name: string;
   key: string;
   description?: string;
+  icon?: string;
+  color?: string;
   owner: IUser;
   members: IProjectMember[];
   sprints: ISprint[];
   backlog: ITask[];
   status: ProjectStatus;
   visibility: ProjectVisibility;
+  category?: string;
+  tags?: string[];
+  startDate?: Date;
+  endDate?: Date;
+  budget?: number;
   settings: IProjectSettings;
-  metrics: IProjectMetrics;
+  metrics?: IProjectMetrics;
   createdAt: Date;
   updatedAt: Date;
   archivedAt?: Date;
@@ -23,29 +34,100 @@ export interface IProject {
 export interface IProjectMember {
   user: IUser;
   role: ProjectRole;
-  joinedAt: Date;
   permissions: string[];
+  joinedAt: Date;
+}
+
+export enum ProjectStatus {
+  PLANNING = 'PLANNING',
+  ACTIVE = 'ACTIVE',
+  ON_HOLD = 'ON_HOLD',
+  COMPLETED = 'COMPLETED',
+  ARCHIVED = 'ARCHIVED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum ProjectVisibility {
+  PUBLIC = 'PUBLIC',
+  PRIVATE = 'PRIVATE',
+  TEAM = 'TEAM',
+  ORGANIZATION = 'ORGANIZATION'
+}
+
+export enum ProjectRole {
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  MEMBER = 'MEMBER',
+  VIEWER = 'VIEWER'
 }
 
 export interface IProjectSettings {
-  sprintDuration: number; // in days
-  startDay: number; // 0-6 (Sunday-Saturday)
   workingDays: number[];
+  sprintDuration: number;
   storyPointScale: number[];
-  defaultAssignee?: string;
-  autoAssign: boolean;
-  requireEstimates: boolean;
-  allowSubtasks: boolean;
+  taskTypes: ITaskType[];
+  taskStatuses: ITaskStatus[];
+  priorities: IPriority[];
+  labels: ILabel[];
   customFields: ICustomField[];
+  automations: IAutomation[];
+  integrations: IIntegration[];
+}
+
+export interface ITaskType {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export interface ITaskStatus {
+  id: string;
+  name: string;
+  category: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  color: string;
+  order: number;
+}
+
+export interface IPriority {
+  id: string;
+  name: string;
+  level: number;
+  icon: string;
+  color: string;
+}
+
+export interface ILabel {
+  id: string;
+  name: string;
+  color: string;
+  description?: string;
 }
 
 export interface ICustomField {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'multiselect';
+  type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'checkbox' | 'user';
   required: boolean;
   options?: string[];
   defaultValue?: any;
+}
+
+export interface IAutomation {
+  id: string;
+  name: string;
+  trigger: string;
+  conditions: Record<string, any>;
+  actions: Record<string, any>[];
+  enabled: boolean;
+}
+
+export interface IIntegration {
+  id: string;
+  type: string;
+  name: string;
+  config: Record<string, any>;
+  enabled: boolean;
 }
 
 export interface IProjectMetrics {
@@ -54,92 +136,51 @@ export interface IProjectMetrics {
   inProgressTasks: number;
   totalStoryPoints: number;
   completedStoryPoints: number;
-  averageVelocity: number;
-  currentVelocity: number;
-  sprintProgress: number;
+  velocity: number;
   burndownData: IBurndownPoint[];
-  velocityTrend: IVelocityPoint[];
   teamPerformance: ITeamPerformance[];
+  sprintProgress: number;
+  projectProgress: number;
+  averageCycleTime: number;
+  averageLeadTime: number;
 }
 
 export interface IBurndownPoint {
   date: Date;
   ideal: number;
   actual: number;
-  completed: number;
-}
-
-export interface IVelocityPoint {
-  sprint: string;
-  planned: number;
-  completed: number;
-  date: Date;
+  projected?: number;
 }
 
 export interface ITeamPerformance {
   userId: string;
-  userName: string;
-  tasksCompleted: number;
-  storyPointsCompleted: number;
-  averageCompletionTime: number;
+  completedTasks: number;
+  completedStoryPoints: number;
+  averageVelocity: number;
   efficiency: number;
 }
 
-export enum ProjectStatus {
-  ACTIVE = 'active',
-  PAUSED = 'paused',
-  COMPLETED = 'completed',
-  ARCHIVED = 'archived',
-  CANCELLED = 'cancelled',
-}
-
-export enum ProjectVisibility {
-  PUBLIC = 'public',
-  PRIVATE = 'private',
-  TEAM = 'team',
-  ORGANIZATION = 'organization',
-}
-
-export enum ProjectRole {
-  OWNER = 'owner',
-  ADMIN = 'admin',
-  DEVELOPER = 'developer',
-  TESTER = 'tester',
-  DESIGNER = 'designer',
-  VIEWER = 'viewer',
-}
-
-export interface ICreateProjectRequest {
-  name: string;
-  key: string;
-  description?: string;
-  visibility: ProjectVisibility;
-  settings?: Partial<IProjectSettings>;
-}
-
-export interface IUpdateProjectRequest {
-  name?: string;
-  description?: string;
-  status?: ProjectStatus;
-  visibility?: ProjectVisibility;
-  settings?: Partial<IProjectSettings>;
-}
-
-export interface IProjectSubscription {
+export interface IProjectTemplate {
   id: string;
-  userId: string;
-  projectId: string;
-  events: ProjectEventType[];
-  createdAt: Date;
+  name: string;
+  description: string;
+  category: string;
+  thumbnail?: string;
+  settings: Partial<IProjectSettings>;
+  sampleData?: {
+    sprints?: Partial<ISprint>[];
+    tasks?: Partial<ITask>[];
+  };
 }
 
-export enum ProjectEventType {
-  TASK_CREATED = 'task_created',
-  TASK_UPDATED = 'task_updated',
-  TASK_COMPLETED = 'task_completed',
-  SPRINT_STARTED = 'sprint_started',
-  SPRINT_COMPLETED = 'sprint_completed',
-  MEMBER_ADDED = 'member_added',
-  MEMBER_REMOVED = 'member_removed',
-  PROJECT_UPDATED = 'project_updated',
+export interface IProjectInvite {
+  id: string;
+  projectId: string;
+  email: string;
+  role: ProjectRole;
+  token: string;
+  expiresAt: Date;
+  acceptedAt?: Date;
+  createdBy: IUser;
+  createdAt: Date;
 }

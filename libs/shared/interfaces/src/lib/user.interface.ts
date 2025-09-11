@@ -1,23 +1,32 @@
+/**
+ * User related interfaces
+ */
+
 export interface IUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
   avatar?: string;
-  isActive: boolean;
   roles: IRole[];
   groups: IGroup[];
-  preferences: IUserPreferences;
+  isActive: boolean;
+  isVerified: boolean;
+  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
-  lastLogin?: Date;
+  preferences?: IUserPreferences;
+  metadata?: Record<string, any>;
 }
 
 export interface IRole {
   id: string;
   name: string;
-  permissions: IPermission[];
   description?: string;
+  permissions: IPermission[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IPermission {
@@ -38,44 +47,63 @@ export interface IGroup {
 }
 
 export interface IUserPreferences {
-  theme: 'light' | 'dark' | 'auto';
+  theme: 'light' | 'dark' | 'system';
   language: string;
   timezone: string;
+  dateFormat: string;
+  timeFormat: '12h' | '24h';
+  numberFormat: string;
   notifications: INotificationPreferences;
-  displaySettings: IDisplaySettings;
+  dashboard: IDashboardPreferences;
 }
 
 export interface INotificationPreferences {
   email: boolean;
   push: boolean;
   inApp: boolean;
-  dailyDigest: boolean;
-  weeklyReport: boolean;
-  taskAssigned: boolean;
-  taskCompleted: boolean;
-  commentMention: boolean;
-  projectUpdate: boolean;
+  sound: boolean;
+  vibration: boolean;
+  types: {
+    taskAssigned: boolean;
+    taskUpdated: boolean;
+    taskCompleted: boolean;
+    sprintStarted: boolean;
+    sprintCompleted: boolean;
+    commentAdded: boolean;
+    mentionedInComment: boolean;
+    projectInvite: boolean;
+  };
 }
 
-export interface IDisplaySettings {
-  compactView: boolean;
-  showAvatars: boolean;
-  animationsEnabled: boolean;
-  sidebarCollapsed: boolean;
-  kanbanColumns: string[];
+export interface IDashboardPreferences {
+  widgets: string[];
+  layout: 'grid' | 'list';
+  defaultView: string;
+  refreshInterval: number;
 }
 
-export enum UserRole {
-  SUPER_ADMIN = 'super_admin',
-  ADMIN = 'admin',
-  PROJECT_OWNER = 'project_owner',
-  TEAM_MEMBER = 'team_member',
-  VIEWER = 'viewer',
+export interface IUserProfile extends IUser {
+  bio?: string;
+  title?: string;
+  department?: string;
+  location?: string;
+  phone?: string;
+  skills?: string[];
+  socialLinks?: {
+    linkedin?: string;
+    github?: string;
+    twitter?: string;
+  };
 }
 
-export enum UserStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  PENDING = 'pending',
-  SUSPENDED = 'suspended',
+export interface IUserActivity {
+  id: string;
+  userId: string;
+  action: string;
+  resource: string;
+  resourceId: string;
+  details?: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: Date;
 }

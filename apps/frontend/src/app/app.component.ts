@@ -1,38 +1,32 @@
 /**
  * Root component of the SCRUM Project Manager application.
- * Manages the overall application layout, theme, and global services initialization.
- * 
- * @component AppComponent
- * @module App
+ * Manages the overall layout and initializes core services.
  */
 
-import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { OverlayContainer } from '@angular/cdk/overlay';
+import { RouterOutlet, RouterModule } from '@angular/router';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { SwUpdate } from '@angular/service-worker';
-import { Subject, takeUntil, filter, fromEvent, merge } from 'rxjs';
-import { debounceTime, throttleTime } from 'rxjs/operators';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { Store } from '@ngrx/store';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ToastrService } from 'ngx-toastr';
 
-// Services
-import { ThemeService } from './core/services/theme.service';
-import { LoadingService } from './core/services/loading.service';
-import { NotificationService } from './core/services/notification.service';
-import { ShortcutService } from './core/services/shortcut.service';
-import { NetworkService } from './core/services/network.service';
-import { LocaleService } from './core/services/locale.service';
-import { AccessibilityService } from './core/services/accessibility.service';
-
-// Components
-import { HeaderComponent } from './layout/header/header.component';
-import { SidebarComponent } from './layout/sidebar/sidebar.component';
-import { FooterComponent } from './layout/footer/footer.component';
+import { SidenavComponent } from './layouts/sidenav/sidenav.component';
+import { HeaderComponent } from './layouts/header/header.component';
+import { FooterComponent } from './layouts/footer/footer.component';
+import { LoaderComponent } from './shared/components/loader/loader.component';
 import { NotificationCenterComponent } from './shared/components/notification-center/notification-center.component';
-import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
-import { GlobalSearchComponent } from './shared/components/global-search/global-search.component';
-import { KeyboardShortcutsDialogComponent } from './shared/components/keyboard-shortcuts-dialog/keyboard-shortcuts-dialog.component';
+
+import { AuthService } from './core/services/auth.service';
+import { ThemeService } from './core/services/theme.service';
+import { LoaderService } from './core/services/loader.service';
+import { WebSocketService } from './core/services/websocket.service';
+import { ShortcutService } from './core/services/shortcut.service';
 
 @Component({
   selector: 'app-root',
@@ -40,393 +34,289 @@ import { KeyboardShortcutsDialogComponent } from './shared/components/keyboard-s
   imports: [
     CommonModule,
     RouterOutlet,
+    RouterModule,
+    MatSidenavModule,
+    MatToolbarModule,
+    MatIconModule,
+    MatButtonModule,
     MatProgressBarModule,
+    TranslateModule,
+    SidenavComponent,
     HeaderComponent,
-    SidebarComponent,
     FooterComponent,
-    NotificationCenterComponent,
-    ToastContainerComponent,
-    GlobalSearchComponent,
-    KeyboardShortcutsDialogComponent,
+    LoaderComponent,
+    NotificationCenterComponent
   ],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+  template: `
+    <div class="app-container" [class.dark-theme]="isDarkTheme()">
+      <!-- Global Loader -->
+      <app-loader *ngIf="isLoading()"></app-loader>
+      
+      <!-- Main Layout -->
+      <mat-sidenav-container class="sidenav-container" [hasBackdrop]="isMobile()">
+        <!-- Side Navigation -->
+        <mat-sidenav
+          #sidenav
+          [mode]="sidenavMode()"
+          [opened]="sidenavOpened()"
+          [fixedInViewport]="isMobile()"
+          class="sidenav"
+          (closedStart)="onSidenavClose()"
+        >
+          <app-sidenav
+            [isCollapsed]="sidenavCollapsed()"
+            (toggleCollapse)="toggleSidenavCollapse()"
+            (navigate)="onNavigate()"
+          ></app-sidenav>
+        </mat-sidenav>
+        
+        <!-- Main Content -->
+        <mat-sidenav-content class="main-content">
+          <!-- Header -->
+          <app-header
+            [sidenavOpened]="sidenavOpened()"
+            (toggleSidenav)="toggleSidenav()"
+            (toggleNotifications)="toggleNotifications()"
+          ></app-header>
+          
+          <!-- Router Outlet with Animation -->
+          <main class="content-wrapper" [@routeAnimations]="prepareRoute(outlet)">
+            <router-outlet #outlet="outlet"></router-outlet>
+          </main>
+          
+          <!-- Footer -->
+          <app-footer *ngIf="!isMobile()"></app-footer>
+        </mat-sidenav-content>
+      </mat-sidenav-container>
+      
+      <!-- Notification Center -->
+      <app-notification-center
+        [isOpen]="notificationsOpen()"
+        (close)="closeNotifications()"
+      ></app-notification-center>
+    </div>
+  `,
+  styles: [`
+    .app-container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .sidenav-container {
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .sidenav {
+      width: 260px;
+      transition: width 0.3s ease;
+      
+      &.collapsed {
+        width: 64px;
+      }
+    }
+    
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .content-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background-color: var(--background-color);
+      
+      @media (max-width: 768px) {
+        padding: 16px;
+      }
+    }
+    
+    ::ng-deep {
+      .mat-drawer-backdrop.mat-drawer-shown {
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+    }
+  `],
+  animations: [
+    // Route animations will be defined in animations file
+  ]
 })
-export class AppComponent implements OnInit, OnDestroy {
-  private readonly destroy$ = new Subject<void>();
-  private readonly breakpointObserver = inject(BreakpointObserver);
-  private readonly overlayContainer = inject(OverlayContainer);
-  private readonly swUpdate = inject(SwUpdate);
-  private readonly themeService = inject(ThemeService);
-  private readonly loadingService = inject(LoadingService);
-  private readonly notificationService = inject(NotificationService);
-  private readonly shortcutService = inject(ShortcutService);
-  private readonly networkService = inject(NetworkService);
-  private readonly localeService = inject(LocaleService);
-  private readonly accessibilityService = inject(AccessibilityService);
-
-  /**
-   * Application title
-   */
-  readonly title = 'SCRUM Project Manager';
-
-  /**
-   * Current theme signal
-   */
-  readonly theme = this.themeService.currentTheme;
-
-  /**
-   * Loading state signal
-   */
-  readonly isLoading = this.loadingService.isLoading;
-
-  /**
-   * Sidebar expanded state signal
-   */
-  readonly sidebarExpanded = signal(true);
-
-  /**
-   * Mobile view state signal
-   */
-  readonly isMobile = signal(false);
-
-  /**
-   * Tablet view state signal
-   */
-  readonly isTablet = signal(false);
-
-  /**
-   * Desktop view state signal
-   */
-  readonly isDesktop = signal(true);
-
-  /**
-   * Network status signal
-   */
-  readonly isOnline = this.networkService.isOnline;
-
-  /**
-   * Touch device detection signal
-   */
-  readonly isTouchDevice = signal(false);
-
-  /**
-   * Computed layout class based on device type
-   */
-  readonly layoutClass = computed(() => {
-    if (this.isMobile()) return 'layout-mobile';
-    if (this.isTablet()) return 'layout-tablet';
-    return 'layout-desktop';
-  });
-
-  /**
-   * Computed sidebar state based on device type
-   */
-  readonly sidebarMode = computed(() => {
-    if (this.isMobile()) return 'over';
-    if (this.isTablet() && !this.sidebarExpanded()) return 'over';
-    return 'side';
-  });
-
-  constructor() {
-    // Apply theme effect
-    effect(() => {
-      const theme = this.theme();
-      this.applyTheme(theme);
-    });
-
-    // Auto-hide sidebar on mobile
-    effect(() => {
-      if (this.isMobile()) {
-        this.sidebarExpanded.set(false);
-      }
-    });
-  }
-
-  /**
-   * Component initialization
-   */
+export class AppComponent implements OnInit {
+  private store = inject(Store);
+  private authService = inject(AuthService);
+  private themeService = inject(ThemeService);
+  private loaderService = inject(LoaderService);
+  private wsService = inject(WebSocketService);
+  private shortcutService = inject(ShortcutService);
+  private translateService = inject(TranslateService);
+  private toastr = inject(ToastrService);
+  private breakpointObserver = inject(BreakpointObserver);
+  
+  // Signals for reactive state
+  isDarkTheme = signal(false);
+  isLoading = signal(false);
+  sidenavOpened = signal(true);
+  sidenavCollapsed = signal(false);
+  notificationsOpen = signal(false);
+  isMobile = signal(false);
+  
+  // Computed values
+  sidenavMode = computed(() => this.isMobile() ? 'over' : 'side');
+  
   ngOnInit(): void {
-    this.initializeBreakpointObserver();
-    this.initializeTouchDetection();
-    this.initializeKeyboardShortcuts();
-    this.initializeServiceWorker();
-    this.initializePerformanceMonitoring();
-    this.initializeAccessibility();
-    this.initializeNetworkMonitoring();
-    this.handleWindowEvents();
+    this.initializeApp();
+    this.setupResponsive();
+    this.setupTheme();
+    this.setupTranslations();
+    this.setupWebSocket();
+    this.setupShortcuts();
+    this.setupLoader();
   }
-
+  
   /**
-   * Component cleanup
+   * Initialize core application services
    */
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  private initializeApp(): void {
+    // Check authentication status
+    this.authService.checkAuthStatus();
+    
+    // Initialize service worker for PWA
+    if ('serviceWorker' in navigator && environment.features.enableServiceWorker) {
+      navigator.serviceWorker.register('/ngsw-worker.js');
+    }
   }
-
+  
   /**
-   * Initialize responsive breakpoint observer
+   * Setup responsive behavior
    */
-  private initializeBreakpointObserver(): void {
+  private setupResponsive(): void {
     this.breakpointObserver
-      .observe([
-        Breakpoints.XSmall,
-        Breakpoints.Small,
-        Breakpoints.Medium,
-        Breakpoints.Large,
-        Breakpoints.XLarge,
-      ])
-      .pipe(takeUntil(this.destroy$))
+      .observe([Breakpoints.Handset, Breakpoints.Tablet])
       .subscribe(result => {
-        this.isMobile.set(result.matches && result.breakpoints[Breakpoints.XSmall]);
-        this.isTablet.set(result.matches && (result.breakpoints[Breakpoints.Small] || result.breakpoints[Breakpoints.Medium]));
-        this.isDesktop.set(result.matches && (result.breakpoints[Breakpoints.Large] || result.breakpoints[Breakpoints.XLarge]));
-      });
-  }
-
-  /**
-   * Initialize touch device detection
-   */
-  private initializeTouchDetection(): void {
-    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    this.isTouchDevice.set(hasTouch);
-    
-    if (hasTouch) {
-      document.documentElement.classList.add('touch-device');
-    }
-  }
-
-  /**
-   * Initialize keyboard shortcuts
-   */
-  private initializeKeyboardShortcuts(): void {
-    // Global search shortcut (Ctrl/Cmd + K)
-    this.shortcutService.register('ctrl+k,cmd+k', 'Open global search', () => {
-      this.openGlobalSearch();
-    });
-
-    // Toggle sidebar (Ctrl/Cmd + B)
-    this.shortcutService.register('ctrl+b,cmd+b', 'Toggle sidebar', () => {
-      this.toggleSidebar();
-    });
-
-    // Show shortcuts dialog (Ctrl/Cmd + /)
-    this.shortcutService.register('ctrl+/,cmd+/', 'Show keyboard shortcuts', () => {
-      this.showKeyboardShortcuts();
-    });
-
-    // Toggle theme (Ctrl/Cmd + Shift + T)
-    this.shortcutService.register('ctrl+shift+t,cmd+shift+t', 'Toggle theme', () => {
-      this.toggleTheme();
-    });
-  }
-
-  /**
-   * Initialize service worker for PWA
-   */
-  private initializeServiceWorker(): void {
-    if (this.swUpdate.isEnabled) {
-      // Check for updates
-      this.swUpdate.versionUpdates
-        .pipe(
-          filter(event => event.type === 'VERSION_READY'),
-          takeUntil(this.destroy$)
-        )
-        .subscribe(() => {
-          this.notificationService.info(
-            'New version available',
-            'A new version of the application is available. Reload to update.',
-            {
-              duration: 0,
-              actions: [
-                {
-                  label: 'Reload',
-                  action: () => window.location.reload(),
-                },
-              ],
-            }
-          );
-        });
-
-      // Check for updates every 30 seconds
-      setInterval(() => {
-        this.swUpdate.checkForUpdate();
-      }, 30000);
-    }
-  }
-
-  /**
-   * Initialize performance monitoring
-   */
-  private initializePerformanceMonitoring(): void {
-    if ('PerformanceObserver' in window) {
-      // Monitor long tasks
-      const observer = new PerformanceObserver(list => {
-        for (const entry of list.getEntries()) {
-          if (entry.duration > 50) {
-            console.warn('Long task detected:', entry);
-          }
-        }
-      });
-
-      observer.observe({ entryTypes: ['longtask'] });
-    }
-  }
-
-  /**
-   * Initialize accessibility features
-   */
-  private initializeAccessibility(): void {
-    this.accessibilityService.initialize();
-    
-    // Skip to main content link
-    this.shortcutService.register('alt+1', 'Skip to main content', () => {
-      const mainContent = document.getElementById('main-content');
-      if (mainContent) {
-        mainContent.focus();
-        mainContent.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  }
-
-  /**
-   * Initialize network monitoring
-   */
-  private initializeNetworkMonitoring(): void {
-    this.networkService.statusChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isOnline => {
-        if (isOnline) {
-          this.notificationService.success('Connection restored', 'You are back online');
+        this.isMobile.set(result.matches);
+        if (result.matches) {
+          this.sidenavOpened.set(false);
         } else {
-          this.notificationService.warning(
-            'Connection lost',
-            'You are currently offline. Some features may be limited.'
-          );
+          this.sidenavOpened.set(true);
         }
       });
   }
-
+  
   /**
-   * Handle window events
+   * Setup theme management
    */
-  private handleWindowEvents(): void {
-    // Handle resize events with throttling
-    fromEvent(window, 'resize')
-      .pipe(
-        throttleTime(200),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => {
-        this.handleResize();
-      });
-
-    // Handle scroll events with throttling
-    fromEvent(window, 'scroll')
-      .pipe(
-        throttleTime(100),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => {
-        this.handleScroll();
-      });
-
-    // Handle visibility change
-    fromEvent(document, 'visibilitychange')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.handleVisibilityChange();
-      });
+  private setupTheme(): void {
+    this.themeService.isDarkTheme$.subscribe(isDark => {
+      this.isDarkTheme.set(isDark);
+    });
   }
-
+  
   /**
-   * Handle window resize
+   * Setup translations
    */
-  private handleResize(): void {
-    // Custom resize logic if needed
+  private setupTranslations(): void {
+    const defaultLang = localStorage.getItem('language') || environment.i18n.defaultLanguage;
+    this.translateService.setDefaultLang(defaultLang);
+    this.translateService.use(defaultLang);
   }
-
+  
   /**
-   * Handle window scroll
+   * Setup WebSocket connection
    */
-  private handleScroll(): void {
-    // Custom scroll logic if needed
-  }
-
-  /**
-   * Handle document visibility change
-   */
-  private handleVisibilityChange(): void {
-    if (document.hidden) {
-      // Pause non-critical operations
-      console.log('App moved to background');
-    } else {
-      // Resume operations
-      console.log('App moved to foreground');
-      // Check for updates
-      if (this.swUpdate.isEnabled) {
-        this.swUpdate.checkForUpdate();
-      }
+  private setupWebSocket(): void {
+    if (this.authService.isAuthenticated()) {
+      this.wsService.connect();
     }
   }
-
+  
   /**
-   * Apply theme to the application
+   * Setup keyboard shortcuts
    */
-  private applyTheme(theme: 'light' | 'dark' | 'auto'): void {
-    const effectiveTheme = theme === 'auto' 
-      ? this.getSystemTheme() 
-      : theme;
-
-    // Remove existing theme classes
-    document.body.classList.remove('light-theme', 'dark-theme');
+  private setupShortcuts(): void {
+    // Global shortcuts
+    this.shortcutService.add('ctrl+k', () => {
+      // Open command palette
+      console.log('Command palette opened');
+    });
     
-    // Add new theme class
-    document.body.classList.add(`${effectiveTheme}-theme`);
+    this.shortcutService.add('ctrl+/', () => {
+      // Toggle sidebar
+      this.toggleSidenav();
+    });
     
-    // Update overlay container for Material overlays
-    const overlayContainerElement = this.overlayContainer.getContainerElement();
-    overlayContainerElement.classList.remove('light-theme', 'dark-theme');
-    overlayContainerElement.classList.add(`${effectiveTheme}-theme`);
+    this.shortcutService.add('ctrl+shift+n', () => {
+      // Toggle notifications
+      this.toggleNotifications();
+    });
   }
-
+  
   /**
-   * Get system theme preference
+   * Setup loader service
    */
-  private getSystemTheme(): 'light' | 'dark' {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches 
-      ? 'dark' 
-      : 'light';
+  private setupLoader(): void {
+    this.loaderService.loading$.subscribe(loading => {
+      this.isLoading.set(loading);
+    });
   }
-
+  
   /**
-   * Toggle sidebar visibility
+   * Toggle sidenav open/close
    */
-  toggleSidebar(): void {
-    this.sidebarExpanded.update(value => !value);
+  toggleSidenav(): void {
+    this.sidenavOpened.update(opened => !opened);
   }
-
+  
   /**
-   * Toggle theme
+   * Toggle sidenav collapse/expand
    */
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
+  toggleSidenavCollapse(): void {
+    this.sidenavCollapsed.update(collapsed => !collapsed);
   }
-
+  
   /**
-   * Open global search
+   * Handle sidenav close event
    */
-  openGlobalSearch(): void {
-    // Emit event to open global search
-    document.dispatchEvent(new CustomEvent('open-global-search'));
+  onSidenavClose(): void {
+    if (this.isMobile()) {
+      this.sidenavOpened.set(false);
+    }
   }
-
+  
   /**
-   * Show keyboard shortcuts dialog
+   * Handle navigation
    */
-  showKeyboardShortcuts(): void {
-    // Emit event to show shortcuts dialog
-    document.dispatchEvent(new CustomEvent('show-keyboard-shortcuts'));
+  onNavigate(): void {
+    if (this.isMobile()) {
+      this.sidenavOpened.set(false);
+    }
+  }
+  
+  /**
+   * Toggle notifications panel
+   */
+  toggleNotifications(): void {
+    this.notificationsOpen.update(open => !open);
+  }
+  
+  /**
+   * Close notifications panel
+   */
+  closeNotifications(): void {
+    this.notificationsOpen.set(false);
+  }
+  
+  /**
+   * Prepare route for animation
+   */
+  prepareRoute(outlet: RouterOutlet): string {
+    return outlet?.activatedRouteData?.['animation'] || '';
   }
 }
+
+// Import environment
+import { environment } from '../environments/environment';
