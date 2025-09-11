@@ -1,0 +1,149 @@
+<!-- Loader Component Template -->
+<div 
+  class="loader-overlay" 
+  [class.fullscreen]="fullscreen"
+  [class.inline]="!fullscreen"
+  [attr.aria-label]="'loader.loading' | translate"
+  [attr.aria-busy]="true"
+  role="status"
+  [@fadeIn]="animationState"
+>
+  <div class="loader-container" [class.backdrop-blur]="backdropBlur">
+    <!-- Main Spinner -->
+    <div class="loader-spinner" [ngSwitch]="type">
+      <!-- Circular Progress -->
+      <mat-progress-spinner
+        *ngSwitchCase="'circular'"
+        [mode]="mode"
+        [diameter]="size"
+        [strokeWidth]="strokeWidth"
+        [value]="progress"
+        [color]="color"
+        [attr.aria-label]="getProgressLabel()"
+        [attr.aria-valuenow]="progress"
+        [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="100"
+      ></mat-progress-spinner>
+      
+      <!-- Linear Progress -->
+      <mat-progress-bar
+        *ngSwitchCase="'linear'"
+        class="linear-progress"
+        [mode]="mode"
+        [value]="progress"
+        [bufferValue]="bufferValue"
+        [color]="color"
+        [attr.aria-label]="getProgressLabel()"
+        [attr.aria-valuenow]="progress"
+        [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="100"
+      ></mat-progress-bar>
+      
+      <!-- Dots Animation -->
+      <div *ngSwitchCase="'dots'" class="loader-dots" [attr.aria-label]="'loader.loading' | translate">
+        <span class="dot" *ngFor="let dot of [1, 2, 3, 4]" [style.animation-delay.ms]="dot * 150"></span>
+      </div>
+      
+      <!-- Pulse Animation -->
+      <div *ngSwitchCase="'pulse'" class="loader-pulse" [attr.aria-label]="'loader.loading' | translate">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+      </div>
+      
+      <!-- Skeleton Loader -->
+      <div *ngSwitchCase="'skeleton'" class="loader-skeleton" [attr.aria-label]="'loader.loading' | translate">
+        <div class="skeleton-header"></div>
+        <div class="skeleton-content">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>
+      
+      <!-- Custom Content -->
+      <div *ngSwitchCase="'custom'" class="loader-custom">
+        <ng-content></ng-content>
+      </div>
+      
+      <!-- Default: Circular -->
+      <mat-progress-spinner
+        *ngSwitchDefault
+        mode="indeterminate"
+        [diameter]="size"
+        [strokeWidth]="strokeWidth"
+        [color]="color"
+      ></mat-progress-spinner>
+    </div>
+    
+    <!-- Message -->
+    <div class="loader-message" *ngIf="message" [@slideIn]="messageState">
+      <p class="message-text">{{ message | translate }}</p>
+      <p class="message-submessage" *ngIf="submessage">
+        {{ submessage | translate }}
+      </p>
+    </div>
+    
+    <!-- Progress Text -->
+    <div class="loader-progress" *ngIf="showProgress && mode === 'determinate'">
+      <span class="progress-value">{{ progress }}%</span>
+      <span class="progress-label" *ngIf="progressLabel">
+        {{ progressLabel | translate }}
+      </span>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="loader-actions" *ngIf="showActions">
+      <button 
+        mat-button
+        *ngIf="cancelable"
+        (click)="onCancel()"
+        [disabled]="cancelDisabled"
+        class="cancel-button"
+        [attr.aria-label]="'loader.cancel' | translate"
+      >
+        <mat-icon>close</mat-icon>
+        {{ 'loader.cancel' | translate }}
+      </button>
+      
+      <button 
+        mat-button
+        *ngIf="retryable"
+        (click)="onRetry()"
+        class="retry-button"
+        [attr.aria-label]="'loader.retry' | translate"
+      >
+        <mat-icon>refresh</mat-icon>
+        {{ 'loader.retry' | translate }}
+      </button>
+    </div>
+    
+    <!-- Time Estimate -->
+    <div class="loader-estimate" *ngIf="estimatedTime">
+      <mat-icon class="timer-icon">timer</mat-icon>
+      <span>{{ getTimeEstimate() }}</span>
+    </div>
+    
+    <!-- Tips (rotating messages) -->
+    <div class="loader-tips" *ngIf="tips.length > 0" [@fadeIn]>
+      <p class="tip-text">
+        <mat-icon class="tip-icon">lightbulb</mat-icon>
+        {{ currentTip() | translate }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Inline loader template for tables/lists -->
+<ng-template #inlineLoader>
+  <div class="inline-loader">
+    <mat-spinner 
+      [diameter]="24" 
+      [strokeWidth]="3"
+      color="primary"
+    ></mat-spinner>
+    <span class="inline-text" *ngIf="message">
+      {{ message | translate }}
+    </span>
+  </div>
+</ng-template>
