@@ -5,32 +5,51 @@ export class CryptoUtils {
   private static readonly algorithm = 'aes-256-gcm';
   private static readonly saltRounds = 12;
 
+  /**
+   * Hash password using bcrypt
+   */
   static async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, this.saltRounds);
   }
 
+  /**
+   * Verify password against hash
+   */
   static async verifyPassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
   }
 
+  /**
+   * Generate random token
+   */
   static generateToken(length: number = 32): string {
     return crypto.randomBytes(length).toString('hex');
   }
 
+  /**
+   * Generate UUID v4
+   */
   static generateUUID(): string {
     return crypto.randomUUID();
   }
 
-  static encrypt(text: string, secretKey: string): { encrypted: string; iv: string; authTag: string } {
-    const key = crypto.scryptSync(secretKey, 'salt', 32);
+  /**
+   * Encrypt data
+   */
+  static encrypt(text: string, secretKey: string): {
+    encrypted: string;
+    iv: string;
+    authTag: string;
+  } {
     const iv = crypto.randomBytes(16);
+    const key = crypto.scryptSync(secretKey, 'salt', 32);
     const cipher = crypto.createCipheriv(this.algorithm, key, iv);
-    
+
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     const authTag = cipher.getAuthTag();
-    
+
     return {
       encrypted,
       iv: iv.toString('hex'),
@@ -38,125 +57,102 @@ export class CryptoUtils {
     };
   }
 
+  /**
+   * Decrypt data
+   */
   static decrypt(
-    encryptedData: { encrypted: string; iv: string; authTag: string },
-    secretKey: string
+    encryptedData: {
+      encrypted: string;
+      iv: string;
+      authTag: string;
+    },
+    secretKey: string,
   ): string {
     const key = crypto.scryptSync(secretKey, 'salt', 32);
     const decipher = crypto.createDecipheriv(
       this.algorithm,
       key,
-      Buffer.from(encryptedData.iv, 'hex')
+      Buffer.from(encryptedData.iv, 'hex'),
     );
-    
+
     decipher.setAuthTag(Buffer.from(encryptedData.authTag, 'hex'));
-    
+
     let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return decrypted;
   }
 
-  static generateHash(data: string, algorithm: string = 'sha256'): string {
+  /**
+   * Generate hash of data
+   */
+  static hash(data: string, algorithm: string = 'sha256'): string {
     return crypto.createHash(algorithm).update(data).digest('hex');
   }
 
-  static generateHmac(data: string, secret: string, algorithm: string = 'sha256'): string {
-    return crypto.createHmac(algorithm, secret).update(data).digest('hex');
+  /**
+   * Generate HMAC
+   */
+  static generateHMAC(data: string, secret: string): string {
+    return crypto.createHmac('sha256', secret).update(data).digest('hex');
   }
 
-  static verifyHmac(data: string, hmac: string, secret: string, algorithm: string = 'sha256'): boolean {
-    const computedHmac = this.generateHmac(data, secret, algorithm);
-    return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(computedHmac));
-  }
-
-  static generateKeyPair(): { publicKey: string; privateKey: string } {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-      modulusLength: 2048,
-      publicKeyEncoding: {
-        type: 'spki',
-        format: 'pem',
-      },
-      privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'pem',
-      },
-    });
-    
-    return { publicKey, privateKey };
-  }
-
-  static encryptWithPublicKey(text: string, publicKey: string): string {
-    const buffer = Buffer.from(text, 'utf8');
-    const encrypted = crypto.publicEncrypt(
-      {
-        key: publicKey,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
-      },
-      buffer
+  /**
+   * Verify HMAC
+   */
+  static verifyHMAC(data: string, hmac: string, secret: string): boolean {
+    const expectedHmac = this.generateHMAC(data, secret);
+    return crypto.timingSafeEqual(
+      Buffer.from(hmac, 'hex'),
+      Buffer.from(expectedHmac, 'hex'),
     );
-    
-    return encrypted.toString('base64');
   }
 
-  static decryptWithPrivateKey(encryptedText: string, privateKey: string): string {
-    const buffer = Buffer.from(encryptedText, 'base64');
-    const decrypted = crypto.privateDecrypt(
-      {
-        key: privateKey,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
-      },
-      buffer
-    );
-    
-    return decrypted.toString('utf8');
-  }
-
+  /**
+   * Generate OTP (One-Time Password)
+   */
   static generateOTP(length: number = 6): string {
     const digits = '0123456789';
     let otp = '';
-    
     for (let i = 0; i < length; i++) {
       otp += digits[Math.floor(Math.random() * 10)];
     }
-    
     return otp;
   }
 
-  static generateSecureRandomString(length: number): string {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    const randomBytes = crypto.randomBytes(length);
+  /**
+   * Generate secure random string
+   */
+  static generateSecureRandom(length: number = 16): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
+    const randomBytes = crypto.randomBytes(length);
     
     for (let i = 0; i < length; i++) {
-      result += charset[randomBytes[i] % charset.length];
+      result += chars[randomBytes[i] % chars.length];
     }
     
     return result;
   }
 
-  static base64Encode(text: string): string {
-    return Buffer.from(text, 'utf8').toString('base64');
+  /**
+   * Generate API key
+   */
+  static generateApiKey(prefix: string = 'sk'): string {
+    const token = this.generateToken(32);
+    return `${prefix}_${token}`;
   }
 
-  static base64Decode(encoded: string): string {
-    return Buffer.from(encoded, 'base64').toString('utf8');
-  }
-
-  static generateChecksum(data: string | Buffer): string {
-    return crypto
-      .createHash('md5')
-      .update(data)
-      .digest('hex');
-  }
-
-  static constantTimeCompare(a: string, b: string): boolean {
-    if (a.length !== b.length) {
-      return false;
+  /**
+   * Mask sensitive data
+   */
+  static maskSensitiveData(data: string, visibleChars: number = 4): string {
+    if (data.length <= visibleChars * 2) {
+      return '*'.repeat(data.length);
     }
-    
-    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+    const start = data.substring(0, visibleChars);
+    const end = data.substring(data.length - visibleChars);
+    const middle = '*'.repeat(Math.max(4, data.length - visibleChars * 2));
+    return `${start}${middle}${end}`;
   }
 }

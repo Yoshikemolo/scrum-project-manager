@@ -28,12 +28,6 @@
       "options": {
         "jestConfig": "libs/shared/utils/jest.config.ts",
         "passWithNoTests": true
-      },
-      "configurations": {
-        "ci": {
-          "ci": true,
-          "codeCoverage": true
-        }
       }
     }
   },
