@@ -258,6 +258,7 @@ Comprehensive documentation is available in the `/docs` directory:
 - [Architecture Overview](./docs/ARCHITECTURE.md) - System design and patterns
 - [API Documentation](./docs/API.md) - GraphQL schema and endpoints
 - [Development Guide](./docs/DEVELOPMENT.md) - Development workflow and standards
+- [Testing Guide](./docs/TESTING.md) - Testing strategy and practices
 - [Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment instructions
 - [Security Guide](./docs/SECURITY.md) - Security measures and best practices
 - [AI Integration Guide](./docs/AI_INTEGRATION.md) - AI assistant configuration

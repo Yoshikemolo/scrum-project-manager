@@ -441,6 +441,7 @@ async create(createTaskDto: CreateTaskDto): Promise<Task> {
 - [Architecture Overview](./ARCHITECTURE.md)
 - [API Documentation](./API.md)
 - [Testing Guide](./TESTING.md)
+- [Security Guide](./SECURITY.md)
 
 ---
 
