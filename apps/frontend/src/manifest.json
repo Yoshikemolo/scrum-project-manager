@@ -1,9 +1,9 @@
 {
   "name": "SCRUM Project Manager",
   "short_name": "SCRUM PM",
-  "description": "Enterprise SCRUM Project Management Platform with AI-powered assistance",
-  "theme_color": "#0066FF",
-  "background_color": "#FFFFFF",
+  "description": "Enterprise SCRUM Project Management Platform with AI Assistant",
+  "theme_color": "#3f51b5",
+  "background_color": "#ffffff",
   "display": "standalone",
   "orientation": "any",
   "scope": "/",
@@ -58,25 +58,9 @@
       "purpose": "maskable any"
     }
   ],
-  "screenshots": [
-    {
-      "src": "assets/screenshots/dashboard.png",
-      "type": "image/png",
-      "sizes": "1920x1080",
-      "form_factor": "wide"
-    },
-    {
-      "src": "assets/screenshots/kanban.png",
-      "type": "image/png",
-      "sizes": "1920x1080",
-      "form_factor": "wide"
-    },
-    {
-      "src": "assets/screenshots/mobile-dashboard.png",
-      "type": "image/png",
-      "sizes": "412x915",
-      "form_factor": "narrow"
-    }
+  "categories": [
+    "business",
+    "productivity"
   ],
   "shortcuts": [
     {
@@ -106,7 +90,7 @@
     {
       "name": "Tasks",
       "short_name": "Tasks",
-      "description": "View tasks",
+      "description": "View tasks board",
       "url": "/tasks",
       "icons": [
         {
@@ -116,8 +100,26 @@
       ]
     }
   ],
-  "categories": ["business", "productivity"],
-  "lang": "en-US",
-  "dir": "ltr",
+  "screenshots": [
+    {
+      "src": "assets/screenshots/dashboard.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "label": "Dashboard view showing project metrics and analytics"
+    },
+    {
+      "src": "assets/screenshots/kanban.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "label": "Kanban board with drag and drop task management"
+    },
+    {
+      "src": "assets/screenshots/sprint.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "label": "Sprint planning and management interface"
+    }
+  ],
+  "related_applications": [],
   "prefer_related_applications": false
 }
