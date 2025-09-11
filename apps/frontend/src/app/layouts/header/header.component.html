@@ -1,0 +1,263 @@
+<mat-toolbar class="header" [class.dark-mode]="isDarkMode()" [@slideDown]>
+  <!-- Loading Progress Bar -->
+  <mat-progress-bar 
+    *ngIf="isLoading()" 
+    mode="indeterminate" 
+    class="header__progress"
+    color="accent">
+  </mat-progress-bar>
+
+  <div class="header__container">
+    <!-- Logo and Menu Toggle -->
+    <div class="header__left">
+      <button 
+        mat-icon-button 
+        class="header__menu-toggle"
+        [matTooltip]="'header.menu' | translate"
+        matTooltipPosition="below"
+        (click)="onMenuToggle()"
+        [attr.aria-label]="'header.menu' | translate">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <a 
+        routerLink="/dashboard" 
+        class="header__logo"
+        [attr.aria-label]="'header.home' | translate">
+        <img 
+          src="/assets/logo.svg" 
+          alt="SCRUM Manager" 
+          class="header__logo-image"
+          [class.header__logo-image--dark]="isDarkMode()">
+        <span class="header__logo-text" *ngIf="!isMobile()">
+          SCRUM Manager
+        </span>
+      </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="header__nav" *ngIf="!isMobile()">
+      <a 
+        *ngFor="let item of navItems()"
+        [routerLink]="item.route"
+        routerLinkActive="header__nav-item--active"
+        class="header__nav-item"
+        [matTooltip]="item.tooltip | translate"
+        matTooltipPosition="below"
+        matRipple
+        [attr.aria-label]="item.label | translate">
+        <mat-icon class="header__nav-icon">{{ item.icon }}</mat-icon>
+        <span class="header__nav-label">{{ item.label | translate }}</span>
+        <span 
+          *ngIf="item.badge && item.badge() > 0" 
+          class="header__nav-badge"
+          [@badgePulse]>
+          {{ item.badge() }}
+        </span>
+      </a>
+    </nav>
+
+    <!-- Right Actions -->
+    <div class="header__right">
+      <!-- Search -->
+      <button 
+        mat-icon-button 
+        class="header__action"
+        [class.header__action--active]="isSearchOpen()"
+        [matTooltip]="'header.search' | translate"
+        matTooltipPosition="below"
+        (click)="toggleSearch()"
+        [attr.aria-label]="'header.search' | translate">
+        <mat-icon>search</mat-icon>
+      </button>
+
+      <!-- AI Assistant -->
+      <button 
+        mat-icon-button 
+        class="header__action header__action--ai"
+        [matTooltip]="'header.ai_assistant' | translate"
+        matTooltipPosition="below"
+        (click)="openAIAssistant()"
+        [attr.aria-label]="'header.ai_assistant' | translate">
+        <mat-icon class="header__ai-icon">auto_awesome</mat-icon>
+      </button>
+
+      <!-- Notifications -->
+      <button 
+        mat-icon-button 
+        class="header__action"
+        [class.header__action--active]="isNotificationOpen()"
+        [matTooltip]="'header.notifications' | translate"
+        matTooltipPosition="below"
+        [matBadge]="unreadNotifications()"
+        [matBadgeHidden]="unreadNotifications() === 0"
+        matBadgeColor="warn"
+        matBadgeSize="small"
+        matBadgePosition="above after"
+        (click)="toggleNotifications()"
+        [attr.aria-label]="'header.notifications' | translate">
+        <mat-icon [@fadeIn]>
+          {{ unreadNotifications() > 0 ? 'notifications_active' : 'notifications' }}
+        </mat-icon>
+      </button>
+
+      <!-- Language Selector -->
+      <button 
+        mat-icon-button 
+        class="header__action"
+        [matTooltip]="'header.language' | translate"
+        matTooltipPosition="below"
+        [matMenuTriggerFor]="languageMenu"
+        [attr.aria-label]="'header.language' | translate">
+        <span class="header__flag">
+          {{ languages().find(l => l.code === currentLanguage())?.flag }}
+        </span>
+      </button>
+
+      <!-- Theme Toggle -->
+      <button 
+        mat-icon-button 
+        class="header__action"
+        [matTooltip]="isDarkMode() ? ('header.light_mode' | translate) : ('header.dark_mode' | translate)"
+        matTooltipPosition="below"
+        (click)="toggleTheme()"
+        [attr.aria-label]="'header.theme' | translate">
+        <mat-icon class="header__theme-icon" [@fadeIn]>
+          {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
+        </mat-icon>
+      </button>
+
+      <!-- Connection Status Indicator -->
+      <div 
+        class="header__connection"
+        [class.header__connection--connected]="connectionStatus() === 'connected'"
+        [class.header__connection--disconnected]="connectionStatus() === 'disconnected'"
+        [class.header__connection--reconnecting]="connectionStatus() === 'reconnecting'"
+        [matTooltip]="'header.connection.' + connectionStatus() | translate"
+        matTooltipPosition="below">
+        <span class="header__connection-dot"></span>
+      </div>
+
+      <!-- User Menu -->
+      <button 
+        mat-button 
+        class="header__user"
+        [matMenuTriggerFor]="userMenu"
+        [attr.aria-label]="'header.user_menu' | translate">
+        <div class="header__user-avatar" matRipple>
+          <img 
+            *ngIf="currentUser()?.avatar" 
+            [src]="currentUser()?.avatar" 
+            [alt]="displayName()"
+            class="header__user-image">
+          <span 
+            *ngIf="!currentUser()?.avatar" 
+            class="header__user-initials">
+            {{ userInitials() }}
+          </span>
+        </div>
+        <div class="header__user-info" *ngIf="!isMobile()">
+          <span class="header__user-name">{{ displayName() }}</span>
+          <span class="header__user-role">{{ currentUser()?.role | translate }}</span>
+        </div>
+        <mat-icon class="header__user-arrow">expand_more</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Overlay -->
+  <div 
+    class="header__search-overlay" 
+    *ngIf="isSearchOpen()"
+    [@fadeIn]
+    (click)="toggleSearch()"
+    (keydown.escape)="onEscape()">
+    <app-search 
+      (close)="toggleSearch()"
+      (click)="$event.stopPropagation()">
+    </app-search>
+  </div>
+
+  <!-- Notification Center Overlay -->
+  <div 
+    class="header__notification-overlay"
+    *ngIf="isNotificationOpen()"
+    [@fadeIn]
+    (click)="toggleNotifications()"
+    (keydown.escape)="onEscape()">
+    <app-notification-center 
+      (close)="toggleNotifications()"
+      (click)="$event.stopPropagation()">
+    </app-notification-center>
+  </div>
+</mat-toolbar>
+
+<!-- Language Menu -->
+<mat-menu #languageMenu="matMenu" class="header__menu header__menu--language">
+  <h3 class="header__menu-title">{{ 'header.select_language' | translate }}</h3>
+  <mat-divider></mat-divider>
+  <button 
+    mat-menu-item 
+    *ngFor="let lang of languages()"
+    (click)="changeLanguage(lang.code)"
+    [class.header__menu-item--active]="lang.code === currentLanguage()">
+    <span class="header__menu-flag">{{ lang.flag }}</span>
+    <span class="header__menu-label">{{ lang.label }}</span>
+    <mat-icon *ngIf="lang.code === currentLanguage()">check</mat-icon>
+  </button>
+</mat-menu>
+
+<!-- User Menu -->
+<mat-menu #userMenu="matMenu" class="header__menu header__menu--user">
+  <div class="header__menu-header">
+    <div class="header__menu-avatar">
+      <img 
+        *ngIf="currentUser()?.avatar" 
+        [src]="currentUser()?.avatar" 
+        [alt]="displayName()"
+        class="header__menu-avatar-image">
+      <span 
+        *ngIf="!currentUser()?.avatar" 
+        class="header__menu-avatar-initials">
+        {{ userInitials() }}
+      </span>
+    </div>
+    <div class="header__menu-user-info">
+      <span class="header__menu-user-name">{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</span>
+      <span class="header__menu-user-email">{{ currentUser()?.email }}</span>
+    </div>
+  </div>
+  <mat-divider></mat-divider>
+  
+  <ng-container *ngFor="let item of userMenuItems()">
+    <mat-divider *ngIf="item.divider"></mat-divider>
+    <button 
+      mat-menu-item 
+      (click)="handleUserMenuAction(item.action)"
+      [class.header__menu-item--danger]="item.danger">
+      <mat-icon>{{ item.icon }}</mat-icon>
+      <span>{{ item.label | translate }}</span>
+    </button>
+  </ng-container>
+</mat-menu>
+
+<!-- Mobile Bottom Navigation -->
+<nav 
+  class="header__mobile-nav" 
+  *ngIf="isMobile()"
+  [@slideDown]>
+  <a 
+    *ngFor="let item of navItems().slice(0, 5)"
+    [routerLink]="item.route"
+    routerLinkActive="header__mobile-nav-item--active"
+    class="header__mobile-nav-item"
+    matRipple>
+    <mat-icon class="header__mobile-nav-icon">{{ item.icon }}</mat-icon>
+    <span class="header__mobile-nav-label">{{ item.label | translate }}</span>
+    <span 
+      *ngIf="item.badge && item.badge() > 0" 
+      class="header__mobile-nav-badge">
+      {{ item.badge() }}
+    </span>
+  </a>
+</nav>
