@@ -1,8 +1,8 @@
 /**
  * Loader Component Styles
  * 
- * This file contains all styling for the loader component,
- * including various loader types, animations, and responsive behavior.
+ * Comprehensive loading indicator styles supporting multiple loader types,
+ * animations, and responsive behavior.
  */
 
 @import '../../../../styles/variables';
@@ -11,36 +11,41 @@
 
 // Component container
 .loader-overlay {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-loader);
   
-  // Fullscreen mode
   &.fullscreen {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    
-    &.backdrop-blur {
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
+    z-index: var(--z-loader);
   }
   
-  // Inline mode
   &.inline {
-    position: relative;
     min-height: 100px;
-    background: transparent;
+    padding: var(--spacing-md);
   }
+}
+
+// Backdrop for fullscreen mode
+.loader-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn var(--transition-base);
 }
 
 // Main container
 .loader-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,32 +54,35 @@
   background: var(--surface-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
-  max-width: 90%;
-  animation: slideUp 0.3s ease-out;
+  min-width: 200px;
+  animation: scaleIn var(--transition-base) ease-out;
   
-  .inline & {
-    background: transparent;
-    box-shadow: none;
-    padding: var(--spacing-md);
-  }
-  
-  // Size variations
+  // Size variants
   &.loader-small {
     padding: var(--spacing-md);
-    gap: var(--spacing-sm);
+    min-width: 150px;
+    
+    .loader-spinner {
+      transform: scale(0.8);
+    }
   }
   
   &.loader-medium {
     padding: var(--spacing-lg);
+    min-width: 200px;
   }
   
   &.loader-large {
-    padding: var(--spacing-xl) var(--spacing-xxl);
-    gap: var(--spacing-lg);
+    padding: var(--spacing-xl);
+    min-width: 300px;
+    
+    .loader-spinner {
+      transform: scale(1.2);
+    }
   }
 }
 
-// Circular spinner
+// Circular spinner styles
 .loader-spinner {
   position: relative;
   display: flex;
@@ -83,374 +91,41 @@
   
   .progress-text {
     position: absolute;
+    font-size: 1.2rem;
     font-weight: 600;
-    font-size: 0.875rem;
-    color: var(--text-primary);
+    color: var(--primary-color);
   }
 }
 
-// Linear progress
+// Linear progress styles
 .loader-linear {
   width: 100%;
   min-width: 200px;
   
-  mat-progress-bar {
-    height: 8px;
+  ::ng-deep .mat-mdc-progress-bar {
+    height: 6px;
     border-radius: var(--radius-sm);
-  }
-  
-  .progress-info {
-    display: flex;
-    justify-content: space-between;
-    margin-top: var(--spacing-xs);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    
-    .progress-value {
-      font-weight: 600;
-      color: var(--primary-color);
-    }
   }
 }
 
-// Skeleton loader
+// Skeleton loader styles
 .loader-skeleton {
   width: 100%;
   
-  .skeleton-item {
-    display: flex;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
+  .skeleton-line {
+    margin: var(--spacing-sm) 0;
     
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-  
-  .skeleton-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(
-      90deg,
-      var(--skeleton-base) 25%,
-      var(--skeleton-shine) 50%,
-      var(--skeleton-base) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    flex-shrink: 0;
-  }
-  
-  .skeleton-content {
-    flex: 1;
-    
-    .skeleton-line {
-      height: 12px;
-      margin-bottom: var(--spacing-xs);
-      border-radius: var(--radius-sm);
+    .skeleton-shimmer {
       background: linear-gradient(
         90deg,
-        var(--skeleton-base) 25%,
-        var(--skeleton-shine) 50%,
-        var(--skeleton-base) 75%
+        rgba(var(--text-rgb), 0.1) 0%,
+        rgba(var(--text-rgb), 0.2) 50%,
+        rgba(var(--text-rgb), 0.1) 100%
       );
       background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      
-      &.skeleton-title {
-        height: 16px;
-        width: 60%;
-      }
-      
-      &:nth-child(2) {
-        width: 100%;
-      }
-      
-      &:nth-child(3) {
-        width: 80%;
-      }
-      
-      &:last-child {
-        margin-bottom: 0;
-        width: 40%;
-      }
-    }
-  }
-}
-
-// Dots loader
-.loader-dots {
-  display: flex;
-  gap: var(--spacing-xs);
-  
-  .dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    animation: dotPulse 1.4s infinite ease-in-out both;
-    
-    @for $i from 1 through 4 {
-      &:nth-child(#{$i}) {
-        animation-delay: #{-0.32 + ($i - 1) * 0.16}s;
-      }
-    }
-  }
-}
-
-// Pulse loader
-.loader-pulse {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  
-  .pulse-ring {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 3px solid var(--primary-color);
-    animation: pulse 1.5s infinite;
-    
-    &:nth-child(2) {
-      animation-delay: 0.5s;
-    }
-    
-    &:nth-child(3) {
-      animation-delay: 1s;
-    }
-  }
-}
-
-// Icon loader
-.loader-icon {
-  .rotating-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
-    color: var(--primary-color);
-    animation: rotate 1s linear infinite;
-  }
-}
-
-// Loading message
-.loader-message {
-  text-align: center;
-  max-width: 300px;
-  
-  &.message-above {
-    order: -1;
-  }
-  
-  .message-text {
-    font-size: 1.1rem;
-    color: var(--text-primary);
-    font-weight: 500;
-  }
-  
-  .message-dots {
-    display: inline-flex;
-    gap: 2px;
-    margin-left: 4px;
-    
-    .dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--text-secondary);
-      animation: messageDot 1.4s infinite ease-in-out both;
-      
-      @for $i from 1 through 3 {
-        &:nth-child(#{$i}) {
-          animation-delay: #{($i - 1) * 0.16}s;
-        }
-      }
-    }
-  }
-}
-
-// Sub-message
-.loader-submessage {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  text-align: center;
-  max-width: 250px;
-  
-  .tip-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: var(--warning-color);
-  }
-}
-
-// Action buttons
-.loader-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-}
-
-// Timer
-.loader-timer {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  
-  .timer-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-  }
-}
-
-// Steps progress
-.loader-steps {
-  width: 100%;
-  max-width: 400px;
-  
-  .steps-container {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-  }
-  
-  .step {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--spacing-sm);
-    
-    &.completed {
-      .step-indicator {
-        color: var(--success-color);
-      }
-      
-      .step-content {
-        opacity: 0.7;
-      }
-    }
-    
-    &.active {
-      .step-content {
-        font-weight: 500;
-      }
-    }
-    
-    &.error {
-      .step-indicator {
-        color: var(--error-color);
-      }
-    }
-  }
-  
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-    
-    mat-icon {
-      font-size: 24px;
-    }
-    
-    .step-number {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      border: 2px solid var(--border-color);
-      border-radius: 50%;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-  }
-  
-  .step-content {
-    flex: 1;
-    
-    .step-title {
-      font-size: 0.875rem;
-      color: var(--text-primary);
-      margin-bottom: 2px;
-    }
-    
-    .step-description {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-  }
-  
-  .steps-progress {
-    position: relative;
-    
-    mat-progress-bar {
-      height: 4px;
       border-radius: var(--radius-sm);
+      animation: shimmer 1.5s infinite;
     }
-    
-    .steps-count {
-      display: block;
-      text-align: center;
-      margin-top: var(--spacing-xs);
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-  }
-}
-
-// Background patterns
-.loader-pattern {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  opacity: 0.05;
-  pointer-events: none;
-  
-  &.pattern-dots {
-    background-image: radial-gradient(circle, var(--primary-color) 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-  
-  &.pattern-lines {
-    background-image: repeating-linear-gradient(
-      45deg,
-      var(--primary-color),
-      var(--primary-color) 1px,
-      transparent 1px,
-      transparent 15px
-    );
-  }
-  
-  &.pattern-grid {
-    background-image: 
-      linear-gradient(var(--primary-color) 1px, transparent 1px),
-      linear-gradient(90deg, var(--primary-color) 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-}
-
-// Animations
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -460,6 +135,20 @@
   }
   100% {
     background-position: 200% 0;
+  }
+}
+
+// Dots loader styles
+.loader-dots {
+  display: flex;
+  gap: var(--spacing-sm);
+  
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    animation: dotPulse 1.4s infinite ease-in-out both;
   }
 }
 
@@ -474,27 +163,94 @@
   }
 }
 
-@keyframes pulse {
+// Pulse loader styles
+.loader-pulse {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  
+  .pulse-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: pulseRing 1.5s infinite;
+    
+    &:nth-child(2) {
+      animation-delay: 0.5s;
+    }
+    
+    &:nth-child(3) {
+      animation-delay: 1s;
+    }
+  }
+  
+  .pulse-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    mat-icon {
+      color: var(--on-primary);
+      font-size: 24px;
+    }
+  }
+}
+
+@keyframes pulseRing {
   0% {
-    transform: scale(0.8);
+    transform: scale(0.5);
     opacity: 1;
   }
   100% {
-    transform: scale(1.4);
+    transform: scale(1.5);
     opacity: 0;
   }
 }
 
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
+// Message styles
+.loader-message {
+  text-align: center;
+  color: var(--text-primary);
+  max-width: 300px;
+  
+  &.message-below {
+    margin-top: var(--spacing-sm);
   }
-  to {
-    transform: rotate(360deg);
+  
+  &.message-above {
+    margin-bottom: var(--spacing-sm);
+    order: -1;
+  }
+  
+  .message-text {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  .message-dots {
+    display: inline-block;
+    margin-left: 2px;
+    
+    .message-dot {
+      display: inline-block;
+      animation: dotBounce 1.4s infinite ease-in-out both;
+    }
   }
 }
 
-@keyframes messageDot {
+@keyframes dotBounce {
   0%, 60%, 100% {
     transform: translateY(0);
   }
@@ -503,53 +259,170 @@
   }
 }
 
-// Dark theme
+// Action buttons
+.loader-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  
+  button {
+    min-width: 100px;
+  }
+}
+
+// Timer display
+.loader-timer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  
+  .timer-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Tips display
+.loader-tips {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(var(--info-rgb), 0.1);
+  border-radius: var(--radius-md);
+  max-width: 300px;
+  
+  .tip-container {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    
+    .tip-icon {
+      color: var(--info-color);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    
+    .tip-text {
+      font-size: 0.875rem;
+      line-height: 1.4;
+      color: var(--text-secondary);
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Screen reader only
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Dark theme adjustments
 :host-context(.dark-theme) {
   .loader-container {
     background: var(--surface-dark);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   }
   
-  .loader-overlay.fullscreen {
+  .loader-backdrop {
     background: rgba(0, 0, 0, 0.7);
   }
   
-  .skeleton-avatar,
-  .skeleton-line {
+  .skeleton-shimmer {
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.1) 25%,
-      rgba(255, 255, 255, 0.2) 50%,
-      rgba(255, 255, 255, 0.1) 75%
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 100%
     );
   }
 }
 
-// Accessibility
-.sr-only {
-  @include sr-only;
+// High contrast mode
+@media (prefers-contrast: high) {
+  .loader-container {
+    border: 2px solid var(--text-primary);
+  }
+  
+  .loader-spinner,
+  .loader-dots .dot,
+  .pulse-core {
+    border: 1px solid var(--text-primary);
+  }
 }
 
-// Responsive
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .loader-backdrop {
+    opacity: 1;
+  }
+}
+
+// Responsive adjustments
 @include respond-to('mobile') {
   .loader-container {
-    padding: var(--spacing-md);
-    max-width: 95%;
+    min-width: 90%;
+    max-width: calc(100vw - 40px);
     
     &.loader-large {
-      padding: var(--spacing-lg);
+      min-width: 90%;
     }
   }
   
   .loader-message {
-    .message-text {
-      font-size: 1rem;
-    }
+    max-width: 250px;
   }
   
-  .loader-steps {
-    .steps-container {
-      gap: var(--spacing-sm);
-    }
+  .loader-tips {
+    max-width: 250px;
   }
 }
 
@@ -557,13 +430,5 @@
 @media print {
   .loader-overlay {
     display: none;
-  }
-}
-
-// Reduced motion
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
   }
 }
