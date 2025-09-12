@@ -1,0 +1,348 @@
+<!-- Notification Bell Icon -->
+<button mat-icon-button 
+        class="notification-bell"
+        [matBadge]="unreadCount()"
+        [matBadgeHidden]="!hasUnread()"
+        matBadgeColor="warn"
+        matBadgeSize="small"
+        [matBadgeAnimation]="'pulse'"
+        (click)="toggle()"
+        [attr.aria-label]="'Notifications (' + unreadCount() + ' unread)'"
+        type="button">
+  <mat-icon fontIcon="notifications" 
+            [class.has-unread]="hasUnread()"
+            [@badgeAnimation]="unreadCount()">
+  </mat-icon>
+</button>
+
+<!-- Notification Center Panel -->
+@if (isOpen()) {
+  <div class="notification-center" 
+       [@slideIn]
+       role="region"
+       aria-label="Notification Center">
+    
+    <!-- Header -->
+    <div class="notification-center__header">
+      <div class="notification-center__title-section">
+        <h2 class="notification-center__title">Notifications</h2>
+        @if (unreadCount() > 0) {
+          <span class="notification-center__badge">{{ unreadCount() }}</span>
+        }
+      </div>
+      
+      <div class="notification-center__actions">
+        <!-- Selection Mode -->
+        <button mat-icon-button
+                (click)="toggleSelectionMode()"
+                [class.active]="isSelectionMode()"
+                matTooltip="Select multiple"
+                type="button">
+          <mat-icon fontIcon="check_box" *ngIf="isSelectionMode(); else selectIcon"></mat-icon>
+          <ng-template #selectIcon>
+            <mat-icon fontIcon="check_box_outline_blank"></mat-icon>
+          </ng-template>
+        </button>
+        
+        <!-- Filters -->
+        <button mat-icon-button
+                (click)="toggleFilters()"
+                [class.active]="showFilters()"
+                matTooltip="Filters"
+                type="button">
+          <mat-icon fontIcon="filter_list"></mat-icon>
+        </button>
+        
+        <!-- More Options -->
+        <button mat-icon-button
+                [matMenuTriggerFor]="optionsMenu"
+                matTooltip="More options"
+                type="button">
+          <mat-icon fontIcon="more_vert"></mat-icon>
+        </button>
+        
+        <!-- Close -->
+        <button mat-icon-button
+                (click)="close()"
+                matTooltip="Close"
+                type="button">
+          <mat-icon fontIcon="close"></mat-icon>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="notification-center__search">
+      <mat-icon fontIcon="search" class="notification-center__search-icon"></mat-icon>
+      <input #searchInput
+             type="text"
+             class="notification-center__search-input"
+             placeholder="Search notifications..."
+             [(ngModel)]="searchQuery"
+             (input)="updateFilter()">
+      @if (searchQuery()) {
+        <button mat-icon-button
+                class="notification-center__search-clear"
+                (click)="searchQuery.set(''); updateFilter()"
+                type="button">
+          <mat-icon fontIcon="clear"></mat-icon>
+        </button>
+      }
+    </div>
+    
+    <!-- Tabs -->
+    <div class="notification-center__tabs">
+      <button class="notification-center__tab"
+              [class.active]="activeTab() === 'all'"
+              (click)="changeTab('all')"
+              type="button">
+        All
+        @if (stats().total > 0) {
+          <span class="notification-center__tab-count">{{ stats().total }}</span>
+        }
+      </button>
+      <button class="notification-center__tab"
+              [class.active]="activeTab() === 'unread'"
+              (click)="changeTab('unread')"
+              type="button">
+        Unread
+        @if (unreadCount() > 0) {
+          <span class="notification-center__tab-count notification-center__tab-count--unread">
+            {{ unreadCount() }}
+          </span>
+        }
+      </button>
+      <button class="notification-center__tab"
+              [class.active]="activeTab() === 'mentions'"
+              (click)="changeTab('mentions')"
+              type="button">
+        Mentions
+        @if (stats().byType[NotificationType.MENTION] > 0) {
+          <span class="notification-center__tab-count">
+            {{ stats().byType[NotificationType.MENTION] }}
+          </span>
+        }
+      </button>
+    </div>
+    
+    <!-- Filters Panel -->
+    @if (showFilters()) {
+      <div class="notification-center__filters" [@slideIn]>
+        <div class="notification-center__filter-group">
+          <label class="notification-center__filter-label">Type</label>
+          <div class="notification-center__filter-chips">
+            @for (type of NotificationType | keyvalue; track type.key) {
+              <button class="notification-center__filter-chip"
+                      [class.active]="selectedTypes().has(type.value)"
+                      (click)="toggleTypeFilter(type.value)"
+                      type="button">
+                <mat-icon [fontIcon]="getNotificationIcon({type: type.value} as any)"
+                          class="notification-center__filter-chip-icon">
+                </mat-icon>
+                {{ type.key }}
+              </button>
+            }
+          </div>
+        </div>
+        
+        <div class="notification-center__filter-group">
+          <label class="notification-center__filter-label">Priority</label>
+          <div class="notification-center__filter-chips">
+            @for (priority of NotificationPriority | keyvalue; track priority.key) {
+              <button class="notification-center__filter-chip"
+                      [class.active]="selectedPriorities().has(priority.value)"
+                      (click)="togglePriorityFilter(priority.value)"
+                      type="button">
+                @if (getPriorityBadge(priority.value)) {
+                  <mat-icon [fontIcon]="getPriorityBadge(priority.value)"
+                            class="notification-center__filter-chip-icon">
+                  </mat-icon>
+                }
+                {{ priority.key }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    
+    <!-- Selection Actions -->
+    @if (isSelectionMode() && selectedCount() > 0) {
+      <div class="notification-center__selection-bar">
+        <span class="notification-center__selection-count">
+          {{ selectedCount() }} selected
+        </span>
+        <div class="notification-center__selection-actions">
+          <button mat-button (click)="selectAll()" type="button">Select All</button>
+          <button mat-button (click)="markSelectedAsRead()" type="button">Mark as Read</button>
+          <button mat-button (click)="deleteSelected()" color="warn" type="button">Delete</button>
+        </div>
+      </div>
+    }
+    
+    <!-- Notifications List -->
+    <div #notificationList 
+         class="notification-center__list"
+         [@listAnimation]="displayedNotifications().length">
+      
+      @if (displayedNotifications().length === 0) {
+        <!-- Empty State -->
+        <div class="notification-center__empty">
+          <mat-icon fontIcon="notifications_none" class="notification-center__empty-icon"></mat-icon>
+          <p class="notification-center__empty-text">
+            @if (searchQuery()) {
+              No notifications found matching your search
+            } @else if (activeTab() === 'unread') {
+              You're all caught up!
+            } @else {
+              No notifications yet
+            }
+          </p>
+        </div>
+      } @else {
+        <!-- Grouped Notifications -->
+        @for (group of groupedNotifications(); track trackByGroupKey($index, group)) {
+          <div class="notification-center__group">
+            <h3 class="notification-center__group-title">{{ group.label }}</h3>
+            
+            @for (notification of group.notifications; track trackByNotificationId($index, notification)) {
+              <div class="notification-center__item"
+                   [class.notification-center__item--unread]="notification.status === NotificationStatus.UNREAD"
+                   [class.notification-center__item--selected]="isSelectionMode() && selectedNotifications().has(notification.id)"
+                   (click)="toggleSelection(notification)"
+                   matRipple>
+                
+                <!-- Selection Checkbox -->
+                @if (isSelectionMode()) {
+                  <mat-checkbox class="notification-center__item-checkbox"
+                                [checked]="selectedNotifications().has(notification.id)"
+                                (click)="$event.stopPropagation()"
+                                (change)="toggleSelection(notification)">
+                  </mat-checkbox>
+                }
+                
+                <!-- Avatar/Icon -->
+                <div class="notification-center__item-avatar"
+                     [style.background-color]="getNotificationColor(notification)">
+                  @if (notification.avatar) {
+                    <img [src]="notification.avatar" 
+                         [alt]="notification.sender?.name || 'Avatar'"
+                         class="notification-center__item-avatar-img">
+                  } @else {
+                    <mat-icon [fontIcon]="getNotificationIcon(notification)"
+                              class="notification-center__item-avatar-icon">
+                    </mat-icon>
+                  }
+                </div>
+                
+                <!-- Content -->
+                <div class="notification-center__item-content">
+                  <div class="notification-center__item-header">
+                    <h4 class="notification-center__item-title">{{ notification.title }}</h4>
+                    @if (notification.priority === NotificationPriority.HIGH || notification.priority === NotificationPriority.URGENT) {
+                      <mat-icon [fontIcon]="getPriorityBadge(notification.priority)"
+                                class="notification-center__item-priority"
+                                [style.color]="notification.priority === NotificationPriority.URGENT ? '#f44336' : '#ff9800'">
+                      </mat-icon>
+                    }
+                  </div>
+                  
+                  <p class="notification-center__item-message">{{ notification.message }}</p>
+                  
+                  @if (notification.sender) {
+                    <span class="notification-center__item-sender">{{ notification.sender.name }}</span>
+                  }
+                  
+                  <!-- Actions -->
+                  @if (notification.actions && notification.actions.length > 0) {
+                    <div class="notification-center__item-actions">
+                      @for (action of notification.actions; track action.label) {
+                        <button mat-button
+                                [color]="action.color || 'primary'"
+                                (click)="handleAction(notification, action, $event)"
+                                class="notification-center__item-action"
+                                type="button">
+                          @if (action.icon) {
+                            <mat-icon [fontIcon]="action.icon"></mat-icon>
+                          }
+                          {{ action.label }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+                
+                <!-- Meta -->
+                <div class="notification-center__item-meta">
+                  <span class="notification-center__item-time">
+                    {{ getRelativeTime(notification.timestamp) }}
+                  </span>
+                  
+                  <!-- Item Actions -->
+                  <div class="notification-center__item-menu">
+                    @if (notification.status === NotificationStatus.UNREAD) {
+                      <button mat-icon-button
+                              (click)="markAsRead(notification, $event)"
+                              matTooltip="Mark as read"
+                              type="button">
+                        <mat-icon fontIcon="mark_email_read"></mat-icon>
+                      </button>
+                    }
+                    
+                    <button mat-icon-button
+                            (click)="archiveNotification(notification, $event)"
+                            matTooltip="Archive"
+                            type="button">
+                      <mat-icon fontIcon="archive"></mat-icon>
+                    </button>
+                    
+                    <button mat-icon-button
+                            (click)="deleteNotification(notification, $event)"
+                            matTooltip="Delete"
+                            type="button">
+                      <mat-icon fontIcon="delete"></mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+        
+        <!-- Load More -->
+        @if (hasMore()) {
+          <div class="notification-center__load-more">
+            @if (isLoading()) {
+              <mat-spinner diameter="24"></mat-spinner>
+            } @else {
+              <button mat-button (click)="loadMore()" type="button">
+                Load More
+              </button>
+            }
+          </div>
+        }
+      }
+    </div>
+  </div>
+}
+
+<!-- Options Menu -->
+<mat-menu #optionsMenu="matMenu">
+  <button mat-menu-item (click)="markAllAsRead()">
+    <mat-icon fontIcon="done_all"></mat-icon>
+    <span>Mark all as read</span>
+  </button>
+  <button mat-menu-item (click)="refresh()">
+    <mat-icon fontIcon="refresh"></mat-icon>
+    <span>Refresh</span>
+  </button>
+  <button mat-menu-item (click)="clearAll()">
+    <mat-icon fontIcon="clear_all"></mat-icon>
+    <span>Clear all</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item routerLink="/settings/notifications">
+    <mat-icon fontIcon="settings"></mat-icon>
+    <span>Notification settings</span>
+  </button>
+</mat-menu>

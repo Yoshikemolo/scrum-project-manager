@@ -1,61 +1,39 @@
-import { Component, OnInit, signal, computed, inject, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+/**
+ * Notification Center Component
+ * Displays and manages user notifications with filtering and actions
+ */
+import { Component, OnInit, OnDestroy, HostListener, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Router } from '@angular/router';
-import { Store } from '@ngrx/store';
-import { animate, style, transition, trigger, query, stagger, state } from '@angular/animations';
-import { SwipeDirective } from '../../directives/swipe.directive';
-import { WebSocketService } from '../../../core/services/websocket.service';
-import { NotificationService } from '../../../core/services/notification.service';
-
-interface Notification {
-  id: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'mention' | 'task' | 'comment' | 'system';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  actionUrl?: string;
-  actionLabel?: string;
-  icon?: string;
-  avatar?: string;
-  from?: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  data?: any;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  category: string;
-}
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatRippleModule } from '@angular/material/core';
+import { trigger, state, style, transition, animate, query, stagger } from '@angular/animations';
+import { NotificationService, Notification, NotificationType, NotificationPriority, NotificationStatus, NotificationFilter } from '../../../core/services/notification.service';
+import { Subject, fromEvent } from 'rxjs';
+import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-notification-center',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatIconModule,
     MatButtonModule,
     MatBadgeModule,
-    MatTabsModule,
     MatMenuModule,
-    MatTooltipModule,
-    MatDividerModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
+    MatTabsModule,
     MatCheckboxModule,
-    TranslateModule,
-    SwipeDirective
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    MatRippleModule
   ],
   templateUrl: './notification-center.component.html',
   styleUrls: ['./notification-center.component.scss'],
@@ -63,547 +41,531 @@ interface Notification {
     trigger('slideIn', [
       transition(':enter', [
         style({ transform: 'translateX(100%)', opacity: 0 }),
-        animate('300ms cubic-bezier(0.4, 0.0, 0.2, 1)', 
-          style({ transform: 'translateX(0)', opacity: 1 }))
+        animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', 
+          style({ transform: 'translateX(0)', opacity: 1 })
+        )
       ]),
       transition(':leave', [
-        animate('200ms cubic-bezier(0.4, 0.0, 0.2, 1)', 
-          style({ transform: 'translateX(100%)', opacity: 0 }))
+        animate('200ms cubic-bezier(0.4, 0, 0.6, 1)', 
+          style({ transform: 'translateX(100%)', opacity: 0 })
+        )
       ])
     ]),
-    trigger('fadeIn', [
-      transition(':enter', [
-        style({ opacity: 0 }),
-        animate('200ms ease-in', style({ opacity: 1 }))
-      ])
-    ]),
-    trigger('staggerNotifications', [
+    trigger('listAnimation', [
       transition('* => *', [
         query(':enter', [
-          style({ opacity: 0, transform: 'translateY(10px)' }),
-          stagger('50ms', [
-            animate('300ms ease-out', 
-              style({ opacity: 1, transform: 'translateY(0)' }))
+          style({ opacity: 0, transform: 'translateY(-10px)' }),
+          stagger(50, [
+            animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', 
+              style({ opacity: 1, transform: 'translateY(0)' })
+            )
           ])
         ], { optional: true })
       ])
     ]),
-    trigger('swipeOut', [
-      state('swiped', style({ transform: 'translateX(100%)', opacity: 0 })),
-      transition('* => swiped', animate('300ms ease-out'))
+    trigger('badgeAnimation', [
+      transition(':increment', [
+        animate('300ms cubic-bezier(0.4, 0, 0.6, 1)', 
+          style({ transform: 'scale(1.2)' })
+        ),
+        animate('200ms cubic-bezier(0.4, 0, 0.2, 1)', 
+          style({ transform: 'scale(1)' })
+        )
+      ])
     ])
   ]
 })
-export class NotificationCenterComponent implements OnInit {
-  @Output() close = new EventEmitter<void>();
-  @ViewChild('notificationList') notificationList!: ElementRef;
-
-  private router = inject(Router);
-  private store = inject(Store);
-  private translate = inject(TranslateService);
-  private snackBar = inject(MatSnackBar);
-  private wsService = inject(WebSocketService);
-  private notificationService = inject(NotificationService);
-
-  // State
-  notifications = signal<Notification[]>([]);
-  isLoading = signal(false);
-  selectedTab = signal(0);
-  selectedNotifications = signal<Set<string>>(new Set());
-  isSelectionMode = signal(false);
-  filter = signal<string>('all');
-  hasMore = signal(true);
-  page = signal(1);
-  searchQuery = signal('');
-
-  // Categories
-  categories = signal([
-    { id: 'all', label: 'notifications.all', icon: 'inbox', count: 0 },
-    { id: 'unread', label: 'notifications.unread', icon: 'markunread', count: 0 },
-    { id: 'mentions', label: 'notifications.mentions', icon: 'alternate_email', count: 0 },
-    { id: 'tasks', label: 'notifications.tasks', icon: 'task_alt', count: 0 },
-    { id: 'comments', label: 'notifications.comments', icon: 'comment', count: 0 },
-    { id: 'system', label: 'notifications.system', icon: 'info', count: 0 }
-  ]);
-
-  // Settings
-  notificationSettings = signal({
-    sound: true,
-    desktop: true,
-    email: true,
-    push: true,
-    vibration: true,
-    groupByProject: false,
-    showTimestamps: true
-  });
-
-  // Computed
-  filteredNotifications = computed(() => {
-    let notifications = this.notifications();
-    const filter = this.filter();
-    const query = this.searchQuery().toLowerCase();
-
-    // Apply filter
-    if (filter === 'unread') {
-      notifications = notifications.filter(n => !n.read);
-    } else if (filter !== 'all') {
-      notifications = notifications.filter(n => n.category === filter);
+export class NotificationCenterComponent implements OnInit, OnDestroy {
+  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('notificationList') notificationList?: ElementRef<HTMLElement>;
+  
+  private destroy$ = new Subject<void>();
+  
+  // State management
+  public isOpen = signal(false);
+  public activeTab = signal<'all' | 'unread' | 'mentions'>('all');
+  public searchQuery = signal('');
+  public isSelectionMode = signal(false);
+  public showFilters = signal(false);
+  public currentFilter = signal<NotificationFilter>({});
+  
+  // Filter options
+  public selectedTypes = signal<Set<NotificationType>>(new Set());
+  public selectedPriorities = signal<Set<NotificationPriority>>(new Set());
+  
+  // Computed values from service
+  public notifications = computed(() => this.notificationService.filteredNotifications());
+  public unreadCount = computed(() => this.notificationService.unreadCount());
+  public hasUnread = computed(() => this.notificationService.hasUnread());
+  public isLoading = computed(() => this.notificationService.isLoadingNotifications());
+  public hasMore = computed(() => this.notificationService.hasMoreNotifications());
+  public selectedCount = computed(() => this.notificationService.selectedCount());
+  public stats = computed(() => this.notificationService.stats());
+  
+  // Filtered notifications based on active tab
+  public displayedNotifications = computed(() => {
+    const notifications = this.notifications();
+    const tab = this.activeTab();
+    const search = this.searchQuery();
+    
+    let filtered = notifications;
+    
+    // Filter by tab
+    switch (tab) {
+      case 'unread':
+        filtered = filtered.filter(n => n.status === NotificationStatus.UNREAD);
+        break;
+      case 'mentions':
+        filtered = filtered.filter(n => n.type === NotificationType.MENTION);
+        break;
     }
-
-    // Apply search
-    if (query) {
-      notifications = notifications.filter(n => 
-        n.title.toLowerCase().includes(query) ||
-        n.message.toLowerCase().includes(query) ||
-        n.from?.name.toLowerCase().includes(query)
+    
+    // Filter by search
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(n => 
+        n.title.toLowerCase().includes(searchLower) ||
+        n.message.toLowerCase().includes(searchLower)
       );
     }
-
-    // Group by date if enabled
-    if (this.notificationSettings().groupByProject) {
-      // Group logic here
-    }
-
-    return notifications;
+    
+    return filtered;
   });
-
-  unreadCount = computed(() => 
-    this.notifications().filter(n => !n.read).length
-  );
-
-  hasUnread = computed(() => this.unreadCount() > 0);
-
-  selectedCount = computed(() => this.selectedNotifications().size);
-
+  
+  // Grouped notifications
+  public groupedNotifications = computed(() => {
+    const notifications = this.displayedNotifications();
+    const groups = new Map<string, Notification[]>();
+    
+    notifications.forEach(notification => {
+      const date = new Date(notification.timestamp);
+      const key = this.getDateGroupKey(date);
+      
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(notification);
+    });
+    
+    return Array.from(groups.entries()).map(([key, items]) => ({
+      key,
+      label: this.getDateGroupLabel(key),
+      notifications: items
+    }));
+  });
+  
+  constructor(public notificationService: NotificationService) {}
+  
   ngOnInit(): void {
-    this.loadNotifications();
-    this.setupWebSocket();
-    this.loadSettings();
-    this.requestNotificationPermission();
-    this.setupInfiniteScroll();
-  }
-
-  private loadNotifications(): void {
-    this.isLoading.set(true);
+    this.setupSearchListener();
+    this.setupScrollListener();
+    this.setupKeyboardShortcuts();
     
-    // Simulate API call
-    setTimeout(() => {
-      this.notifications.set(this.generateMockNotifications());
-      this.updateCategoryCounts();
-      this.isLoading.set(false);
-    }, 500);
+    // Load initial notifications
+    this.notificationService.loadMore();
   }
-
-  private generateMockNotifications(): Notification[] {
-    return [
-      {
-        id: '1',
-        type: 'mention',
-        title: 'New mention in task',
-        message: '@john mentioned you in "Implement user authentication"',
-        timestamp: new Date(Date.now() - 1000 * 60 * 5),
-        read: false,
-        actionUrl: '/tasks/TASK-001',
-        actionLabel: 'View Task',
-        icon: 'alternate_email',
-        from: {
-          id: '1',
-          name: 'John Doe',
-          avatar: null
-        },
-        priority: 'high',
-        category: 'mentions'
-      },
-      {
-        id: '2',
-        type: 'task',
-        title: 'Task assigned to you',
-        message: 'You have been assigned to "Fix critical bug in payment module"',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30),
-        read: false,
-        actionUrl: '/tasks/TASK-003',
-        actionLabel: 'Open Task',
-        icon: 'assignment_ind',
-        from: {
-          id: '2',
-          name: 'Jane Smith',
-          avatar: null
-        },
-        priority: 'urgent',
-        category: 'tasks'
-      },
-      {
-        id: '3',
-        type: 'success',
-        title: 'Sprint completed',
-        message: 'Sprint 14 has been successfully completed with 95% velocity',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-        read: true,
-        actionUrl: '/sprints/14',
-        actionLabel: 'View Report',
-        icon: 'check_circle',
-        priority: 'normal',
-        category: 'system'
-      },
-      {
-        id: '4',
-        type: 'comment',
-        title: 'New comment on your task',
-        message: 'Mike commented: "Great work on this implementation!"',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-        read: true,
-        actionUrl: '/tasks/TASK-002',
-        actionLabel: 'Reply',
-        icon: 'comment',
-        from: {
-          id: '3',
-          name: 'Mike Johnson',
-          avatar: null
-        },
-        priority: 'normal',
-        category: 'comments'
-      },
-      {
-        id: '5',
-        type: 'warning',
-        title: 'Deadline approaching',
-        message: 'Task "Update API documentation" is due in 2 days',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        read: false,
-        actionUrl: '/tasks/TASK-004',
-        actionLabel: 'View Task',
-        icon: 'schedule',
-        priority: 'high',
-        category: 'tasks'
-      },
-      {
-        id: '6',
-        type: 'info',
-        title: 'System maintenance',
-        message: 'Scheduled maintenance on Sunday, 2:00 AM - 4:00 AM',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-        read: true,
-        icon: 'build',
-        priority: 'low',
-        category: 'system'
-      }
-    ];
+  
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
-
-  private setupWebSocket(): void {
-    this.wsService.on('notification').subscribe(notification => {
-      this.addNotification(notification);
-      this.showNotification(notification);
+  
+  /**
+   * Toggle notification center
+   */
+  public toggle(): void {
+    this.isOpen.set(!this.isOpen());
+    
+    if (this.isOpen()) {
+      // Mark all as read after delay
+      setTimeout(() => {
+        if (this.notificationService.userPreferences().autoMarkAsRead) {
+          this.notificationService.markAllAsRead();
+        }
+      }, 3000);
       
-      if (this.notificationSettings().sound) {
-        this.playNotificationSound();
-      }
-      
-      if (this.notificationSettings().vibration && 'vibrate' in navigator) {
-        navigator.vibrate([200, 100, 200]);
-      }
-    });
-  }
-
-  private addNotification(notification: Notification): void {
-    const notifications = [notification, ...this.notifications()];
-    this.notifications.set(notifications);
-    this.updateCategoryCounts();
-  }
-
-  private showNotification(notification: Notification): void {
-    // Show snackbar
-    const snackBarRef = this.snackBar.open(
-      notification.message,
-      notification.actionLabel || 'View',
-      {
-        duration: 5000,
-        horizontalPosition: 'end',
-        verticalPosition: 'bottom',
-        panelClass: [`snackbar-${notification.type}`]
-      }
-    );
-
-    snackBarRef.onAction().subscribe(() => {
-      if (notification.actionUrl) {
-        this.router.navigate([notification.actionUrl]);
-      }
-    });
-
-    // Show desktop notification if enabled
-    if (this.notificationSettings().desktop && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
-        const desktopNotification = new Notification(notification.title, {
-          body: notification.message,
-          icon: '/assets/icons/icon-192x192.png',
-          badge: '/assets/icons/badge-72x72.png',
-          tag: notification.id,
-          requireInteraction: notification.priority === 'urgent',
-          data: notification
-        });
-
-        desktopNotification.onclick = () => {
-          window.focus();
-          if (notification.actionUrl) {
-            this.router.navigate([notification.actionUrl]);
-          }
-          desktopNotification.close();
-        };
-      }
+      // Focus search input
+      setTimeout(() => {
+        this.searchInput?.nativeElement.focus();
+      }, 100);
     }
   }
-
-  private requestNotificationPermission(): void {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+  
+  /**
+   * Close notification center
+   */
+  public close(): void {
+    this.isOpen.set(false);
   }
-
-  private loadSettings(): void {
-    const settings = localStorage.getItem('notificationSettings');
-    if (settings) {
-      this.notificationSettings.set(JSON.parse(settings));
-    }
+  
+  /**
+   * Change active tab
+   */
+  public changeTab(tab: 'all' | 'unread' | 'mentions'): void {
+    this.activeTab.set(tab);
+    this.updateFilter();
   }
-
-  private saveSettings(): void {
-    localStorage.setItem('notificationSettings', JSON.stringify(this.notificationSettings()));
-  }
-
-  private updateCategoryCounts(): void {
-    const notifications = this.notifications();
-    const categories = [...this.categories()];
-
-    categories.forEach(category => {
-      if (category.id === 'all') {
-        category.count = notifications.length;
-      } else if (category.id === 'unread') {
-        category.count = notifications.filter(n => !n.read).length;
-      } else {
-        category.count = notifications.filter(n => n.category === category.id).length;
-      }
-    });
-
-    this.categories.set(categories);
-  }
-
-  private setupInfiniteScroll(): void {
-    if (!this.notificationList) return;
-
-    const element = this.notificationList.nativeElement;
-    element.addEventListener('scroll', () => {
-      const threshold = 100;
-      const position = element.scrollTop + element.offsetHeight;
-      const height = element.scrollHeight;
-
-      if (position > height - threshold && !this.isLoading() && this.hasMore()) {
-        this.loadMore();
-      }
-    });
-  }
-
-  private loadMore(): void {
-    if (this.isLoading() || !this.hasMore()) return;
-
-    this.isLoading.set(true);
-    const nextPage = this.page() + 1;
-
-    // Simulate loading more
-    setTimeout(() => {
-      const moreNotifications = this.generateMockNotifications();
-      this.notifications.update(current => [...current, ...moreNotifications]);
-      this.page.set(nextPage);
-      this.isLoading.set(false);
-      
-      // Check if there are more
-      if (nextPage >= 5) {
-        this.hasMore.set(false);
-      }
-    }, 500);
-  }
-
-  private playNotificationSound(): void {
-    const audio = new Audio('/assets/sounds/notification.mp3');
-    audio.volume = 0.3;
-    audio.play().catch(() => {});
-  }
-
-  // Public methods
-  markAsRead(notification: Notification): void {
-    if (notification.read) return;
-
-    const notifications = this.notifications().map(n => 
-      n.id === notification.id ? { ...n, read: true } : n
-    );
-    
-    this.notifications.set(notifications);
-    this.updateCategoryCounts();
-    
-    // Update backend
-    this.notificationService.markAsRead(notification.id).subscribe();
-  }
-
-  markAllAsRead(): void {
-    const notifications = this.notifications().map(n => ({ ...n, read: true }));
-    this.notifications.set(notifications);
-    this.updateCategoryCounts();
-    
-    // Update backend
-    this.notificationService.markAllAsRead().subscribe();
-    
-    this.snackBar.open('All notifications marked as read', 'OK', {
-      duration: 2000
-    });
-  }
-
-  deleteNotification(notification: Notification, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-
-    const notifications = this.notifications().filter(n => n.id !== notification.id);
-    this.notifications.set(notifications);
-    this.updateCategoryCounts();
-    
-    // Update backend
-    this.notificationService.delete(notification.id).subscribe();
-    
-    // Show undo option
-    const snackBarRef = this.snackBar.open('Notification deleted', 'Undo', {
-      duration: 5000
-    });
-
-    snackBarRef.onAction().subscribe(() => {
-      this.addNotification(notification);
-    });
-  }
-
-  deleteSelected(): void {
-    const selected = this.selectedNotifications();
-    if (selected.size === 0) return;
-
-    const notifications = this.notifications().filter(n => !selected.has(n.id));
-    this.notifications.set(notifications);
-    this.updateCategoryCounts();
-    this.selectedNotifications.set(new Set());
-    this.isSelectionMode.set(false);
-    
-    this.snackBar.open(`${selected.size} notifications deleted`, 'OK', {
-      duration: 2000
-    });
-  }
-
-  clearAll(): void {
-    if (confirm('Are you sure you want to clear all notifications?')) {
-      this.notifications.set([]);
-      this.updateCategoryCounts();
-      
-      // Update backend
-      this.notificationService.clearAll().subscribe();
-      
-      this.snackBar.open('All notifications cleared', 'OK', {
-        duration: 2000
-      });
-    }
-  }
-
-  toggleSelection(notification: Notification): void {
-    const selected = new Set(this.selectedNotifications());
-    
-    if (selected.has(notification.id)) {
-      selected.delete(notification.id);
-    } else {
-      selected.add(notification.id);
-    }
-    
-    this.selectedNotifications.set(selected);
-  }
-
-  toggleSelectionMode(): void {
-    this.isSelectionMode.update(mode => !mode);
+  
+  /**
+   * Toggle selection mode
+   */
+  public toggleSelectionMode(): void {
+    this.isSelectionMode.set(!this.isSelectionMode());
     if (!this.isSelectionMode()) {
-      this.selectedNotifications.set(new Set());
+      this.notificationService.clearSelection();
     }
   }
-
-  selectAll(): void {
-    const allIds = new Set(this.filteredNotifications().map(n => n.id));
-    this.selectedNotifications.set(allIds);
+  
+  /**
+   * Toggle filters
+   */
+  public toggleFilters(): void {
+    this.showFilters.set(!this.showFilters());
   }
-
-  performAction(notification: Notification): void {
-    this.markAsRead(notification);
+  
+  /**
+   * Toggle notification selection
+   */
+  public toggleSelection(notification: Notification): void {
+    if (this.isSelectionMode()) {
+      this.notificationService.selectNotification(notification.id);
+    } else {
+      // Open notification
+      this.openNotification(notification);
+    }
+  }
+  
+  /**
+   * Select all notifications
+   */
+  public selectAll(): void {
+    this.notificationService.selectAll();
+  }
+  
+  /**
+   * Open notification
+   */
+  public openNotification(notification: Notification): void {
+    // Mark as read
+    if (notification.status === NotificationStatus.UNREAD) {
+      this.notificationService.markAsRead(notification.id);
+    }
     
-    if (notification.actionUrl) {
-      this.router.navigate([notification.actionUrl]);
-      this.close.emit();
+    // Open URL if available
+    if (notification.url) {
+      window.open(notification.url, '_blank');
     }
   }
-
-  updateSetting(key: string, value: any): void {
-    const settings = { ...this.notificationSettings(), [key]: value };
-    this.notificationSettings.set(settings);
-    this.saveSettings();
+  
+  /**
+   * Handle notification action
+   */
+  public handleAction(notification: Notification, action: any, event: Event): void {
+    event.stopPropagation();
+    this.notificationService.handleAction(notification, action);
   }
-
-  setFilter(filter: string): void {
-    this.filter.set(filter);
-    this.selectedNotifications.set(new Set());
+  
+  /**
+   * Mark as read
+   */
+  public markAsRead(notification: Notification, event: Event): void {
+    event.stopPropagation();
+    this.notificationService.markAsRead(notification.id);
   }
-
-  onSwipeRight(notification: Notification): void {
-    this.markAsRead(notification);
+  
+  /**
+   * Delete notification
+   */
+  public deleteNotification(notification: Notification, event: Event): void {
+    event.stopPropagation();
+    this.notificationService.deleteNotification(notification.id);
   }
-
-  onSwipeLeft(notification: Notification): void {
-    this.deleteNotification(notification);
+  
+  /**
+   * Archive notification
+   */
+  public archiveNotification(notification: Notification, event: Event): void {
+    event.stopPropagation();
+    this.notificationService.archiveNotification(notification.id);
   }
-
-  // Helper methods
-  getIconForType(type: string): string {
-    const icons: { [key: string]: string } = {
-      info: 'info',
-      success: 'check_circle',
-      warning: 'warning',
-      error: 'error',
-      mention: 'alternate_email',
-      task: 'task_alt',
-      comment: 'comment',
-      system: 'settings'
+  
+  /**
+   * Mark all as read
+   */
+  public markAllAsRead(): void {
+    this.notificationService.markAllAsRead();
+  }
+  
+  /**
+   * Clear all notifications
+   */
+  public clearAll(): void {
+    if (confirm('Are you sure you want to clear all notifications?')) {
+      this.notificationService.clearAll();
+    }
+  }
+  
+  /**
+   * Delete selected
+   */
+  public deleteSelected(): void {
+    const selected = Array.from(this.notificationService.selectedNotifications());
+    if (selected.length > 0) {
+      this.notificationService.deleteMultiple(selected);
+      this.toggleSelectionMode();
+    }
+  }
+  
+  /**
+   * Mark selected as read
+   */
+  public markSelectedAsRead(): void {
+    const selected = Array.from(this.notificationService.selectedNotifications());
+    if (selected.length > 0) {
+      this.notificationService.markMultipleAsRead(selected);
+      this.toggleSelectionMode();
+    }
+  }
+  
+  /**
+   * Toggle type filter
+   */
+  public toggleTypeFilter(type: NotificationType): void {
+    this.selectedTypes.update(types => {
+      const newTypes = new Set(types);
+      if (newTypes.has(type)) {
+        newTypes.delete(type);
+      } else {
+        newTypes.add(type);
+      }
+      return newTypes;
+    });
+    this.updateFilter();
+  }
+  
+  /**
+   * Toggle priority filter
+   */
+  public togglePriorityFilter(priority: NotificationPriority): void {
+    this.selectedPriorities.update(priorities => {
+      const newPriorities = new Set(priorities);
+      if (newPriorities.has(priority)) {
+        newPriorities.delete(priority);
+      } else {
+        newPriorities.add(priority);
+      }
+      return newPriorities;
+    });
+    this.updateFilter();
+  }
+  
+  /**
+   * Update filter
+   */
+  private updateFilter(): void {
+    const filter: NotificationFilter = {
+      types: Array.from(this.selectedTypes()),
+      priorities: Array.from(this.selectedPriorities()),
+      search: this.searchQuery(),
+      unreadOnly: this.activeTab() === 'unread'
     };
-    return icons[type] || 'notifications';
+    
+    this.currentFilter.set(filter);
+    this.notificationService.updateFilter(filter);
   }
-
-  getColorForType(type: string): string {
-    const colors: { [key: string]: string } = {
-      info: 'primary',
-      success: 'success',
-      warning: 'warn',
-      error: 'error',
-      mention: 'accent',
-      task: 'primary',
-      comment: 'info',
-      system: 'basic'
+  
+  /**
+   * Load more notifications
+   */
+  public loadMore(): void {
+    this.notificationService.loadMore();
+  }
+  
+  /**
+   * Refresh notifications
+   */
+  public refresh(): void {
+    this.notificationService.refresh();
+  }
+  
+  /**
+   * Get notification icon
+   */
+  public getNotificationIcon(notification: Notification): string {
+    const icons: Record<NotificationType, string> = {
+      [NotificationType.INFO]: 'info',
+      [NotificationType.SUCCESS]: 'check_circle',
+      [NotificationType.WARNING]: 'warning',
+      [NotificationType.ERROR]: 'error',
+      [NotificationType.MENTION]: 'alternate_email',
+      [NotificationType.TASK]: 'task_alt',
+      [NotificationType.COMMENT]: 'comment',
+      [NotificationType.SYSTEM]: 'settings',
+      [NotificationType.UPDATE]: 'update',
+      [NotificationType.REMINDER]: 'alarm'
     };
-    return colors[type] || 'basic';
+    return notification.icon || icons[notification.type];
   }
-
-  getRelativeTime(date: Date): string {
-    const now = Date.now();
-    const diff = now - date.getTime();
+  
+  /**
+   * Get notification color
+   */
+  public getNotificationColor(notification: Notification): string {
+    const colors: Record<NotificationType, string> = {
+      [NotificationType.INFO]: '#2196f3',
+      [NotificationType.SUCCESS]: '#4caf50',
+      [NotificationType.WARNING]: '#ff9800',
+      [NotificationType.ERROR]: '#f44336',
+      [NotificationType.MENTION]: '#9c27b0',
+      [NotificationType.TASK]: '#00bcd4',
+      [NotificationType.COMMENT]: '#607d8b',
+      [NotificationType.SYSTEM]: '#795548',
+      [NotificationType.UPDATE]: '#3f51b5',
+      [NotificationType.REMINDER]: '#ff5722'
+    };
+    return colors[notification.type];
+  }
+  
+  /**
+   * Get priority badge
+   */
+  public getPriorityBadge(priority: NotificationPriority): string {
+    const badges: Record<NotificationPriority, string> = {
+      [NotificationPriority.LOW]: '',
+      [NotificationPriority.NORMAL]: '',
+      [NotificationPriority.HIGH]: 'priority_high',
+      [NotificationPriority.URGENT]: 'notification_important'
+    };
+    return badges[priority];
+  }
+  
+  /**
+   * Get relative time
+   */
+  public getRelativeTime(date: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - new Date(date).getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
-
-    if (seconds < 60) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
+    
+    if (days > 0) {
+      return `${days}d ago`;
+    } else if (hours > 0) {
+      return `${hours}h ago`;
+    } else if (minutes > 0) {
+      return `${minutes}m ago`;
+    } else {
+      return 'Just now';
+    }
   }
-
-  getUserInitials(name: string): string {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  
+  /**
+   * Get date group key
+   */
+  private getDateGroupKey(date: Date): string {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    if (dateOnly.getTime() === today.getTime()) {
+      return 'today';
+    } else if (dateOnly.getTime() === yesterday.getTime()) {
+      return 'yesterday';
+    } else if (dateOnly.getTime() > today.getTime() - 7 * 24 * 60 * 60 * 1000) {
+      return 'week';
+    } else if (dateOnly.getTime() > today.getTime() - 30 * 24 * 60 * 60 * 1000) {
+      return 'month';
+    } else {
+      return 'older';
+    }
+  }
+  
+  /**
+   * Get date group label
+   */
+  private getDateGroupLabel(key: string): string {
+    const labels: Record<string, string> = {
+      'today': 'Today',
+      'yesterday': 'Yesterday',
+      'week': 'This Week',
+      'month': 'This Month',
+      'older': 'Older'
+    };
+    return labels[key] || key;
+  }
+  
+  /**
+   * Setup search listener
+   */
+  private setupSearchListener(): void {
+    if (this.searchInput) {
+      fromEvent<Event>(this.searchInput.nativeElement, 'input')
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged(),
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          this.searchQuery.set(this.searchInput!.nativeElement.value);
+          this.updateFilter();
+        });
+    }
+  }
+  
+  /**
+   * Setup scroll listener for infinite scroll
+   */
+  private setupScrollListener(): void {
+    if (this.notificationList) {
+      fromEvent(this.notificationList.nativeElement, 'scroll')
+        .pipe(
+          debounceTime(100),
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          const element = this.notificationList!.nativeElement;
+          const threshold = 100;
+          
+          if (element.scrollHeight - element.scrollTop <= element.clientHeight + threshold) {
+            if (this.hasMore() && !this.isLoading()) {
+              this.loadMore();
+            }
+          }
+        });
+    }
+  }
+  
+  /**
+   * Setup keyboard shortcuts
+   */
+  private setupKeyboardShortcuts(): void {
+    // No global shortcuts for notification center to avoid conflicts
+  }
+  
+  /**
+   * Handle escape key
+   */
+  @HostListener('document:keydown.escape')
+  public handleEscape(): void {
+    if (this.isOpen()) {
+      this.close();
+    }
+  }
+  
+  /**
+   * Track by function for performance
+   */
+  public trackByNotificationId(index: number, notification: Notification): string {
+    return notification.id;
+  }
+  
+  /**
+   * Track by group key
+   */
+  public trackByGroupKey(index: number, group: any): string {
+    return group.key;
   }
 }
