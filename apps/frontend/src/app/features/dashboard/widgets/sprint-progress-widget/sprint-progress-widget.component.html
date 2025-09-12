@@ -1,0 +1,198 @@
+<!-- Sprint Progress Widget -->
+<div class="sprint-progress" [class.sprint-progress--compact]="compact">
+  
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="sprint-progress__loading">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-progress"></div>
+      <div class="skeleton-stats">
+        <div class="skeleton-stat"></div>
+        <div class="skeleton-stat"></div>
+        <div class="skeleton-stat"></div>
+      </div>
+      @if (showChart && !compact) {
+        <div class="skeleton-chart"></div>
+      }
+    </div>
+  } @else if (sprintData()) {
+    
+    <!-- Header -->
+    <div class="sprint-progress__header" [@fadeIn]>
+      <div class="sprint-progress__title-section">
+        <h3 class="sprint-progress__title">{{ sprintData()!.sprintName }}</h3>
+        <mat-chip 
+          [style.background-color]="getStatusColor(sprintData()!.status) + '20'"
+          [style.color]="getStatusColor(sprintData()!.status)">
+          <mat-icon [fontIcon]="getStatusIcon(sprintData()!.status)"
+                    class="sprint-progress__status-icon">
+          </mat-icon>
+          {{ sprintData()!.status | titlecase }}
+        </mat-chip>
+      </div>
+      
+      <div class="sprint-progress__actions">
+        @if (!compact && showChart) {
+          <button mat-icon-button
+                  [class.active]="selectedView() === 'burndown'"
+                  (click)="changeView('burndown')"
+                  matTooltip="Burndown chart">
+            <mat-icon fontIcon="show_chart"></mat-icon>
+          </button>
+          <button mat-icon-button
+                  [class.active]="selectedView() === 'stats'"
+                  (click)="changeView('stats')"
+                  matTooltip="Statistics">
+            <mat-icon fontIcon="bar_chart"></mat-icon>
+          </button>
+        }
+        <button mat-icon-button
+                (click)="refresh()"
+                matTooltip="Refresh">
+          <mat-icon fontIcon="refresh"></mat-icon>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Progress Bars -->
+    <div class="sprint-progress__bars" [@slideUp]>
+      <!-- Work Progress -->
+      <div class="sprint-progress__bar-item">
+        <div class="sprint-progress__bar-header">
+          <span class="sprint-progress__bar-label">Work Progress</span>
+          <span class="sprint-progress__bar-value">
+            {{ sprintData()!.completedPoints }} / {{ sprintData()!.totalPoints }} points
+          </span>
+        </div>
+        <mat-progress-bar 
+          mode="determinate"
+          [value]="progressPercentage()"
+          [color]="getProgressColor()">
+        </mat-progress-bar>
+        <div class="sprint-progress__bar-footer">
+          <span class="sprint-progress__bar-percentage">{{ progressPercentage() }}%</span>
+          @if (!isOnTrack()) {
+            <span class="sprint-progress__bar-warning">
+              <mat-icon fontIcon="warning" class="warning-icon"></mat-icon>
+              Behind schedule
+            </span>
+          }
+        </div>
+      </div>
+      
+      <!-- Time Progress -->
+      <div class="sprint-progress__bar-item">
+        <div class="sprint-progress__bar-header">
+          <span class="sprint-progress__bar-label">Time Progress</span>
+          <span class="sprint-progress__bar-value">
+            {{ sprintData()!.daysRemaining }} days remaining
+          </span>
+        </div>
+        <mat-progress-bar 
+          mode="determinate"
+          [value]="daysProgress()"
+          color="accent">
+        </mat-progress-bar>
+        <div class="sprint-progress__bar-footer">
+          <span class="sprint-progress__bar-percentage">{{ Math.round(daysProgress()) }}%</span>
+          <span class="sprint-progress__bar-dates">
+            {{ formatDate(sprintData()!.startDate) }} - {{ formatDate(sprintData()!.endDate) }}
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="sprint-progress__stats" [@slideUp]>
+      <div class="sprint-progress__stat">
+        <mat-icon fontIcon="speed" class="sprint-progress__stat-icon"></mat-icon>
+        <div class="sprint-progress__stat-content">
+          <span class="sprint-progress__stat-value">{{ velocity() }}</span>
+          <span class="sprint-progress__stat-label">Velocity</span>
+        </div>
+      </div>
+      
+      <div class="sprint-progress__stat">
+        <mat-icon fontIcon="assignment_turned_in" class="sprint-progress__stat-icon"></mat-icon>
+        <div class="sprint-progress__stat-content">
+          <span class="sprint-progress__stat-value">{{ sprintData()!.remainingPoints }}</span>
+          <span class="sprint-progress__stat-label">Points Left</span>
+        </div>
+      </div>
+      
+      <div class="sprint-progress__stat">
+        <mat-icon fontIcon="event" class="sprint-progress__stat-icon"></mat-icon>
+        <div class="sprint-progress__stat-content">
+          <span class="sprint-progress__stat-value">
+            @if (estimatedCompletion()) {
+              {{ formatDate(estimatedCompletion()!) }}
+            } @else {
+              On Track
+            }
+          </span>
+          <span class="sprint-progress__stat-label">Est. Completion</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Chart/Details View -->
+    @if (!compact && showChart) {
+      <div class="sprint-progress__chart-container" [@fadeIn]>
+        @if (selectedView() === 'burndown') {
+          <!-- Burndown Chart -->
+          <div class="sprint-progress__chart">
+            <canvas #chartCanvas></canvas>
+            <!-- Simple burndown visualization as fallback -->
+            <div class="sprint-progress__burndown-simple">
+              @for (point of sprintData()!.burndown; track point.date; let i = $index) {
+                <div class="burndown-bar"
+                     [style.height.%]="(point.actual / sprintData()!.totalPoints) * 100"
+                     [matTooltip]="point.date + ': ' + point.actual + ' points'">
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <!-- Detailed Stats -->
+          <div class="sprint-progress__details">
+            <div class="detail-item">
+              <span class="detail-label">Sprint Goal:</span>
+              <span class="detail-value">Deliver user authentication and dashboard</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Team Capacity:</span>
+              <span class="detail-value">120 story points</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Completed Stories:</span>
+              <span class="detail-value">18 of 25</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Bugs Found:</span>
+              <span class="detail-value">3 (2 resolved)</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+    
+    <!-- Footer Actions -->
+    <div class="sprint-progress__footer">
+      <button mat-button (click)="viewDetails()">
+        <mat-icon fontIcon="open_in_new"></mat-icon>
+        View Sprint Board
+      </button>
+    </div>
+    
+  } @else {
+    <!-- No Data State -->
+    <div class="sprint-progress__empty">
+      <mat-icon fontIcon="timer_off"></mat-icon>
+      <p>No active sprint</p>
+      <button mat-button color="primary">
+        <mat-icon fontIcon="add"></mat-icon>
+        Start Sprint
+      </button>
+    </div>
+  }
+</div>

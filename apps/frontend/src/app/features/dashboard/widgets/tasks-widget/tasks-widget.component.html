@@ -1,0 +1,315 @@
+<!-- Tasks Widget -->
+<div class="tasks-widget" [class.tasks-widget--compact]="compact">
+  
+  <!-- Header -->
+  <div class="tasks-widget__header">
+    <div class="tasks-widget__title-section">
+      <h3 class="tasks-widget__title">My Tasks</h3>
+      @if (overdueCount() > 0) {
+        <mat-chip class="overdue-chip">
+          <mat-icon fontIcon="warning" class="chip-icon"></mat-icon>
+          {{ overdueCount() }} overdue
+        </mat-chip>
+      }
+      @if (upcomingCount() > 0) {
+        <mat-chip class="upcoming-chip">
+          <mat-icon fontIcon="schedule" class="chip-icon"></mat-icon>
+          {{ upcomingCount() }} due soon
+        </mat-chip>
+      }
+    </div>
+    
+    <div class="tasks-widget__actions">
+      @if (!compact) {
+        <button mat-icon-button
+                (click)="toggleViewMode()"
+                [matTooltip]="viewMode() === 'list' ? 'Kanban view' : 'List view'">
+          <mat-icon [fontIcon]="viewMode() === 'list' ? 'view_kanban' : 'view_list'"></mat-icon>
+        </button>
+      }
+      <button mat-icon-button
+              (click)="refresh()"
+              matTooltip="Refresh">
+        <mat-icon fontIcon="refresh"></mat-icon>
+      </button>
+      <button mat-icon-button
+              [matMenuTriggerFor]="filterMenu"
+              matTooltip="Filter">
+        <mat-icon fontIcon="filter_list"></mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Tabs (if not compact) -->
+  @if (!compact && showFilters) {
+    <div class="tasks-widget__tabs">
+      <button class="tab"
+              [class.active]="selectedTab() === 'all'"
+              (click)="changeTab('all')">
+        All
+        <span class="tab-badge">{{ tasks().length }}</span>
+      </button>
+      <button class="tab"
+              [class.active]="selectedTab() === 'todo'"
+              (click)="changeTab('todo')">
+        To Do
+        <span class="tab-badge">{{ tasksByStatus().todo.length }}</span>
+      </button>
+      <button class="tab"
+              [class.active]="selectedTab() === 'in-progress'"
+              (click)="changeTab('in-progress')">
+        In Progress
+        <span class="tab-badge">{{ tasksByStatus()['in-progress'].length }}</span>
+      </button>
+      <button class="tab"
+              [class.active]="selectedTab() === 'review'"
+              (click)="changeTab('review')">
+        Review
+        <span class="tab-badge">{{ tasksByStatus().review.length }}</span>
+      </button>
+      @if (showCompleted()) {
+        <button class="tab"
+                [class.active]="selectedTab() === 'done'"
+                (click)="changeTab('done')">
+          Done
+          <span class="tab-badge">{{ tasksByStatus().done.length }}</span>
+        </button>
+      }
+    </div>
+  }
+  
+  <!-- Content -->
+  <div class="tasks-widget__content">
+    @if (isLoading()) {
+      <!-- Loading State -->
+      <div class="tasks-widget__loading">
+        @for (i of [1,2,3,4]; track i) {
+          <div class="skeleton-task">
+            <div class="skeleton-checkbox"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-title"></div>
+              <div class="skeleton-meta"></div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (filteredTasks().length === 0) {
+      <!-- Empty State -->
+      <div class="tasks-widget__empty">
+        <mat-icon fontIcon="task_alt"></mat-icon>
+        <p>
+          @if (selectedTab() !== 'all' || selectedPriority() !== 'all') {
+            No tasks match your filters
+          } @else {
+            No tasks assigned
+          }
+        </p>
+        <button mat-button color="primary">
+          <mat-icon fontIcon="add"></mat-icon>
+          Create Task
+        </button>
+      </div>
+    } @else {
+      <!-- Task List -->
+      @if (viewMode() === 'list') {
+        <div class="tasks-widget__list" 
+             [@listAnimation]="filteredTasks().length"
+             cdkDropList
+             [cdkDropListData]="filteredTasks()"
+             (cdkDropListDropped)="onTaskDrop($event)">
+          
+          @for (task of filteredTasks(); track trackByTaskId($index, task)) {
+            <div class="task-item"
+                 [class.task-item--overdue]="isOverdue(task)"
+                 [class.task-item--selected]="selectedTasks().has(task.id)"
+                 cdkDrag
+                 [@slideIn]>
+              
+              <!-- Checkbox -->
+              <mat-checkbox
+                class="task-item__checkbox"
+                [checked]="task.status === 'done'"
+                (change)="updateTaskStatus(task, $event.checked ? 'done' : 'todo')"
+                (click)="$event.stopPropagation()">
+              </mat-checkbox>
+              
+              <!-- Content -->
+              <div class="task-item__content" (click)="openTask(task)">
+                <div class="task-item__header">
+                  <h4 class="task-item__title"
+                      [class.task-item__title--completed]="task.status === 'done'">
+                    {{ task.title }}
+                  </h4>
+                  <mat-icon [fontIcon]="getPriorityIcon(task.priority)"
+                            [style.color]="getPriorityColor(task.priority)"
+                            [matTooltip]="task.priority + ' priority'"
+                            class="task-item__priority">
+                  </mat-icon>
+                </div>
+                
+                <div class="task-item__meta">
+                  <!-- Status -->
+                  <mat-chip class="task-item__status"
+                            [style.background-color]="getStatusColor(task.status) + '20'"
+                            [style.color]="getStatusColor(task.status)">
+                    <mat-icon [fontIcon]="getStatusIcon(task.status)"
+                              class="chip-icon">
+                    </mat-icon>
+                    {{ task.status | titlecase }}
+                  </mat-chip>
+                  
+                  <!-- Due Date -->
+                  @if (task.dueDate) {
+                    <span class="task-item__due"
+                          [class.task-item__due--overdue]="isOverdue(task)">
+                      <mat-icon fontIcon="event" class="meta-icon"></mat-icon>
+                      {{ formatDueDate(task.dueDate) }}
+                    </span>
+                  }
+                  
+                  <!-- Story Points -->
+                  @if (task.storyPoints) {
+                    <span class="task-item__points">
+                      <mat-icon fontIcon="star" class="meta-icon"></mat-icon>
+                      {{ task.storyPoints }} pts
+                    </span>
+                  }
+                  
+                  <!-- Assignee -->
+                  <span class="task-item__assignee">
+                    <img [src]="task.assignee.avatar" 
+                         [alt]="task.assignee.name"
+                         [matTooltip]="task.assignee.name"
+                         class="assignee-avatar">
+                  </span>
+                </div>
+                
+                <!-- Progress Bar -->
+                @if (task.progress > 0 && task.status !== 'done') {
+                  <mat-progress-bar mode="determinate" 
+                                    [value]="task.progress"
+                                    class="task-item__progress">
+                  </mat-progress-bar>
+                }
+                
+                <!-- Tags -->
+                @if (task.tags && task.tags.length > 0) {
+                  <div class="task-item__tags">
+                    @for (tag of task.tags; track tag) {
+                      <span class="tag">{{ tag }}</span>
+                    }
+                  </div>
+                }
+              </div>
+              
+              <!-- Actions -->
+              <button mat-icon-button
+                      [matMenuTriggerFor]="taskMenu"
+                      class="task-item__menu"
+                      (click)="$event.stopPropagation()">
+                <mat-icon fontIcon="more_vert"></mat-icon>
+              </button>
+              
+              <!-- Task Menu -->
+              <mat-menu #taskMenu="matMenu">
+                <button mat-menu-item (click)="openTask(task)">
+                  <mat-icon fontIcon="open_in_new"></mat-icon>
+                  <span>View Details</span>
+                </button>
+                <button mat-menu-item (click)="updateTaskStatus(task, 'in-progress')">
+                  <mat-icon fontIcon="play_arrow"></mat-icon>
+                  <span>Start Task</span>
+                </button>
+                <button mat-menu-item (click)="updateTaskStatus(task, 'review')">
+                  <mat-icon fontIcon="rate_review"></mat-icon>
+                  <span>Send for Review</span>
+                </button>
+                <mat-divider></mat-divider>
+                <button mat-menu-item>
+                  <mat-icon fontIcon="edit"></mat-icon>
+                  <span>Edit</span>
+                </button>
+                <button mat-menu-item>
+                  <mat-icon fontIcon="delete" color="warn"></mat-icon>
+                  <span>Delete</span>
+                </button>
+              </mat-menu>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Kanban View -->
+        <div class="tasks-widget__kanban">
+          <!-- Kanban columns will be implemented here -->
+          <p>Kanban view coming soon</p>
+        </div>
+      }
+    }
+  </div>
+  
+  <!-- Footer -->
+  @if (!compact) {
+    <div class="tasks-widget__footer">
+      <button mat-button>
+        <mat-icon fontIcon="add"></mat-icon>
+        New Task
+      </button>
+      <button mat-button>
+        <mat-icon fontIcon="view_list"></mat-icon>
+        View All Tasks
+      </button>
+    </div>
+  }
+</div>
+
+<!-- Filter Menu -->
+<mat-menu #filterMenu="matMenu">
+  <div class="filter-menu">
+    <h4>Filter by Priority</h4>
+    <button mat-menu-item 
+            [class.active]="selectedPriority() === 'all'"
+            (click)="changePriority('all')">
+      All Priorities
+    </button>
+    <button mat-menu-item 
+            [class.active]="selectedPriority() === 'critical'"
+            (click)="changePriority('critical')">
+      <mat-icon [fontIcon]="getPriorityIcon('critical')"
+                [style.color]="getPriorityColor('critical')">
+      </mat-icon>
+      Critical
+    </button>
+    <button mat-menu-item 
+            [class.active]="selectedPriority() === 'high'"
+            (click)="changePriority('high')">
+      <mat-icon [fontIcon]="getPriorityIcon('high')"
+                [style.color]="getPriorityColor('high')">
+      </mat-icon>
+      High
+    </button>
+    <button mat-menu-item 
+            [class.active]="selectedPriority() === 'medium'"
+            (click)="changePriority('medium')">
+      <mat-icon [fontIcon]="getPriorityIcon('medium')"
+                [style.color]="getPriorityColor('medium')">
+      </mat-icon>
+      Medium
+    </button>
+    <button mat-menu-item 
+            [class.active]="selectedPriority() === 'low'"
+            (click)="changePriority('low')">
+      <mat-icon [fontIcon]="getPriorityIcon('low')"
+                [style.color]="getPriorityColor('low')">
+      </mat-icon>
+      Low
+    </button>
+    
+    <mat-divider></mat-divider>
+    
+    <button mat-menu-item (click)="showCompleted.set(!showCompleted())">
+      <mat-checkbox [checked]="showCompleted()" (click)="$event.stopPropagation()">
+        Show Completed
+      </mat-checkbox>
+    </button>
+  </div>
+</mat-menu>

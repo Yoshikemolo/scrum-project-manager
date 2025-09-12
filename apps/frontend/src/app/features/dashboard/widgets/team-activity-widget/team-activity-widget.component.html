@@ -1,0 +1,282 @@
+<!-- Team Activity Widget -->
+<div class="team-activity" [class.team-activity--compact]="compact">
+  
+  <!-- Header -->
+  <div class="team-activity__header">
+    <div class="team-activity__title-section">
+      <h3 class="team-activity__title">Team Activity</h3>
+      <div class="team-activity__stats">
+        <span class="stat" [style.color]="getStatusColor('online')">
+          <mat-icon fontIcon="circle" class="stat-icon"></mat-icon>
+          {{ onlineMembers().length }} online
+        </span>
+        <span class="stat" [style.color]="getStatusColor('away')">
+          <mat-icon fontIcon="schedule" class="stat-icon"></mat-icon>
+          {{ awayMembers().length }} away
+        </span>
+        @if (showOffline) {
+          <span class="stat" [style.color]="getStatusColor('offline')">
+            <mat-icon fontIcon="radio_button_unchecked" class="stat-icon"></mat-icon>
+            {{ offlineMembers().length }} offline
+          </span>
+        }
+      </div>
+    </div>
+    
+    <div class="team-activity__actions">
+      @if (!compact) {
+        <button mat-icon-button
+                [class.active]="selectedView() === 'grid'"
+                (click)="changeView('grid')"
+                matTooltip="Grid view">
+          <mat-icon fontIcon="grid_view"></mat-icon>
+        </button>
+        <button mat-icon-button
+                [class.active]="selectedView() === 'list'"
+                (click)="changeView('list')"
+                matTooltip="List view">
+          <mat-icon fontIcon="view_list"></mat-icon>
+        </button>
+      }
+      <button mat-icon-button
+              (click)="refresh()"
+              matTooltip="Refresh">
+        <mat-icon fontIcon="refresh"></mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Quick Stats -->
+  @if (!compact) {
+    <div class="team-activity__quick-stats">
+      <div class="quick-stat">
+        <mat-icon fontIcon="trending_up" class="quick-stat__icon"></mat-icon>
+        <div class="quick-stat__content">
+          <span class="quick-stat__value">{{ averageProductivity() }}%</span>
+          <span class="quick-stat__label">Avg Productivity</span>
+        </div>
+      </div>
+      <div class="quick-stat">
+        <mat-icon fontIcon="task_alt" class="quick-stat__icon"></mat-icon>
+        <div class="quick-stat__content">
+          <span class="quick-stat__value">{{ totalTasksCompleted }}</span>
+          <span class="quick-stat__label">Tasks Completed</span>
+        </div>
+      </div>
+      <div class="quick-stat">
+        <mat-icon fontIcon="timer" class="quick-stat__icon"></mat-icon>
+        <div class="quick-stat__content">
+          <span class="quick-stat__value">{{ totalTasksInProgress }}</span>
+          <span class="quick-stat__label">In Progress</span>
+        </div>
+      </div>
+    </div>
+  }
+  
+  <!-- Content -->
+  <div class="team-activity__content">
+    @if (isLoading()) {
+      <!-- Loading State -->
+      <div class="team-activity__loading">
+        @for (i of [1,2,3,4]; track i) {
+          <div class="skeleton-member">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-info">
+              <div class="skeleton-name"></div>
+              <div class="skeleton-task"></div>
+              <div class="skeleton-stats"></div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (filteredMembers().length === 0) {
+      <!-- Empty State -->
+      <div class="team-activity__empty">
+        <mat-icon fontIcon="group_off"></mat-icon>
+        <p>No team members to display</p>
+      </div>
+    } @else {
+      <!-- Member List/Grid -->
+      @if (selectedView() === 'grid') {
+        <div class="team-activity__grid" [@listAnimation]="filteredMembers().length">
+          @for (member of filteredMembers(); track trackByMemberId($index, member)) {
+            <div class="member-card" 
+                 (click)="openMemberProfile(member)"
+                 [@fadeIn]>
+              
+              <!-- Avatar with Status -->
+              <div class="member-card__avatar-wrapper">
+                <img [src]="member.avatar" 
+                     [alt]="member.name"
+                     class="member-card__avatar">
+                <mat-icon [fontIcon]="getStatusIcon(member.status)"
+                          [style.color]="getStatusColor(member.status)"
+                          class="member-card__status"
+                          [matTooltip]="member.status | titlecase">
+                </mat-icon>
+              </div>
+              
+              <!-- Member Info -->
+              <h4 class="member-card__name">{{ member.name }}</h4>
+              
+              @if (member.currentTask) {
+                <p class="member-card__task"
+                   [matTooltip]="member.currentTask">
+                  <mat-icon fontIcon="task" class="task-icon"></mat-icon>
+                  {{ member.currentTask }}
+                </p>
+              } @else {
+                <p class="member-card__task member-card__task--idle">
+                  <mat-icon fontIcon="hourglass_empty" class="task-icon"></mat-icon>
+                  No active task
+                </p>
+              }
+              
+              <!-- Productivity -->
+              <div class="member-card__productivity">
+                <span class="productivity-label">Productivity</span>
+                <mat-progress-bar 
+                  mode="determinate"
+                  [value]="member.productivity"
+                  [color]="getProductivityColor(member.productivity)">
+                </mat-progress-bar>
+                <span class="productivity-value">{{ member.productivity }}%</span>
+              </div>
+              
+              <!-- Stats -->
+              <div class="member-card__stats">
+                <div class="stat-item">
+                  <span class="stat-value">{{ member.tasksCompleted }}</span>
+                  <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">{{ member.tasksInProgress }}</span>
+                  <span class="stat-label">In Progress</span>
+                </div>
+              </div>
+              
+              <!-- Last Activity -->
+              <p class="member-card__activity">
+                <mat-icon fontIcon="access_time" class="activity-icon"></mat-icon>
+                {{ formatLastActivity(member.lastActivity) }}
+              </p>
+              
+              <!-- Actions -->
+              <div class="member-card__actions">
+                <button mat-icon-button
+                        (click)="sendMessage(member); $event.stopPropagation()"
+                        matTooltip="Send message">
+                  <mat-icon fontIcon="message"></mat-icon>
+                </button>
+                @if (member.status === 'online') {
+                  <button mat-icon-button
+                          (click)="startVideoCall(member); $event.stopPropagation()"
+                          matTooltip="Start video call">
+                    <mat-icon fontIcon="videocam"></mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- List View -->
+        <div class="team-activity__list" [@listAnimation]="filteredMembers().length">
+          @for (member of filteredMembers(); track trackByMemberId($index, member)) {
+            <div class="member-item" 
+                 (click)="openMemberProfile(member)"
+                 [@fadeIn]>
+              
+              <!-- Avatar -->
+              <div class="member-item__avatar-wrapper">
+                <img [src]="member.avatar" 
+                     [alt]="member.name"
+                     class="member-item__avatar">
+                <mat-icon [fontIcon]="getStatusIcon(member.status)"
+                          [style.color]="getStatusColor(member.status)"
+                          class="member-item__status">
+                </mat-icon>
+              </div>
+              
+              <!-- Info -->
+              <div class="member-item__info">
+                <div class="member-item__header">
+                  <h4 class="member-item__name">{{ member.name }}</h4>
+                  <span class="member-item__status-text"
+                        [style.color]="getStatusColor(member.status)">
+                    {{ member.status | titlecase }}
+                  </span>
+                </div>
+                
+                @if (member.currentTask) {
+                  <p class="member-item__task">
+                    <mat-icon fontIcon="task" class="inline-icon"></mat-icon>
+                    {{ member.currentTask }}
+                  </p>
+                }
+                
+                <div class="member-item__meta">
+                  <span class="meta-item">
+                    <mat-icon fontIcon="check_circle" class="inline-icon"></mat-icon>
+                    {{ member.tasksCompleted }} completed
+                  </span>
+                  <span class="meta-item">
+                    <mat-icon fontIcon="timer" class="inline-icon"></mat-icon>
+                    {{ member.tasksInProgress }} in progress
+                  </span>
+                  <span class="meta-item">
+                    <mat-icon fontIcon="trending_up" class="inline-icon"></mat-icon>
+                    {{ member.productivity }}% productivity
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Actions -->
+              <div class="member-item__actions">
+                <span class="member-item__activity">
+                  {{ formatLastActivity(member.lastActivity) }}
+                </span>
+                <button mat-icon-button
+                        [matMenuTriggerFor]="memberMenu"
+                        (click)="$event.stopPropagation()">
+                  <mat-icon fontIcon="more_vert"></mat-icon>
+                </button>
+                
+                <mat-menu #memberMenu="matMenu">
+                  <button mat-menu-item (click)="openMemberProfile(member)">
+                    <mat-icon fontIcon="person"></mat-icon>
+                    <span>View Profile</span>
+                  </button>
+                  <button mat-menu-item (click)="sendMessage(member)">
+                    <mat-icon fontIcon="message"></mat-icon>
+                    <span>Send Message</span>
+                  </button>
+                  @if (member.status === 'online') {
+                    <button mat-menu-item (click)="startVideoCall(member)">
+                      <mat-icon fontIcon="videocam"></mat-icon>
+                      <span>Start Video Call</span>
+                    </button>
+                  }
+                </mat-menu>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+  
+  <!-- Footer -->
+  @if (!compact) {
+    <div class="team-activity__footer">
+      <button mat-button>
+        <mat-icon fontIcon="group_add"></mat-icon>
+        Invite Member
+      </button>
+      <button mat-button>
+        <mat-icon fontIcon="people"></mat-icon>
+        View All Team
+      </button>
+    </div>
+  }
+</div>
