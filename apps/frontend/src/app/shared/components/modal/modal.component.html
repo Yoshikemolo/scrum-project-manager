@@ -1,0 +1,142 @@
+<!-- Modal Container -->
+<div class="modal-container" 
+     [ngClass]="modalClasses()"
+     [@modalAnimation]
+     [attr.aria-modal]="true"
+     [attr.aria-label]="ariaLabel || title"
+     [attr.aria-describedby]="ariaDescribedBy"
+     role="dialog">
+  
+  <!-- Backdrop -->
+  @if (backdrop !== false) {
+    <div class="modal__backdrop" 
+         [@backdropAnimation]
+         (click)="onBackdropClick($event)"
+         [class.modal__backdrop--static]="backdrop === 'static'">
+    </div>
+  }
+  
+  <!-- Dialog -->
+  <div #modalDialog
+       [ngClass]="dialogClasses()"
+       [style.transform]="getTransformStyle()"
+       (click)="onDialogClick($event)">
+    
+    <!-- Header -->
+    @if (showHeader) {
+      <div class="modal__header" [ngClass]="headerClass">
+        <!-- Custom header template -->
+        @if (headerTemplate) {
+          <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
+        } @else {
+          <!-- Default header -->
+          <div class="modal__header-content">
+            @if (icon) {
+              <mat-icon class="modal__header-icon" 
+                        [fontIcon]="icon"
+                        [style.color]="iconColor">
+              </mat-icon>
+            }
+            
+            <div class="modal__header-text">
+              @if (title) {
+                <h2 class="modal__title" id="modal-title">{{ title }}</h2>
+              }
+              @if (subtitle) {
+                <p class="modal__subtitle">{{ subtitle }}</p>
+              }
+            </div>
+          </div>
+          
+          <!-- Header actions -->
+          <div class="modal__header-actions">
+            <!-- Minimize button -->
+            @if (size !== 'fullscreen') {
+              <button mat-icon-button 
+                      class="modal__header-button"
+                      (click)="minimize()"
+                      [attr.aria-label]="isMinimized() ? 'Restore' : 'Minimize'"
+                      type="button">
+                <mat-icon [fontIcon]="isMinimized() ? 'expand_less' : 'remove'"></mat-icon>
+              </button>
+            }
+            
+            <!-- Maximize button -->
+            @if (size !== 'fullscreen') {
+              <button mat-icon-button 
+                      class="modal__header-button"
+                      (click)="maximize()"
+                      [attr.aria-label]="isMaximized() ? 'Restore' : 'Maximize'"
+                      type="button">
+                <mat-icon [fontIcon]="isMaximized() ? 'close_fullscreen' : 'open_in_full'"></mat-icon>
+              </button>
+            }
+            
+            <!-- Close button -->
+            @if (showCloseButton) {
+              <button #closeButton
+                      mat-icon-button 
+                      class="modal__header-button modal__header-button--close"
+                      (click)="close()"
+                      [disabled]="disableClose"
+                      aria-label="Close"
+                      type="button">
+                <mat-icon fontIcon="close"></mat-icon>
+              </button>
+            }
+          </div>
+        }
+        
+        <!-- Drag handle -->
+        @if (!isMaximized() && !headerTemplate) {
+          <div class="modal__drag-handle" 
+               (mousedown)="startDrag($event)"
+               role="presentation">
+          </div>
+        }
+      </div>
+    }
+    
+    <!-- Body -->
+    <div class="modal__body" 
+         [ngClass]="bodyClass"
+         [class.modal__body--no-header]="!showHeader"
+         [class.modal__body--no-footer]="!showFooter"
+         [class.modal__body--scrollable]="scrollable"
+         [class.modal__body--minimized]="isMinimized()">
+      
+      @if (!isMinimized()) {
+        <!-- Loading state -->
+        @if (loading) {
+          <div class="modal__loading">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p class="modal__loading-text">Loading...</p>
+          </div>
+        } @else {
+          <!-- Content -->
+          <ng-content></ng-content>
+        }
+      }
+    </div>
+    
+    <!-- Footer -->
+    @if (showFooter && !isMinimized()) {
+      <div class="modal__footer" [ngClass]="footerClass">
+        <!-- Custom footer template -->
+        @if (footerTemplate) {
+          <ng-container *ngTemplateOutlet="footerTemplate"></ng-container>
+        } @else if (actionsTemplate) {
+          <!-- Actions template -->
+          <div class="modal__footer-actions">
+            <ng-container *ngTemplateOutlet="actionsTemplate"></ng-container>
+          </div>
+        } @else {
+          <!-- Default footer -->
+          <div class="modal__footer-actions">
+            <ng-content select="[modal-actions]"></ng-content>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

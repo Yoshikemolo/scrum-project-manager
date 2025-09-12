@@ -1,0 +1,137 @@
+<!-- Confirmation Dialog with animations and accessibility -->
+<div class="confirm-dialog" 
+     [ngClass]="severityClass()"
+     [@shake]="shakeState()"
+     role="dialog"
+     aria-modal="true"
+     [attr.aria-labelledby]="'dialog-title'"
+     [attr.aria-describedby]="'dialog-message'">
+  
+  <!-- Dialog Header -->
+  <mat-dialog-title class="confirm-dialog__header">
+    <div class="confirm-dialog__title-wrapper">
+      @if (data.showIcon !== false) {
+        <mat-icon class="confirm-dialog__icon" 
+                  [@iconAnimation]="iconState()"
+                  [fontIcon]="dialogIcon()"
+                  aria-hidden="true">
+        </mat-icon>
+      }
+      <h2 id="dialog-title" class="confirm-dialog__title">
+        {{ data.title }}
+      </h2>
+    </div>
+  </mat-dialog-title>
+  
+  <!-- Dialog Content -->
+  <mat-dialog-content class="confirm-dialog__content">
+    <p id="dialog-message" class="confirm-dialog__message">
+      {{ data.message }}
+    </p>
+    
+    <!-- Additional Details -->
+    @if (shouldShowDetails()) {
+      <div class="confirm-dialog__details" [@slideIn]>
+        <ul class="confirm-dialog__details-list">
+          @for (detail of data.details; track detail) {
+            <li class="confirm-dialog__detail-item">
+              <mat-icon fontIcon="chevron_right" 
+                        class="confirm-dialog__detail-icon" 
+                        aria-hidden="true">
+              </mat-icon>
+              <span>{{ detail }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+    
+    <!-- Input Field -->
+    @if (data.showInput) {
+      <div class="confirm-dialog__input-wrapper" [@slideIn]>
+        @if (data.inputLabel) {
+          <label for="dialog-input" class="confirm-dialog__input-label">
+            {{ data.inputLabel }}
+          </label>
+        }
+        <input type="text" 
+               id="dialog-input"
+               class="confirm-dialog__input"
+               [class.confirm-dialog__input--error]="inputError()"
+               [placeholder]="data.inputPlaceholder || ''"
+               [value]="inputValue()"
+               (input)="onInputChange($event)"
+               (keypress)="onInputKeyPress($event)"
+               [disabled]="isProcessing()"
+               autocomplete="off"
+               spellcheck="false">
+        @if (inputError()) {
+          <div class="confirm-dialog__input-error" role="alert">
+            <mat-icon fontIcon="error_outline" 
+                      class="confirm-dialog__input-error-icon"
+                      aria-hidden="true">
+            </mat-icon>
+            <span>{{ inputError() }}</span>
+          </div>
+        }
+      </div>
+    }
+    
+    <!-- Loading Indicator -->
+    @if (data.loading || isProcessing()) {
+      <div class="confirm-dialog__loading" [@slideIn]>
+        <mat-spinner diameter="24" 
+                     mode="indeterminate"
+                     aria-label="Processing">
+        </mat-spinner>
+        <span class="confirm-dialog__loading-text">Processing...</span>
+      </div>
+    }
+  </mat-dialog-content>
+  
+  <!-- Dialog Actions -->
+  <mat-dialog-actions class="confirm-dialog__actions">
+    <button mat-button 
+            class="confirm-dialog__cancel-button"
+            (click)="onCancel()"
+            [disabled]="isProcessing()"
+            type="button">
+      <mat-icon fontIcon="close" aria-hidden="true"></mat-icon>
+      <span>{{ data.cancelText }}</span>
+    </button>
+    
+    <button mat-raised-button 
+            class="confirm-dialog__confirm-button"
+            [color]="getConfirmButtonColor()"
+            (click)="onConfirm()"
+            [disabled]="confirmButtonDisabled()"
+            type="button"
+            cdkFocusInitial>
+      @if (isProcessing()) {
+        <mat-spinner diameter="18" 
+                     mode="indeterminate" 
+                     class="confirm-dialog__button-spinner"
+                     aria-hidden="true">
+        </mat-spinner>
+      } @else {
+        <mat-icon fontIcon="check" aria-hidden="true"></mat-icon>
+      }
+      <span>{{ confirmButtonText() }}</span>
+    </button>
+  </mat-dialog-actions>
+  
+  <!-- Keyboard Shortcuts Hint -->
+  @if (!data.showInput && !isProcessing()) {
+    <div class="confirm-dialog__shortcuts" aria-hidden="true">
+      <span class="confirm-dialog__shortcut">
+        <kbd>Y</kbd> to confirm
+      </span>
+      <span class="confirm-dialog__shortcut">
+        <kbd>N</kbd> to cancel
+      </span>
+      <span class="confirm-dialog__shortcut">
+        <kbd>ESC</kbd> to close
+      </span>
+    </div>
+  }
+</div>
