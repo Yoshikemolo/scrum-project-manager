@@ -340,7 +340,7 @@ The project encompasses the development of a comprehensive SCRUM management plat
 | Milestone | Date | Deliverables | Status |
 |-----------|------|--------------|--------|
 | M1: Project Kickoff | Sep 1 | Project plan | Completed |
-| M2: Foundation Complete | Sep 28 | Documentation, Setup | Completed |
+| M2: Foundation Complete | Sep 28 | Documentation, Setup | In Progress |
 | M3: Alpha Release | Nov 30 | Core features | Pending |
 | M4: Beta Release | Jan 31 | All features | Pending |
 | M5: Production Release | Feb 28 | Final product | Pending |
