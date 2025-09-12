@@ -1,0 +1,151 @@
+<!-- Loader Component Template -->
+<div 
+  class="loader-overlay" 
+  [class.fullscreen]="fullscreen"
+  [class.inline]="!fullscreen"
+  [class.backdrop]="showBackdrop"
+  [@fadeIn]="animationState"
+  [attr.aria-busy]="true"
+  [attr.aria-live]="'polite'"
+  [attr.aria-label]="'loader.loading' | translate"
+  role="status"
+>
+  <div 
+    class="loader-container"
+    [class.elevated]="elevated"
+    [class.compact]="compact"
+  >
+    <!-- Main Spinner -->
+    <div class="spinner-wrapper" [ngSwitch]="type">
+      <!-- Circular Spinner -->
+      <mat-progress-spinner
+        *ngSwitchCase="'circular'"
+        mode="indeterminate"
+        [diameter]="size"
+        [strokeWidth]="strokeWidth"
+        [color]="color"
+        class="spinner-circular"
+      ></mat-progress-spinner>
+      
+      <!-- Linear Progress -->
+      <mat-progress-bar
+        *ngSwitchCase="'linear'"
+        mode="indeterminate"
+        [color]="color"
+        class="spinner-linear"
+      ></mat-progress-bar>
+      
+      <!-- Dots Loader -->
+      <div *ngSwitchCase="'dots'" class="spinner-dots">
+        <span 
+          class="dot" 
+          *ngFor="let dot of [1,2,3,4]; let i = index"
+          [style.animation-delay.ms]="i * 150"
+        ></span>
+      </div>
+      
+      <!-- Pulse Loader -->
+      <div *ngSwitchCase="'pulse'" class="spinner-pulse">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+      </div>
+      
+      <!-- Custom SVG Loader -->
+      <div *ngSwitchCase="'custom'" class="spinner-custom">
+        <svg 
+          class="custom-svg" 
+          [style.width.px]="size" 
+          [style.height.px]="size"
+          viewBox="0 0 100 100"
+        >
+          <circle
+            class="svg-circle-bg"
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke-width="4"
+          />
+          <circle
+            class="svg-circle"
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke-width="4"
+            stroke-dasharray="283"
+            stroke-dashoffset="75"
+          />
+        </svg>
+      </div>
+      
+      <!-- Skeleton Loader -->
+      <div *ngSwitchCase="'skeleton'" class="spinner-skeleton">
+        <div class="skeleton-line" *ngFor="let line of skeletonLines"></div>
+      </div>
+    </div>
+    
+    <!-- Loading Message -->
+    <div 
+      class="loader-message" 
+      *ngIf="message"
+      [class.with-progress]="showProgress"
+    >
+      <span class="message-text">{{ message | translate }}</span>
+      <small class="message-hint" *ngIf="hint">
+        {{ hint | translate }}
+      </small>
+    </div>
+    
+    <!-- Progress Indicator -->
+    <div class="progress-indicator" *ngIf="showProgress && progress >= 0">
+      <div class="progress-bar">
+        <div 
+          class="progress-fill"
+          [style.width.%]="progress"
+          [attr.aria-valuenow]="progress"
+          [attr.aria-valuemin]="0"
+          [attr.aria-valuemax]="100"
+          role="progressbar"
+        >
+          <span class="progress-text">{{ progress }}%</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="loader-actions" *ngIf="showActions">
+      <button
+        mat-button
+        (click)="onCancel()"
+        [disabled]="!cancellable"
+        class="action-cancel"
+        [attr.aria-label]="'loader.cancel' | translate"
+      >
+        <mat-icon>close</mat-icon>
+        {{ 'loader.cancel' | translate }}
+      </button>
+    </div>
+    
+    <!-- Time Indicator -->
+    <div class="time-indicator" *ngIf="showTimer">
+      <mat-icon class="timer-icon">schedule</mat-icon>
+      <span class="timer-text">{{ formatTime(elapsedTime) }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Inline Loader Template -->
+<ng-container *ngIf="!fullscreen && type === 'inline'">
+  <div class="inline-loader">
+    <mat-spinner
+      [diameter]="20"
+      [strokeWidth]="2"
+      color="primary"
+    ></mat-spinner>
+    <span class="inline-text" *ngIf="message">
+      {{ message | translate }}
+    </span>
+  </div>
+</ng-container>
