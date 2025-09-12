@@ -1,0 +1,282 @@
+/**
+ * Charts Widget Component Styles
+ * Provides styling for chart visualizations and controls
+ */
+@use '@angular/material' as mat;
+@use '../../../shared/styles/variables' as vars;
+@use '../../../shared/styles/mixins' as mixins;
+
+// Component-specific variables
+$header-height: 64px;
+$compact-header-height: 48px;
+$chart-min-height: 300px;
+$chart-compact-height: 200px;
+$control-gap: 12px;
+$stat-item-padding: 8px;
+
+// Main container
+.charts-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface-color);
+  border-radius: vars.$border-radius-lg;
+  overflow: hidden;
+  
+  &--compact {
+    .charts-widget__header {
+      height: $compact-header-height;
+      padding: vars.$spacing-sm vars.$spacing-md;
+    }
+    
+    .charts-widget__description,
+    .charts-widget__stats {
+      display: none;
+    }
+    
+    .charts-widget__chart-container {
+      min-height: $chart-compact-height;
+    }
+  }
+}
+
+// Header section
+.charts-widget__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: $header-height;
+  padding: vars.$spacing-md;
+  border-bottom: 1px solid var(--divider-color);
+  
+  @include mixins.mobile {
+    flex-direction: column;
+    height: auto;
+    align-items: flex-start;
+    gap: vars.$spacing-sm;
+  }
+}
+
+.charts-widget__title-section {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-xs;
+}
+
+.charts-widget__title {
+  margin: 0;
+  font-size: vars.$font-size-lg;
+  font-weight: vars.$font-weight-medium;
+  color: var(--text-primary);
+}
+
+.charts-widget__description {
+  margin: 0;
+  font-size: vars.$font-size-sm;
+  color: var(--text-secondary);
+}
+
+// Controls section
+.charts-widget__controls {
+  display: flex;
+  align-items: center;
+  gap: $control-gap;
+  
+  @include mixins.mobile {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.charts-widget__select {
+  min-width: 120px;
+  font-size: vars.$font-size-sm;
+  
+  @include mixins.mobile {
+    min-width: 100px;
+  }
+  
+  ::ng-deep {
+    .mat-form-field-wrapper {
+      padding-bottom: 0;
+    }
+    
+    .mat-form-field-underline {
+      display: none;
+    }
+    
+    .mat-select-trigger {
+      padding: vars.$spacing-xs vars.$spacing-sm;
+      background: var(--background-color);
+      border-radius: vars.$border-radius-sm;
+      border: 1px solid var(--divider-color);
+    }
+  }
+}
+
+// Content section
+.charts-widget__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: vars.$spacing-md;
+  min-height: $chart-min-height;
+  position: relative;
+}
+
+// Loading state
+.charts-widget__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: vars.$spacing-md;
+  
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: vars.$font-size-sm;
+  }
+}
+
+// Error state
+.charts-widget__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: vars.$spacing-md;
+  text-align: center;
+  
+  .error-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--error-color);
+  }
+  
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: vars.$font-size-md;
+  }
+}
+
+// Chart container
+.charts-widget__chart-container {
+  flex: 1;
+  position: relative;
+  min-height: $chart-min-height;
+  
+  &--compact {
+    min-height: $chart-compact-height;
+  }
+  
+  canvas {
+    max-width: 100%;
+    max-height: 100%;
+  }
+}
+
+// Empty state
+.charts-widget__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: vars.$spacing-md;
+  
+  .empty-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: var(--text-disabled);
+    opacity: 0.5;
+  }
+  
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: vars.$font-size-md;
+  }
+}
+
+// Stats section
+.charts-widget__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-md;
+  border-top: 1px solid var(--divider-color);
+  background: var(--background-color);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-xs;
+  padding: $stat-item-padding;
+}
+
+.stat-label {
+  font-size: vars.$font-size-xs;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-size: vars.$font-size-lg;
+  font-weight: vars.$font-weight-semibold;
+  color: var(--text-primary);
+}
+
+// Dark mode adjustments
+@include mixins.dark-mode {
+  .charts-widget {
+    background: var(--surface-color-dark);
+    
+    &__header {
+      border-bottom-color: var(--divider-color-dark);
+    }
+    
+    &__stats {
+      background: var(--background-color-dark);
+      border-top-color: var(--divider-color-dark);
+    }
+  }
+}
+
+// Animation classes
+@include mixins.reduced-motion {
+  .charts-widget {
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+// Accessibility
+.charts-widget {
+  &:focus-within {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 2px;
+  }
+}
+
+// Print styles
+@media print {
+  .charts-widget {
+    &__controls {
+      display: none;
+    }
+    
+    &__stats {
+      page-break-inside: avoid;
+    }
+  }
+}
