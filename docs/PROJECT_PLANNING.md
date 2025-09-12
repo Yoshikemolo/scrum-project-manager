@@ -6,12 +6,11 @@
 2. [Current Status](#current-status)
 3. [Development Phases](#development-phases)
 4. [Sprint Planning](#sprint-planning)
-5. [Resource Allocation](#resource-allocation)
-6. [Risk Management](#risk-management)
-7. [Dependencies](#dependencies)
-8. [Deliverables](#deliverables)
-9. [Quality Assurance](#quality-assurance)
-10. [Related Documentation](#related-documentation)
+5. [Risk Management](#risk-management)
+6. [Dependencies](#dependencies)
+7. [Deliverables](#deliverables)
+8. [Quality Assurance](#quality-assurance)
+9. [Related Documentation](#related-documentation)
 
 ## Project Overview
 
@@ -236,42 +235,12 @@ The project encompasses the development of a comprehensive SCRUM management plat
 - **Sprint 3**: 40 story points (in progress - 15% complete)
 - **Average Velocity**: 31.67 story points
 
-## Resource Allocation
-
-### Team Structure
-
-1. **Project Management** (1 person)
-   - Project Manager: Overall coordination
-
-2. **Frontend Team** (3 people)
-   - Lead Frontend Developer
-   - 2 Frontend Developers
-
-3. **Backend Team** (4 people)
-   - Lead Backend Developer
-   - 3 Backend Developers
-
-4. **DevOps Team** (2 people)
-   - DevOps Engineer
-   - Infrastructure Specialist
-
-5. **QA Team** (2 people)
-   - QA Lead
-   - QA Engineer
-
 ### Time Allocation
 
 - **Development**: 60%
 - **Testing**: 20%
 - **Documentation**: 10%
 - **Meetings/Planning**: 10%
-
-### Budget Allocation
-
-- **Personnel**: 70%
-- **Infrastructure**: 15%
-- **Tools/Licenses**: 10%
-- **Contingency**: 5%
 
 ## Risk Management
 
@@ -370,7 +339,7 @@ The project encompasses the development of a comprehensive SCRUM management plat
 
 | Milestone | Date | Deliverables | Status |
 |-----------|------|--------------|--------|
-| M1: Project Kickoff | Sep 1 | Project plan, Team onboarding | Completed |
+| M1: Project Kickoff | Sep 1 | Project plan | Completed |
 | M2: Foundation Complete | Sep 28 | Documentation, Setup | Completed |
 | M3: Alpha Release | Nov 30 | Core features | Pending |
 | M4: Beta Release | Jan 31 | All features | Pending |
