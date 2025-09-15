@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -9,30 +9,32 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatRippleModule } from '@angular/material/core';
 import { Store } from '@ngrx/store';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { trigger, transition, style, animate, state } from '@angular/animations';
 
-import { ThemeService } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ShortcutService } from '../../core/services/shortcut.service';
-import { SearchService } from '../../core/services/search.service';
 import { WebSocketService } from '../../core/services/websocket.service';
+import { ShortcutService } from '../../core/services/shortcut.service';
+import { LocaleService } from '../../core/services/locale.service';
 import { AuthActions } from '../../store/auth/auth.actions';
+import { NotificationActions } from '../../store/notifications/notification.actions';
 import { selectUser, selectIsAuthenticated } from '../../store/auth/auth.selectors';
-import { selectUnreadNotificationsCount } from '../../store/notifications/notifications.selectors';
+import { selectUnreadNotificationsCount, selectRecentNotifications } from '../../store/notifications/notification.selectors';
 import { User } from '../../shared/interfaces/user.interface';
-import { SearchResult } from '../../shared/interfaces/search.interface';
+import { Notification } from '../../shared/interfaces/notification.interface';
 
 /**
- * Header component for the application
- * Provides navigation, search, notifications, and user menu
+ * Application header component with navigation and user controls
+ * Implements responsive design with mobile menu support
  */
 @Component({
   selector: 'app-header',
@@ -49,10 +51,11 @@ import { SearchResult } from '../../shared/interfaces/search.interface';
     MatBadgeModule,
     MatTooltipModule,
     MatDividerModule,
-    MatInputModule,
     MatFormFieldModule,
-    MatProgressSpinnerModule,
+    MatInputModule,
     MatAutocompleteModule,
+    MatProgressSpinnerModule,
+    MatChipsModule,
     MatRippleModule
   ],
   templateUrl: './header.component.html',
@@ -85,99 +88,117 @@ import { SearchResult } from '../../shared/interfaces/search.interface';
 export class HeaderComponent implements OnInit, OnDestroy {
   // Dependency injection
   private store = inject(Store);
-  private themeService = inject(ThemeService);
   private authService = inject(AuthService);
+  private themeService = inject(ThemeService);
   private notificationService = inject(NotificationService);
+  private webSocketService = inject(WebSocketService);
   private shortcutService = inject(ShortcutService);
-  private searchService = inject(SearchService);
-  private websocketService = inject(WebSocketService);
-
-  // ViewChild references
-  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+  private localeService = inject(LocaleService);
 
   // Component state
   user = signal<User | null>(null);
   isAuthenticated = signal(false);
-  isDarkTheme = signal(false);
-  unreadNotifications = signal(0);
-  searchControl = new FormControl('');
-  searchResults = signal<SearchResult[]>([]);
-  isSearching = signal(false);
-  showSearchResults = signal(false);
+  isDarkMode = signal(false);
   isMobileMenuOpen = signal(false);
-  isScrolled = signal(false);
-  badgeAnimation = signal('');
-  onlineUsers = signal(0);
-  connectionStatus = signal<'connected' | 'connecting' | 'disconnected'>('disconnected');
+  isSearchFocused = signal(false);
+  isNotificationOpen = signal(false);
+  unreadCount = signal(0);
+  recentNotifications = signal<Notification[]>([]);
+  searchControl = new FormControl('');
+  searchResults = signal<any[]>([]);
+  isSearching = signal(false);
+  userInitials = computed(() => {
+    const user = this.user();
+    if (!user) return '';
+    return `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
+  });
+  notificationBadgeAnimation = signal('');
+  currentLanguage = signal('en');
+  onlineStatus = signal('online');
   
   // Observables
   private destroy$ = new Subject<void>();
   user$ = this.store.select(selectUser);
   isAuthenticated$ = this.store.select(selectIsAuthenticated);
   unreadCount$ = this.store.select(selectUnreadNotificationsCount);
+  recentNotifications$ = this.store.select(selectRecentNotifications);
 
   // Navigation items
   navigationItems = [
-    { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
-    { label: 'Projects', route: '/projects', icon: 'folder' },
-    { label: 'Tasks', route: '/tasks', icon: 'task_alt' },
-    { label: 'Sprints', route: '/sprints', icon: 'speed' },
-    { label: 'Teams', route: '/teams', icon: 'groups' },
-    { label: 'Reports', route: '/reports', icon: 'analytics' }
+    { label: 'Dashboard', route: '/dashboard', icon: 'dashboard', permissions: [] },
+    { label: 'Projects', route: '/projects', icon: 'folder', permissions: ['view_projects'] },
+    { label: 'Tasks', route: '/tasks', icon: 'task_alt', permissions: ['view_tasks'] },
+    { label: 'Sprints', route: '/sprints', icon: 'speed', permissions: ['view_sprints'] },
+    { label: 'Team', route: '/team', icon: 'groups', permissions: ['view_team'] },
+    { label: 'Reports', route: '/reports', icon: 'analytics', permissions: ['view_reports'] }
   ];
 
-  // User menu items
-  userMenuItems = [
-    { label: 'Profile', icon: 'person', action: 'profile' },
-    { label: 'Settings', icon: 'settings', action: 'settings' },
-    { label: 'Notifications', icon: 'notifications', action: 'notifications', badge: true },
-    { label: 'Help & Support', icon: 'help', action: 'help' },
-    { divider: true },
-    { label: 'Logout', icon: 'logout', action: 'logout', danger: true }
+  // Language options
+  languages = [
+    { code: 'en', label: 'English', flag: '🇬🇧' },
+    { code: 'es', label: 'Español', flag: '🇪🇸' },
+    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { code: 'pt', label: 'Português', flag: '🇵🇹' },
+    { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+    { code: 'ja', label: '日本語', flag: '🇯🇵' },
+    { code: 'zh', label: '中文', flag: '🇨🇳' }
   ];
 
   ngOnInit(): void {
-    this.initializeSubscriptions();
+    this.subscribeToUserState();
+    this.subscribeToNotifications();
+    this.subscribeToTheme();
     this.setupSearch();
-    this.setupShortcuts();
-    this.setupScrollListener();
-    this.setupWebSocket();
+    this.setupKeyboardShortcuts();
+    this.setupWebSocketListeners();
+    this.loadUserPreferences();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    this.websocketService.disconnect();
   }
 
   /**
-   * Initialize subscriptions
+   * Subscribe to user state
    */
-  private initializeSubscriptions(): void {
-    // User subscription
+  private subscribeToUserState(): void {
     this.user$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.user.set(user);
     });
 
-    // Authentication subscription
     this.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe(isAuth => {
       this.isAuthenticated.set(isAuth);
     });
+  }
 
-    // Theme subscription
-    this.themeService.isDarkTheme$.pipe(takeUntil(this.destroy$)).subscribe(isDark => {
-      this.isDarkTheme.set(isDark);
+  /**
+   * Subscribe to notifications
+   */
+  private subscribeToNotifications(): void {
+    this.unreadCount$.pipe(takeUntil(this.destroy$)).subscribe(count => {
+      const prevCount = this.unreadCount();
+      this.unreadCount.set(count);
+      
+      // Animate badge when count increases
+      if (count > prevCount) {
+        this.animateNotificationBadge();
+        this.playNotificationSound();
+      }
     });
 
-    // Unread notifications subscription
-    this.unreadCount$.pipe(takeUntil(this.destroy$)).subscribe(count => {
-      const previousCount = this.unreadNotifications();
-      this.unreadNotifications.set(count);
-      
-      // Animate badge on new notification
-      if (count > previousCount) {
-        this.animateBadge();
-      }
+    this.recentNotifications$.pipe(takeUntil(this.destroy$)).subscribe(notifications => {
+      this.recentNotifications.set(notifications || []);
+    });
+  }
+
+  /**
+   * Subscribe to theme changes
+   */
+  private subscribeToTheme(): void {
+    this.themeService.isDarkTheme$.pipe(takeUntil(this.destroy$)).subscribe(isDark => {
+      this.isDarkMode.set(isDark);
     });
   }
 
@@ -187,117 +208,110 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private setupSearch(): void {
     this.searchControl.valueChanges
       .pipe(
-        takeUntil(this.destroy$),
         debounceTime(300),
         distinctUntilChanged(),
         switchMap(query => {
           if (!query || query.length < 2) {
             this.searchResults.set([]);
-            this.showSearchResults.set(false);
             return of([]);
           }
-
           this.isSearching.set(true);
-          this.showSearchResults.set(true);
-          return this.searchService.search(query);
-        })
+          return this.performSearch(query);
+        }),
+        takeUntil(this.destroy$)
       )
-      .subscribe({
-        next: (results) => {
-          this.searchResults.set(results);
-          this.isSearching.set(false);
-        },
-        error: () => {
-          this.searchResults.set([]);
-          this.isSearching.set(false);
-        }
+      .subscribe(results => {
+        this.searchResults.set(results);
+        this.isSearching.set(false);
       });
+  }
+
+  /**
+   * Perform search
+   */
+  private async performSearch(query: string): Promise<any[]> {
+    // This would call a search service
+    // For now, returning mock results
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const mockResults = [
+          { type: 'project', title: 'Project Alpha', description: 'Main project', route: '/projects/1' },
+          { type: 'task', title: 'Task #123', description: 'Fix bug in header', route: '/tasks/123' },
+          { type: 'user', title: 'John Doe', description: 'Developer', route: '/team/johndoe' }
+        ].filter(item => 
+          item.title.toLowerCase().includes(query.toLowerCase()) ||
+          item.description.toLowerCase().includes(query.toLowerCase())
+        );
+        resolve(mockResults);
+      }, 500);
+    });
   }
 
   /**
    * Setup keyboard shortcuts
    */
-  private setupShortcuts(): void {
-    // Global search shortcut (Ctrl/Cmd + K)
+  private setupKeyboardShortcuts(): void {
+    // Search shortcut (Ctrl/Cmd + K)
     this.shortcutService.add({
-      keys: 'meta.k',
-      description: 'Open global search',
-      handler: () => {
-        this.focusSearch();
-        return true;
-      }
+      keys: 'ctrl+k,cmd+k',
+      description: 'Focus search',
+      action: () => this.focusSearch()
     });
 
-    // Quick navigation shortcuts
+    // Notifications shortcut (Ctrl/Cmd + N)
     this.shortcutService.add({
-      keys: 'meta.shift.d',
-      description: 'Go to dashboard',
-      handler: () => {
-        this.navigate('/dashboard');
-        return true;
-      }
+      keys: 'ctrl+n,cmd+n',
+      description: 'Open notifications',
+      action: () => this.toggleNotifications()
     });
 
+    // Theme toggle shortcut (Ctrl/Cmd + Shift + T)
     this.shortcutService.add({
-      keys: 'meta.shift.p',
-      description: 'Go to projects',
-      handler: () => {
-        this.navigate('/projects');
-        return true;
-      }
-    });
-
-    // Toggle theme shortcut
-    this.shortcutService.add({
-      keys: 'meta.shift.t',
+      keys: 'ctrl+shift+t,cmd+shift+t',
       description: 'Toggle theme',
-      handler: () => {
-        this.toggleTheme();
-        return true;
-      }
+      action: () => this.toggleTheme()
     });
   }
 
   /**
-   * Setup scroll listener for header effects
+   * Setup WebSocket listeners
    */
-  private setupScrollListener(): void {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('scroll', () => {
-        this.isScrolled.set(window.scrollY > 10);
+  private setupWebSocketListeners(): void {
+    // Listen for real-time notifications
+    this.webSocketService.on('notification')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(notification => {
+        this.store.dispatch(NotificationActions.addNotification({ notification }));
       });
+
+    // Listen for user status updates
+    this.webSocketService.on('userStatus')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        this.onlineStatus.set(status);
+      });
+  }
+
+  /**
+   * Load user preferences
+   */
+  private loadUserPreferences(): void {
+    const user = this.user();
+    if (user?.preferences) {
+      this.currentLanguage.set(user.preferences.language || 'en');
+      this.localeService.setLocale(user.preferences.language || 'en');
+      
+      if (user.preferences.theme) {
+        this.themeService.setTheme(user.preferences.theme);
+      }
     }
   }
 
   /**
-   * Setup WebSocket connection
+   * Toggle mobile menu
    */
-  private setupWebSocket(): void {
-    if (this.isAuthenticated()) {
-      this.websocketService.connect();
-      
-      // Listen for connection status
-      this.websocketService.connectionStatus$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(status => {
-          this.connectionStatus.set(status);
-        });
-
-      // Listen for online users count
-      this.websocketService.on('onlineUsers')
-        .pipe(takeUntil(this.destroy$))
-        .subscribe((data: any) => {
-          this.onlineUsers.set(data.count);
-        });
-
-      // Listen for real-time notifications
-      this.websocketService.on('notification')
-        .pipe(takeUntil(this.destroy$))
-        .subscribe((notification: any) => {
-          this.notificationService.addNotification(notification);
-          this.animateBadge();
-        });
-    }
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen.update(isOpen => !isOpen);
   }
 
   /**
@@ -308,27 +322,23 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Toggle mobile menu
+   * Toggle notifications panel
    */
-  toggleMobileMenu(): void {
-    this.isMobileMenuOpen.update(open => !open);
-  }
-
-  /**
-   * Close mobile menu
-   */
-  closeMobileMenu(): void {
-    this.isMobileMenuOpen.set(false);
+  toggleNotifications(): void {
+    this.isNotificationOpen.update(isOpen => !isOpen);
+    
+    if (this.isNotificationOpen()) {
+      // Mark notifications as read when opened
+      this.store.dispatch(NotificationActions.markAllAsRead());
+    }
   }
 
   /**
    * Focus search input
    */
   focusSearch(): void {
-    if (this.searchInput) {
-      this.searchInput.nativeElement.focus();
-      this.searchInput.nativeElement.select();
-    }
+    this.isSearchFocused.set(true);
+    // Focus would be handled by ViewChild in template
   }
 
   /**
@@ -337,57 +347,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
   clearSearch(): void {
     this.searchControl.setValue('');
     this.searchResults.set([]);
-    this.showSearchResults.set(false);
+    this.isSearchFocused.set(false);
   }
 
   /**
    * Handle search result click
    */
-  onSearchResultClick(result: SearchResult): void {
+  onSearchResultClick(result: any): void {
+    // Navigate to result
+    // Router would be injected and used here
     this.clearSearch();
-    this.navigate(result.url);
-  }
-
-  /**
-   * Handle search blur
-   */
-  onSearchBlur(): void {
-    // Delay to allow click on results
-    setTimeout(() => {
-      this.showSearchResults.set(false);
-    }, 200);
-  }
-
-  /**
-   * Handle user menu action
-   */
-  handleUserMenuAction(action: string): void {
-    switch (action) {
-      case 'profile':
-        this.navigate('/profile');
-        break;
-      case 'settings':
-        this.navigate('/settings');
-        break;
-      case 'notifications':
-        this.navigate('/notifications');
-        break;
-      case 'help':
-        this.navigate('/help');
-        break;
-      case 'logout':
-        this.logout();
-        break;
-    }
-  }
-
-  /**
-   * Navigate to route
-   */
-  private navigate(route: string): void {
-    // Router navigation would be handled here
-    console.log('Navigating to:', route);
-    this.closeMobileMenu();
   }
 
   /**
@@ -398,64 +367,126 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Change language
+   */
+  changeLanguage(code: string): void {
+    this.currentLanguage.set(code);
+    this.localeService.setLocale(code);
+    
+    // Save preference
+    const user = this.user();
+    if (user) {
+      this.authService.updateUserPreferences({ language: code });
+    }
+  }
+
+  /**
    * Animate notification badge
    */
-  private animateBadge(): void {
-    this.badgeAnimation.set('pulse');
-    setTimeout(() => {
-      this.badgeAnimation.set('');
-    }, 600);
+  private animateNotificationBadge(): void {
+    this.notificationBadgeAnimation.set('pulse');
+    setTimeout(() => this.notificationBadgeAnimation.set(''), 600);
   }
 
   /**
-   * Get user initials
+   * Play notification sound
    */
-  getUserInitials(): string {
-    const user = this.user();
-    if (!user) return '?';
+  private playNotificationSound(): void {
+    if (this.user()?.preferences?.soundEnabled) {
+      const audio = new Audio('/assets/sounds/notification.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {
+        // Handle autoplay restrictions
+      });
+    }
+  }
+
+  /**
+   * Check if user has permission
+   */
+  hasPermission(permissions: string[]): boolean {
+    if (permissions.length === 0) return true;
     
-    const firstName = user.firstName || '';
-    const lastName = user.lastName || '';
-    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || '?';
-  }
-
-  /**
-   * Get user avatar
-   */
-  getUserAvatar(): string | null {
     const user = this.user();
-    return user?.avatar || null;
+    if (!user) return false;
+    
+    return permissions.some(permission => 
+      user.permissions?.includes(permission) || false
+    );
   }
 
   /**
-   * Get connection status color
+   * Get notification icon
    */
-  getConnectionStatusColor(): string {
-    switch (this.connectionStatus()) {
-      case 'connected':
-        return 'success';
-      case 'connecting':
-        return 'warning';
-      case 'disconnected':
-        return 'error';
-      default:
-        return 'error';
-    }
+  getNotificationIcon(type: string): string {
+    const iconMap: { [key: string]: string } = {
+      'task': 'task_alt',
+      'comment': 'comment',
+      'mention': 'alternate_email',
+      'sprint': 'speed',
+      'project': 'folder',
+      'team': 'groups',
+      'system': 'info'
+    };
+    return iconMap[type] || 'notifications';
   }
 
   /**
-   * Get connection status tooltip
+   * Get notification color
    */
-  getConnectionStatusTooltip(): string {
-    switch (this.connectionStatus()) {
-      case 'connected':
-        return `Connected • ${this.onlineUsers()} users online`;
-      case 'connecting':
-        return 'Connecting...';
-      case 'disconnected':
-        return 'Disconnected';
-      default:
-        return 'Unknown';
+  getNotificationColor(type: string): string {
+    const colorMap: { [key: string]: string } = {
+      'task': 'primary',
+      'comment': 'accent',
+      'mention': 'warn',
+      'sprint': 'primary',
+      'project': 'primary',
+      'team': 'accent',
+      'system': 'basic'
+    };
+    return colorMap[type] || 'basic';
+  }
+
+  /**
+   * Format notification time
+   */
+  formatNotificationTime(date: Date | string): string {
+    const now = new Date();
+    const notificationDate = new Date(date);
+    const diff = now.getTime() - notificationDate.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return notificationDate.toLocaleDateString();
+  }
+
+  /**
+   * Get user avatar URL
+   */
+  getUserAvatar(): string {
+    const user = this.user();
+    if (user?.avatarUrl) {
+      return user.avatarUrl;
     }
+    // Return default avatar or generate based on initials
+    return `/assets/avatars/default.png`;
+  }
+
+  /**
+   * Get online status color
+   */
+  getStatusColor(): string {
+    const statusColors: { [key: string]: string } = {
+      'online': 'success',
+      'away': 'warning',
+      'busy': 'error',
+      'offline': 'disabled'
+    };
+    return statusColors[this.onlineStatus()] || 'disabled';
   }
 }
