@@ -15,6 +15,8 @@
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
+- [Project Status](#project-status)
+- [Roadmap]( 3roadmap)
 - [Getting Started](#getting-started)
 - [Development](#development)
 - [Testing](#testing)
@@ -140,6 +142,75 @@ scrum-project-manager/
 ├── postman/                     # API testing collections
 └── nginx/                       # Web server configuration
 ```
+
+---
+
+## Project Status
+
+### Current State vs Scope
+
+| Area     | Module/Feature         | Current State | Next Milestone                         | ETA     | Owner |
+| -------- | ---------------------- | ------------- | -------------------------------------- | ------- | ----- |
+| Backend  | API Gateway (GraphQL)  | Planned       | Healthcheck + `Query{version}`         | 1 week  | JR    |
+| Backend  | Identity (JWT/RBAC)    | Design        | Login + Refresh + `me`                 | 3 weeks | JR    |
+| Backend  | Projects               | Design        | Entities + Schema (`Project{id,name}`) | 4 weeks | JR    |
+| Backend  | AI Assistant           | Planned       | `/recommendations` mock                | 4 weeks | JR    |
+| Frontend | Shell + Router         | ✅ Done        | Kanban (read-only)                     | 2 weeks | —     |
+| DevOps   | docker-compose.dev     | Design        | Postgres + Redis + services            | 2 weeks | —     |
+| DevOps   | CI/CD (GitHub Actions) | Planned       | Lint + Build + Test on PRs             | 2 weeks | —     |
+| Docs     | Compodoc               | ✅ Done        | Link from README                       | 1 day   | —     |
+
+### Milestone Checklist
+
+**MVP-0 (First tangible demo)**
+
+* [ ] API Gateway: `GET /health`, `Query{version}`
+* [ ] Identity: Login, Refresh, `me` resolver, basic guards
+* [ ] Projects: TypeORM + migrations + `Project{id,name}` schema
+* [ ] Frontend: Kanban (read-only) with Apollo
+* [ ] docker-compose.dev: Postgres + Redis + services
+* [ ] E2E test: create project → see it in Kanban
+
+### Status Legend
+
+* **Planned**: Mentioned in scope, not yet started
+* **Design**: Domain model / architecture defined
+* **Scaffolded**: Nx app/library generated, minimal code present
+* **In Progress**: Active implementation
+* **Done**: Ready and working with tests/docs
+
+## Roadmap
+
+```mermaid
+gantt
+  title Roadmap (MVP-0 → MVP-1)
+  dateFormat  YYYY-MM-DD
+  section Backend
+  API Gateway (health+version)     :a1, 2025-09-16, 7d
+  Identity (JWT+me)                :a2, after a1, 10d
+  Projects (entities+schema)       :a3, after a2, 10d
+  section Frontend
+  Shell+Router+Apollo              :b1, 2025-09-16, 7d
+  Kanban read-only                 :b2, after b1, 10d
+  section DevOps
+  docker-compose.dev               :c1, 2025-09-16, 5d
+  CI lint/build/test (PR)          :c2, after c1, 5d
+```
+
+## Risks & Assumptions
+
+* **Risk**: Premature microservice split → **Mitigation**: start as modular monolith, extract later.
+* **Risk**: Scope creep → **Mitigation**: enforce milestone boundaries.
+* **Assumption**: Postgres + Redis available via docker-compose.dev.
+
+## Definition of Done (per layer)
+
+* **Backend**: Compiles, GraphQL schema generated, minimal unit tests.
+* **Frontend**: Builds, routed module loads, basic store integration.
+* **DevOps**: `docker compose up` runs frontend + backend + db + redis.
+* **Docs**: Updated README, STATUS.md, Compodoc builds without errors.
+
+---
 
 ## Getting Started
 
