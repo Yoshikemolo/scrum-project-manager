@@ -1,0 +1,229 @@
+<div class="login-container" [@fadeIn]>
+  <mat-card class="login-card" [@slideIn] [@shake]="shakeAnimation()">
+    <!-- Header -->
+    <mat-card-header class="login-header">
+      <div class="logo-container">
+        <img src="assets/images/logo.svg" alt="{{ 'app.name' | translate }}" class="logo" />
+      </div>
+      <h1 class="login-title">{{ 'auth.login.title' | translate }}</h1>
+      <p class="login-subtitle">{{ 'auth.login.subtitle' | translate }}</p>
+    </mat-card-header>
+
+    <!-- Login Form -->
+    <mat-card-content class="login-content">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <!-- Email Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'auth.login.email.label' | translate }}</mat-label>
+          <input
+            matInput
+            type="email"
+            formControlName="email"
+            placeholder="{{ 'auth.login.email.placeholder' | translate }}"
+            autocomplete="email"
+            [attr.aria-label]="'auth.login.email.label' | translate"
+            [attr.aria-describedby]="loginForm.get('email')?.errors ? 'email-error' : null"
+          />
+          <mat-icon matPrefix>email</mat-icon>
+          <mat-error id="email-error" *ngIf="loginForm.get('email')?.touched">
+            {{ getErrorMessage('email') }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Password Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'auth.login.password.label' | translate }}</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            placeholder="{{ 'auth.login.password.placeholder' | translate }}"
+            autocomplete="current-password"
+            [attr.aria-label]="'auth.login.password.label' | translate"
+            [attr.aria-describedby]="loginForm.get('password')?.errors ? 'password-error' : null"
+          />
+          <mat-icon matPrefix>lock</mat-icon>
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="hidePassword() ? ('auth.login.password.show' | translate) : ('auth.login.password.hide' | translate)"
+            [matTooltip]="hidePassword() ? ('auth.login.password.show' | translate) : ('auth.login.password.hide' | translate)"
+          >
+            <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+          </button>
+          <mat-error id="password-error" *ngIf="loginForm.get('password')?.touched">
+            {{ getErrorMessage('password') }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Password Strength Indicator -->
+        <div class="password-strength" *ngIf="loginForm.get('password')?.value">
+          <div class="strength-bars">
+            <div
+              class="strength-bar"
+              *ngFor="let i of [1,2,3,4]"
+              [class.active]="passwordStrength() >= i"
+              [class.weak]="passwordStrength() === 1 && i === 1"
+              [class.fair]="passwordStrength() === 2 && i <= 2"
+              [class.good]="passwordStrength() === 3 && i <= 3"
+              [class.strong]="passwordStrength() === 4 && i <= 4"
+            ></div>
+          </div>
+          <span class="strength-label" [class]="getPasswordStrengthColor()">
+            {{ getPasswordStrengthLabel() }}
+          </span>
+        </div>
+
+        <!-- Options Row -->
+        <div class="options-row">
+          <mat-checkbox formControlName="rememberMe" color="primary">
+            {{ 'auth.login.rememberMe' | translate }}
+          </mat-checkbox>
+          <a
+            class="forgot-password-link"
+            (click)="forgotPassword()"
+            [attr.aria-label]="'auth.login.forgotPassword' | translate"
+          >
+            {{ 'auth.login.forgotPassword' | translate }}
+          </a>
+        </div>
+
+        <!-- Login Attempts Warning -->
+        <div class="warning-message" *ngIf="loginAttempts() > 2 && remainingAttempts() > 0">
+          <mat-icon>warning</mat-icon>
+          <span>{{ 'auth.login.attemptsRemaining' | translate: { count: remainingAttempts() } }}</span>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" *ngIf="error$ | async as error">
+          <mat-icon>error</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="full-width submit-button"
+          [disabled]="loginForm.invalid || isLoginDisabled()"
+          [class.loading]="isSubmitting()"
+        >
+          <mat-spinner
+            *ngIf="isSubmitting()"
+            diameter="20"
+            class="button-spinner"
+          ></mat-spinner>
+          <span *ngIf="!isSubmitting()">
+            {{ 'auth.login.submit' | translate }}
+          </span>
+        </button>
+
+        <!-- Keyboard Shortcuts Hint -->
+        <div class="shortcuts-hint">
+          <mat-icon>keyboard</mat-icon>
+          <span>{{ 'auth.login.shortcuts.submit' | translate }}</span>
+        </div>
+      </form>
+
+      <!-- Social Login Divider -->
+      <div class="divider-container">
+        <mat-divider></mat-divider>
+        <span class="divider-text">{{ 'auth.login.or' | translate }}</span>
+        <mat-divider></mat-divider>
+      </div>
+
+      <!-- Social Login Buttons -->
+      <div class="social-login-container">
+        <button
+          mat-stroked-button
+          class="social-button google-button"
+          (click)="socialLogin('google')"
+          [disabled]="socialLoginLoading() === 'google'"
+          [matTooltip]="'auth.login.shortcuts.google' | translate"
+        >
+          <mat-spinner
+            *ngIf="socialLoginLoading() === 'google'"
+            diameter="20"
+            class="button-spinner"
+          ></mat-spinner>
+          <img
+            *ngIf="socialLoginLoading() !== 'google'"
+            src="assets/images/google-logo.svg"
+            alt="Google"
+            class="social-icon"
+          />
+          <span>{{ 'auth.login.social.google' | translate }}</span>
+        </button>
+
+        <button
+          mat-stroked-button
+          class="social-button github-button"
+          (click)="socialLogin('github')"
+          [disabled]="socialLoginLoading() === 'github'"
+          [matTooltip]="'auth.login.shortcuts.github' | translate"
+        >
+          <mat-spinner
+            *ngIf="socialLoginLoading() === 'github'"
+            diameter="20"
+            class="button-spinner"
+          ></mat-spinner>
+          <img
+            *ngIf="socialLoginLoading() !== 'github'"
+            src="assets/images/github-logo.svg"
+            alt="GitHub"
+            class="social-icon"
+          />
+          <span>{{ 'auth.login.social.github' | translate }}</span>
+        </button>
+      </div>
+    </mat-card-content>
+
+    <!-- Footer -->
+    <mat-card-footer class="login-footer">
+      <p class="register-prompt">
+        {{ 'auth.login.noAccount' | translate }}
+        <a
+          class="register-link"
+          (click)="navigateToRegister()"
+          [attr.aria-label]="'auth.login.register' | translate"
+        >
+          {{ 'auth.login.register' | translate }}
+        </a>
+      </p>
+      
+      <!-- Language Selector -->
+      <div class="language-selector">
+        <mat-icon>language</mat-icon>
+        <button mat-button [matMenuTriggerFor]="languageMenu">
+          {{ 'languages.' + translateService.currentLang | translate }}
+        </button>
+        <mat-menu #languageMenu="matMenu">
+          <button mat-menu-item (click)="translateService.use('en')">
+            {{ 'languages.en' | translate }}
+          </button>
+          <button mat-menu-item (click)="translateService.use('es')">
+            {{ 'languages.es' | translate }}
+          </button>
+          <button mat-menu-item (click)="translateService.use('fr')">
+            {{ 'languages.fr' | translate }}
+          </button>
+          <button mat-menu-item (click)="translateService.use('de')">
+            {{ 'languages.de' | translate }}
+          </button>
+        </mat-menu>
+      </div>
+    </mat-card-footer>
+  </mat-card>
+
+  <!-- Background Animation -->
+  <div class="background-animation">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+    <div class="shape shape-5"></div>
+  </div>
+</div>
