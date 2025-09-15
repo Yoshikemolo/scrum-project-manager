@@ -1,0 +1,360 @@
+<div class="dashboard-container" [@fadeInUp]>
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="dashboard-title">{{ 'dashboard.title' | translate }}</h1>
+        <p class="dashboard-subtitle">
+          {{ 'dashboard.welcome' | translate: { name: (user$ | async)?.firstName || 'User' } }}
+        </p>
+      </div>
+      
+      <div class="header-right">
+        <!-- Period Selector -->
+        <mat-button-toggle-group
+          [value]="selectedPeriod()"
+          (change)="onPeriodChange($event.value)"
+          class="period-selector"
+        >
+          <mat-button-toggle value="week" [matTooltip]="'dashboard.periods.week' | translate">
+            {{ 'dashboard.periods.week' | translate }}
+          </mat-button-toggle>
+          <mat-button-toggle value="month" [matTooltip]="'dashboard.periods.month' | translate">
+            {{ 'dashboard.periods.month' | translate }}
+          </mat-button-toggle>
+          <mat-button-toggle value="quarter" [matTooltip]="'dashboard.periods.quarter' | translate">
+            {{ 'dashboard.periods.quarter' | translate }}
+          </mat-button-toggle>
+          <mat-button-toggle value="year" [matTooltip]="'dashboard.periods.year' | translate">
+            {{ 'dashboard.periods.year' | translate }}
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+        
+        <!-- Action Buttons -->
+        <button
+          mat-icon-button
+          (click)="refreshDashboard()"
+          [matTooltip]="'dashboard.actions.refresh' | translate"
+          [disabled]="isLoading()"
+        >
+          <mat-icon [class.spin]="isLoading()">refresh</mat-icon>
+        </button>
+        
+        <button
+          mat-icon-button
+          (click)="toggleAutoRefresh()"
+          [matTooltip]="autoRefresh() ? ('dashboard.actions.autoRefreshOn' | translate) : ('dashboard.actions.autoRefreshOff' | translate)"
+          [color]="autoRefresh() ? 'primary' : ''"
+        >
+          <mat-icon>{{ autoRefresh() ? 'timer' : 'timer_off' }}</mat-icon>
+        </button>
+        
+        <button
+          mat-icon-button
+          (click)="exportDashboard()"
+          [matTooltip]="'dashboard.actions.export' | translate"
+        >
+          <mat-icon>download</mat-icon>
+        </button>
+        
+        <button
+          mat-icon-button
+          (click)="toggleFullscreen()"
+          [matTooltip]="'dashboard.actions.fullscreen' | translate"
+        >
+          <mat-icon>fullscreen</mat-icon>
+        </button>
+        
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="settingsMenu"
+          [matTooltip]="'dashboard.actions.settings' | translate"
+        >
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Last Updated -->
+    <div class="last-updated">
+      <mat-icon>update</mat-icon>
+      <span>{{ 'dashboard.lastUpdated' | translate }}: {{ formatRelativeTime(lastUpdated()) }}</span>
+    </div>
+  </div>
+  
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading()">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+  
+  <!-- KPI Cards -->
+  <div class="kpi-section" [@staggerAnimation]="widgets().length">
+    <mat-card
+      class="kpi-card"
+      *ngFor="let kpi of [
+        { key: 'projects', value: totalProjects(), icon: 'folder', color: 'primary', trend: 12 },
+        { key: 'sprints', value: activeSprints(), icon: 'flag', color: 'accent', trend: 3 },
+        { key: 'tasks', value: completedTasks(), icon: 'check_circle', color: 'success', trend: 156 },
+        { key: 'team', value: teamMembers(), icon: 'group', color: 'warn', trend: 24 },
+        { key: 'velocity', value: velocity(), icon: 'speed', color: 'primary', trend: 38 },
+        { key: 'bugs', value: bugCount(), icon: 'bug_report', color: 'error', trend: 12, inverse: true },
+        { key: 'reviews', value: codeReviews(), icon: 'rate_review', color: 'accent', trend: 15 },
+        { key: 'deployments', value: deployments(), icon: 'cloud_upload', color: 'success', trend: 3 }
+      ]"
+      (click)="navigateToDetail(kpi.key)"
+      [@pulse]="kpi.value"
+    >
+      <mat-card-content class="kpi-content">
+        <div class="kpi-icon" [class]="'bg-' + kpi.color">
+          <mat-icon>{{ kpi.icon }}</mat-icon>
+        </div>
+        <div class="kpi-details">
+          <h3 class="kpi-value" [@numberAnimation]>
+            {{ kpi.value }}
+            <mat-icon
+              class="trend-icon"
+              [class]="getTrendColor(kpi.value, kpi.trend, kpi.inverse)"
+            >
+              {{ getTrendIcon(kpi.value, kpi.trend) }}
+            </mat-icon>
+          </h3>
+          <p class="kpi-label">{{ 'dashboard.kpi.' + kpi.key | translate }}</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  
+  <!-- Main Dashboard Grid -->
+  <div class="dashboard-grid" cdkDropList (cdkDropListDropped)="onWidgetDrop($event)">
+    <!-- Velocity Chart Widget -->
+    <mat-card
+      class="widget-card"
+      *ngIf="widgets()[0].enabled"
+      cdkDrag
+      [style.grid-column]="'span ' + (isMobile() ? 1 : 2)"
+      [style.grid-row]="'span 2'"
+    >
+      <mat-card-header class="widget-header">
+        <mat-icon>speed</mat-icon>
+        <h2 class="widget-title">{{ 'dashboard.widgets.velocity' | translate }}</h2>
+        <button mat-icon-button class="widget-action" [matMenuTriggerFor]="velocityMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content class="widget-content">
+        <div class="chart-container">
+          <canvas #velocityChart></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    
+    <!-- Burndown Chart Widget -->
+    <mat-card
+      class="widget-card"
+      *ngIf="widgets()[1].enabled"
+      cdkDrag
+      [style.grid-column]="'span ' + (isMobile() ? 1 : 2)"
+      [style.grid-row]="'span 2'"
+    >
+      <mat-card-header class="widget-header">
+        <mat-icon>trending_down</mat-icon>
+        <h2 class="widget-title">{{ 'dashboard.widgets.burndown' | translate }}</h2>
+        <button mat-icon-button class="widget-action" [matMenuTriggerFor]="burndownMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content class="widget-content">
+        <div class="chart-container">
+          <canvas #burndownChart></canvas>
+        </div>
+        <div class="sprint-progress">
+          <mat-progress-bar
+            mode="determinate"
+            [value]="sprintProgress()"
+            [color]="sprintProgress() > 70 ? 'warn' : 'primary'"
+          ></mat-progress-bar>
+          <span class="progress-label">
+            {{ 'dashboard.sprint.progress' | translate: { value: sprintProgress() } }}
+          </span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    
+    <!-- Task Distribution Widget -->
+    <mat-card
+      class="widget-card"
+      *ngIf="widgets()[2].enabled"
+      cdkDrag
+      [style.grid-column]="'span 1'"
+      [style.grid-row]="'span ' + (isMobile() ? 1 : 2)"
+    >
+      <mat-card-header class="widget-header">
+        <mat-icon>assignment</mat-icon>
+        <h2 class="widget-title">{{ 'dashboard.widgets.tasks' | translate }}</h2>
+      </mat-card-header>
+      <mat-card-content class="widget-content">
+        <div class="chart-container small">
+          <canvas #taskChart></canvas>
+        </div>
+        <div class="completion-rate">
+          <mat-progress-spinner
+            mode="determinate"
+            [value]="completionRate()"
+            diameter="60"
+            strokeWidth="6"
+            [color]="completionRate() > 80 ? 'primary' : 'warn'"
+          ></mat-progress-spinner>
+          <div class="rate-value">{{ completionRate() }}%</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    
+    <!-- Team Performance Widget -->
+    <mat-card
+      class="widget-card"
+      *ngIf="widgets()[3].enabled"
+      cdkDrag
+      [style.grid-column]="'span 1'"
+      [style.grid-row]="'span ' + (isMobile() ? 1 : 2)"
+    >
+      <mat-card-header class="widget-header">
+        <mat-icon>group</mat-icon>
+        <h2 class="widget-title">{{ 'dashboard.widgets.team' | translate }}</h2>
+      </mat-card-header>
+      <mat-card-content class="widget-content">
+        <div class="chart-container small">
+          <canvas #teamChart></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    
+    <!-- Activity Timeline Widget -->
+    <mat-card
+      class="widget-card activity-widget"
+      *ngIf="widgets()[4].enabled"
+      cdkDrag
+      [style.grid-column]="'span ' + (isMobile() ? 1 : 2)"
+      [style.grid-row]="'span 3'"
+    >
+      <mat-card-header class="widget-header">
+        <mat-icon>timeline</mat-icon>
+        <h2 class="widget-title">{{ 'dashboard.widgets.activity' | translate }}</h2>
+        <mat-chip-list class="activity-filters">
+          <mat-chip selected color="primary">{{ 'dashboard.activity.all' | translate }}</mat-chip>
+          <mat-chip>{{ 'dashboard.activity.tasks' | translate }}</mat-chip>
+          <mat-chip>{{ 'dashboard.activity.comments' | translate }}</mat-chip>
+          <mat-chip>{{ 'dashboard.activity.deployments' | translate }}</mat-chip>
+        </mat-chip-list>
+      </mat-card-header>
+      <mat-card-content class="widget-content">
+        <div class="activity-timeline">
+          <div
+            class="activity-item"
+            *ngFor="let activity of activities()"
+            [@fadeInUp]
+          >
+            <div class="activity-icon" [class]="'bg-' + activity.color">
+              <mat-icon>{{ activity.icon }}</mat-icon>
+            </div>
+            <div class="activity-content">
+              <h4 class="activity-title">{{ activity.title }}</h4>
+              <p class="activity-description">{{ activity.description }}</p>
+              <div class="activity-meta">
+                <img
+                  *ngIf="activity.avatar"
+                  [src]="activity.avatar"
+                  [alt]="activity.user"
+                  class="activity-avatar"
+                />
+                <mat-icon *ngIf="!activity.avatar" class="activity-avatar-icon">account_circle</mat-icon>
+                <span class="activity-user">{{ activity.user }}</span>
+                <span class="activity-time">{{ formatRelativeTime(activity.timestamp) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    
+    <!-- Quick Actions Widget -->
+    <mat-card
+      class="widget-card quick-actions-widget"
+      *ngIf="widgets()[5].enabled"
+      cdkDrag
+      [style.grid-column]="'span ' + (isMobile() ? 1 : 2)"
+      [style.grid-row]="'span 1'"
+    >
+      <mat-card-header class="widget-header">
+        <mat-icon>flash_on</mat-icon>
+        <h2 class="widget-title">{{ 'dashboard.widgets.quickActions' | translate }}</h2>
+      </mat-card-header>
+      <mat-card-content class="widget-content">
+        <div class="quick-actions">
+          <button mat-raised-button color="primary" routerLink="/projects/new">
+            <mat-icon>add</mat-icon>
+            {{ 'dashboard.actions.newProject' | translate }}
+          </button>
+          <button mat-raised-button color="accent" routerLink="/tasks/new">
+            <mat-icon>assignment_add</mat-icon>
+            {{ 'dashboard.actions.newTask' | translate }}
+          </button>
+          <button mat-raised-button routerLink="/sprints/planning">
+            <mat-icon>event</mat-icon>
+            {{ 'dashboard.actions.planSprint' | translate }}
+          </button>
+          <button mat-raised-button routerLink="/reports">
+            <mat-icon>assessment</mat-icon>
+            {{ 'dashboard.actions.viewReports' | translate }}
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  
+  <!-- Settings Menu -->
+  <mat-menu #settingsMenu="matMenu">
+    <button mat-menu-item (click)="toggleWidget('velocity')">
+      <mat-icon>{{ widgets()[0].enabled ? 'visibility_off' : 'visibility' }}</mat-icon>
+      {{ 'dashboard.settings.toggleVelocity' | translate }}
+    </button>
+    <button mat-menu-item (click)="toggleWidget('burndown')">
+      <mat-icon>{{ widgets()[1].enabled ? 'visibility_off' : 'visibility' }}</mat-icon>
+      {{ 'dashboard.settings.toggleBurndown' | translate }}
+    </button>
+    <button mat-menu-item (click)="toggleWidget('tasks')">
+      <mat-icon>{{ widgets()[2].enabled ? 'visibility_off' : 'visibility' }}</mat-icon>
+      {{ 'dashboard.settings.toggleTasks' | translate }}
+    </button>
+    <button mat-menu-item (click)="toggleWidget('team')">
+      <mat-icon>{{ widgets()[3].enabled ? 'visibility_off' : 'visibility' }}</mat-icon>
+      {{ 'dashboard.settings.toggleTeam' | translate }}
+    </button>
+    <button mat-menu-item (click)="toggleWidget('activity')">
+      <mat-icon>{{ widgets()[4].enabled ? 'visibility_off' : 'visibility' }}</mat-icon>
+      {{ 'dashboard.settings.toggleActivity' | translate }}
+    </button>
+  </mat-menu>
+  
+  <!-- Chart Context Menus -->
+  <mat-menu #velocityMenu="matMenu">
+    <button mat-menu-item>
+      <mat-icon>zoom_in</mat-icon>
+      {{ 'dashboard.chart.zoomIn' | translate }}
+    </button>
+    <button mat-menu-item>
+      <mat-icon>save_alt</mat-icon>
+      {{ 'dashboard.chart.export' | translate }}
+    </button>
+  </mat-menu>
+  
+  <mat-menu #burndownMenu="matMenu">
+    <button mat-menu-item>
+      <mat-icon>zoom_in</mat-icon>
+      {{ 'dashboard.chart.zoomIn' | translate }}
+    </button>
+    <button mat-menu-item>
+      <mat-icon>save_alt</mat-icon>
+      {{ 'dashboard.chart.export' | translate }}
+    </button>
+  </mat-menu>
+</div>
