@@ -1,369 +1,461 @@
-/**
- * @fileoverview Header Component
- * @module HeaderComponent
- * 
- * Main application header component that provides:
- * - Navigation menu toggle
- * - Global search functionality
- * - User profile menu
- * - Theme switching
- * - Language selection
- * - Notifications access
- * - Quick actions
- * 
- * @author SCRUM Project Manager Team
- * @copyright 2025 Ximplicity Software Solutions
- */
-
-import { 
-  Component, 
-  Input, 
-  Output, 
-  EventEmitter, 
-  inject, 
-  signal, 
-  computed,
-  OnInit,
-  OnDestroy,
-  ChangeDetectionStrategy,
-  ViewChild,
-  ElementRef
-} from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatRippleModule } from '@angular/material/core';
 import { Store } from '@ngrx/store';
-import { Subject, fromEvent } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
+import { trigger, transition, style, animate, state } from '@angular/animations';
 
-import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
-import { ShortcutService } from '../../core/services/shortcut.service';
-import { LoadingService } from '../../core/services/loading.service';
+import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
-import * as AuthActions from '../../store/auth/auth.actions';
-
-/**
- * Language option interface
- */
-interface LanguageOption {
-  code: string;
-  name: string;
-}
+import { ShortcutService } from '../../core/services/shortcut.service';
+import { SearchService } from '../../core/services/search.service';
+import { WebSocketService } from '../../core/services/websocket.service';
+import { AuthActions } from '../../store/auth/auth.actions';
+import { selectUser, selectIsAuthenticated } from '../../store/auth/auth.selectors';
+import { selectUnreadNotificationsCount } from '../../store/notifications/notifications.selectors';
+import { User } from '../../shared/interfaces/user.interface';
+import { SearchResult } from '../../shared/interfaces/search.interface';
 
 /**
  * Header component for the application
- * 
- * @example
- * ```html
- * <app-header 
- *   [sidenavOpened]="isSidenavOpen"
- *   (toggleSidenav)="onToggleSidenav()"
- *   (toggleNotifications)="onToggleNotifications()">
- * </app-header>
- * ```
+ * Provides navigation, search, notifications, and user menu
  */
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule,
-    FormsModule,
+    RouterLink,
+    RouterLinkActive,
+    ReactiveFormsModule,
     MatToolbarModule,
-    MatIconModule,
     MatButtonModule,
+    MatIconModule,
     MatMenuModule,
     MatBadgeModule,
     MatTooltipModule,
+    MatDividerModule,
     MatInputModule,
     MatFormFieldModule,
-    MatDividerModule,
-    MatProgressBarModule,
-    TranslateModule
+    MatProgressSpinnerModule,
+    MatAutocompleteModule,
+    MatRippleModule
   ],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  animations: [
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ transform: 'translateY(-100%)', opacity: 0 }),
+        animate('300ms ease-out', style({ transform: 'translateY(0)', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ transform: 'translateY(-100%)', opacity: 0 }))
+      ])
+    ]),
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('200ms ease-out', style({ opacity: 1 }))
+      ])
+    ]),
+    trigger('badgePulse', [
+      state('pulse', style({ transform: 'scale(1)' })),
+      transition('* => pulse', [
+        animate('300ms', style({ transform: 'scale(1.2)' })),
+        animate('300ms', style({ transform: 'scale(1)' }))
+      ])
+    ])
+  ]
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  // Service injections
-  private readonly store = inject(Store);
-  private readonly authService = inject(AuthService);
-  private readonly themeService = inject(ThemeService);
-  private readonly translateService = inject(TranslateService);
-  private readonly shortcutService = inject(ShortcutService);
-  private readonly loadingService = inject(LoadingService);
-  private readonly notificationService = inject(NotificationService);
-  
-  // Component lifecycle
-  private readonly destroy$ = new Subject<void>();
-  
-  /**
-   * Whether the sidenav is currently opened
-   */
-  @Input() sidenavOpened = false;
-  
-  /**
-   * Event emitted when sidenav toggle is requested
-   */
-  @Output() toggleSidenav = new EventEmitter<void>();
-  
-  /**
-   * Event emitted when notifications panel toggle is requested
-   */
-  @Output() toggleNotifications = new EventEmitter<void>();
-  
-  /**
-   * Reference to search input element
-   */
-  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
-  
+  // Dependency injection
+  private store = inject(Store);
+  private themeService = inject(ThemeService);
+  private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
+  private shortcutService = inject(ShortcutService);
+  private searchService = inject(SearchService);
+  private websocketService = inject(WebSocketService);
+
+  // ViewChild references
+  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+
   // Component state
-  searchQuery = '';
-  currentLanguage = signal(this.translateService.currentLang);
-  scrolled = signal(false);
+  user = signal<User | null>(null);
+  isAuthenticated = signal(false);
+  isDarkTheme = signal(false);
+  unreadNotifications = signal(0);
+  searchControl = new FormControl('');
+  searchResults = signal<SearchResult[]>([]);
+  isSearching = signal(false);
+  showSearchResults = signal(false);
+  isMobileMenuOpen = signal(false);
+  isScrolled = signal(false);
+  badgeAnimation = signal('');
+  onlineUsers = signal(0);
+  connectionStatus = signal<'connected' | 'connecting' | 'disconnected'>('disconnected');
   
-  // Computed signals from services
-  isLoading = computed(() => this.loadingService.isLoading());
-  unreadNotifications = computed(() => this.notificationService.unreadCount());
-  
-  // User information computed from auth service
-  userName = computed(() => {
-    const user = this.authService.currentUser();
-    return user ? `${user.firstName} ${user.lastName}`.trim() : '';
-  });
-  
-  userEmail = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.email || '';
-  });
-  
-  userAvatar = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.avatar || null;
-  });
-  
-  userRole = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.roles?.[0]?.name || '';
-  });
-  
-  // Theme state
-  isDarkTheme = computed(() => {
-    return this.themeService.currentTheme() === 'dark';
-  });
-  
-  /**
-   * Available languages for the application
-   */
-  readonly availableLanguages: ReadonlyArray<LanguageOption> = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'pt', name: 'Português' },
-    { code: 'it', name: 'Italiano' },
-    { code: 'ja', name: '日本語' },
-    { code: 'zh', name: '中文' }
+  // Observables
+  private destroy$ = new Subject<void>();
+  user$ = this.store.select(selectUser);
+  isAuthenticated$ = this.store.select(selectIsAuthenticated);
+  unreadCount$ = this.store.select(selectUnreadNotificationsCount);
+
+  // Navigation items
+  navigationItems = [
+    { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
+    { label: 'Projects', route: '/projects', icon: 'folder' },
+    { label: 'Tasks', route: '/tasks', icon: 'task_alt' },
+    { label: 'Sprints', route: '/sprints', icon: 'speed' },
+    { label: 'Teams', route: '/teams', icon: 'groups' },
+    { label: 'Reports', route: '/reports', icon: 'analytics' }
   ];
-  
-  /**
-   * Component initialization
-   */
+
+  // User menu items
+  userMenuItems = [
+    { label: 'Profile', icon: 'person', action: 'profile' },
+    { label: 'Settings', icon: 'settings', action: 'settings' },
+    { label: 'Notifications', icon: 'notifications', action: 'notifications', badge: true },
+    { label: 'Help & Support', icon: 'help', action: 'help' },
+    { divider: true },
+    { label: 'Logout', icon: 'logout', action: 'logout', danger: true }
+  ];
+
   ngOnInit(): void {
+    this.initializeSubscriptions();
+    this.setupSearch();
+    this.setupShortcuts();
     this.setupScrollListener();
-    this.setupKeyboardShortcuts();
-    this.loadUserPreferences();
+    this.setupWebSocket();
   }
-  
-  /**
-   * Component cleanup
-   */
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.websocketService.disconnect();
   }
-  
+
   /**
-   * Setup scroll listener for header elevation effect
-   * @private
+   * Initialize subscriptions
    */
-  private setupScrollListener(): void {
-    fromEvent(window, 'scroll')
-      .pipe(
-        debounceTime(10),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => {
-        this.scrolled.set(window.scrollY > 10);
-      });
-  }
-  
-  /**
-   * Setup keyboard shortcuts
-   * @private
-   */
-  private setupKeyboardShortcuts(): void {
-    // Global search shortcut (Ctrl/Cmd + K)
-    this.shortcutService.add({
-      keys: 'ctrl+k,cmd+k',
-      description: 'Focus global search',
-      handler: () => {
-        this.searchInput?.nativeElement.focus();
-        return false;
+  private initializeSubscriptions(): void {
+    // User subscription
+    this.user$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      this.user.set(user);
+    });
+
+    // Authentication subscription
+    this.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe(isAuth => {
+      this.isAuthenticated.set(isAuth);
+    });
+
+    // Theme subscription
+    this.themeService.isDarkTheme$.pipe(takeUntil(this.destroy$)).subscribe(isDark => {
+      this.isDarkTheme.set(isDark);
+    });
+
+    // Unread notifications subscription
+    this.unreadCount$.pipe(takeUntil(this.destroy$)).subscribe(count => {
+      const previousCount = this.unreadNotifications();
+      this.unreadNotifications.set(count);
+      
+      // Animate badge on new notification
+      if (count > previousCount) {
+        this.animateBadge();
       }
     });
-    
-    // Toggle theme shortcut (Ctrl/Cmd + Shift + T)
+  }
+
+  /**
+   * Setup search functionality
+   */
+  private setupSearch(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        takeUntil(this.destroy$),
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap(query => {
+          if (!query || query.length < 2) {
+            this.searchResults.set([]);
+            this.showSearchResults.set(false);
+            return of([]);
+          }
+
+          this.isSearching.set(true);
+          this.showSearchResults.set(true);
+          return this.searchService.search(query);
+        })
+      )
+      .subscribe({
+        next: (results) => {
+          this.searchResults.set(results);
+          this.isSearching.set(false);
+        },
+        error: () => {
+          this.searchResults.set([]);
+          this.isSearching.set(false);
+        }
+      });
+  }
+
+  /**
+   * Setup keyboard shortcuts
+   */
+  private setupShortcuts(): void {
+    // Global search shortcut (Ctrl/Cmd + K)
     this.shortcutService.add({
-      keys: 'ctrl+shift+t,cmd+shift+t',
+      keys: 'meta.k',
+      description: 'Open global search',
+      handler: () => {
+        this.focusSearch();
+        return true;
+      }
+    });
+
+    // Quick navigation shortcuts
+    this.shortcutService.add({
+      keys: 'meta.shift.d',
+      description: 'Go to dashboard',
+      handler: () => {
+        this.navigate('/dashboard');
+        return true;
+      }
+    });
+
+    this.shortcutService.add({
+      keys: 'meta.shift.p',
+      description: 'Go to projects',
+      handler: () => {
+        this.navigate('/projects');
+        return true;
+      }
+    });
+
+    // Toggle theme shortcut
+    this.shortcutService.add({
+      keys: 'meta.shift.t',
       description: 'Toggle theme',
       handler: () => {
         this.toggleTheme();
-        return false;
+        return true;
       }
     });
   }
-  
+
   /**
-   * Load user preferences from storage
-   * @private
+   * Setup scroll listener for header effects
    */
-  private loadUserPreferences(): void {
-    // Load saved language preference
-    const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage && this.isValidLanguage(savedLanguage)) {
-      this.translateService.use(savedLanguage);
-      this.currentLanguage.set(savedLanguage);
+  private setupScrollListener(): void {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('scroll', () => {
+        this.isScrolled.set(window.scrollY > 10);
+      });
     }
   }
-  
+
   /**
-   * Check if a language code is valid
-   * @param code Language code to validate
-   * @returns True if the language code is valid
-   * @private
+   * Setup WebSocket connection
    */
-  private isValidLanguage(code: string): boolean {
-    return this.availableLanguages.some(lang => lang.code === code);
-  }
-  
-  /**
-   * Handle global search
-   */
-  onSearch(): void {
-    const query = this.searchQuery.trim();
-    if (query) {
-      // TODO: Implement global search functionality
-      console.log('Searching for:', query);
+  private setupWebSocket(): void {
+    if (this.isAuthenticated()) {
+      this.websocketService.connect();
       
-      // For now, just show a notification
-      this.notificationService.info(
-        this.translateService.instant('header.searchInProgress', { query })
-      );
+      // Listen for connection status
+      this.websocketService.connectionStatus$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(status => {
+          this.connectionStatus.set(status);
+        });
+
+      // Listen for online users count
+      this.websocketService.on('onlineUsers')
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((data: any) => {
+          this.onlineUsers.set(data.count);
+        });
+
+      // Listen for real-time notifications
+      this.websocketService.on('notification')
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((notification: any) => {
+          this.notificationService.addNotification(notification);
+          this.animateBadge();
+        });
     }
   }
-  
+
   /**
-   * Clear search input
-   */
-  clearSearch(): void {
-    this.searchQuery = '';
-    this.searchInput?.nativeElement.focus();
-  }
-  
-  /**
-   * Toggle application theme
+   * Toggle theme
    */
   toggleTheme(): void {
     this.themeService.toggleTheme();
-    
-    // Show notification
-    const theme = this.isDarkTheme() ? 'dark' : 'light';
-    this.notificationService.success(
-      this.translateService.instant('header.themeChanged', { theme })
-    );
   }
-  
+
   /**
-   * Change application language
-   * @param languageCode The language code to switch to
+   * Toggle mobile menu
    */
-  changeLanguage(languageCode: string): void {
-    if (this.isValidLanguage(languageCode)) {
-      this.translateService.use(languageCode);
-      this.currentLanguage.set(languageCode);
-      localStorage.setItem('language', languageCode);
-      
-      // Show notification
-      const language = this.availableLanguages.find(l => l.code === languageCode)?.name;
-      this.notificationService.success(
-        this.translateService.instant('header.languageChanged', { language })
-      );
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen.update(open => !open);
+  }
+
+  /**
+   * Close mobile menu
+   */
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen.set(false);
+  }
+
+  /**
+   * Focus search input
+   */
+  focusSearch(): void {
+    if (this.searchInput) {
+      this.searchInput.nativeElement.focus();
+      this.searchInput.nativeElement.select();
     }
   }
-  
+
   /**
-   * Show keyboard shortcuts dialog
+   * Clear search
    */
-  showKeyboardShortcuts(): void {
-    // TODO: Implement keyboard shortcuts dialog
-    console.log('Show keyboard shortcuts dialog');
-    
-    // For now, just show a notification
-    this.notificationService.info(
-      this.translateService.instant('header.shortcutsComingSoon')
-    );
+  clearSearch(): void {
+    this.searchControl.setValue('');
+    this.searchResults.set([]);
+    this.showSearchResults.set(false);
   }
-  
+
   /**
-   * Handle avatar image load error
-   * @param event The error event
+   * Handle search result click
    */
-  handleAvatarError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    if (img) {
-      img.src = 'assets/images/default-avatar.png';
+  onSearchResultClick(result: SearchResult): void {
+    this.clearSearch();
+    this.navigate(result.url);
+  }
+
+  /**
+   * Handle search blur
+   */
+  onSearchBlur(): void {
+    // Delay to allow click on results
+    setTimeout(() => {
+      this.showSearchResults.set(false);
+    }, 200);
+  }
+
+  /**
+   * Handle user menu action
+   */
+  handleUserMenuAction(action: string): void {
+    switch (action) {
+      case 'profile':
+        this.navigate('/profile');
+        break;
+      case 'settings':
+        this.navigate('/settings');
+        break;
+      case 'notifications':
+        this.navigate('/notifications');
+        break;
+      case 'help':
+        this.navigate('/help');
+        break;
+      case 'logout':
+        this.logout();
+        break;
     }
   }
-  
+
   /**
-   * Logout the current user
+   * Navigate to route
+   */
+  private navigate(route: string): void {
+    // Router navigation would be handled here
+    console.log('Navigating to:', route);
+    this.closeMobileMenu();
+  }
+
+  /**
+   * Logout user
    */
   logout(): void {
-    // Show confirmation dialog
-    if (confirm(this.translateService.instant('header.logoutConfirm'))) {
-      this.store.dispatch(AuthActions.logout());
-      
-      // Clear local storage
-      localStorage.removeItem('language');
-      
-      // Show notification
-      this.notificationService.info(
-        this.translateService.instant('header.logoutSuccess')
-      );
+    this.store.dispatch(AuthActions.logout());
+  }
+
+  /**
+   * Animate notification badge
+   */
+  private animateBadge(): void {
+    this.badgeAnimation.set('pulse');
+    setTimeout(() => {
+      this.badgeAnimation.set('');
+    }, 600);
+  }
+
+  /**
+   * Get user initials
+   */
+  getUserInitials(): string {
+    const user = this.user();
+    if (!user) return '?';
+    
+    const firstName = user.firstName || '';
+    const lastName = user.lastName || '';
+    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || '?';
+  }
+
+  /**
+   * Get user avatar
+   */
+  getUserAvatar(): string | null {
+    const user = this.user();
+    return user?.avatar || null;
+  }
+
+  /**
+   * Get connection status color
+   */
+  getConnectionStatusColor(): string {
+    switch (this.connectionStatus()) {
+      case 'connected':
+        return 'success';
+      case 'connecting':
+        return 'warning';
+      case 'disconnected':
+        return 'error';
+      default:
+        return 'error';
     }
   }
-  
+
   /**
-   * TrackBy function for language options
-   * @param index The index of the item
-   * @param item The language option
-   * @returns The unique identifier for the item
+   * Get connection status tooltip
    */
-  trackByLanguageCode(index: number, item: LanguageOption): string {
-    return item.code;
+  getConnectionStatusTooltip(): string {
+    switch (this.connectionStatus()) {
+      case 'connected':
+        return `Connected • ${this.onlineUsers()} users online`;
+      case 'connecting':
+        return 'Connecting...';
+      case 'disconnected':
+        return 'Disconnected';
+      default:
+        return 'Unknown';
+    }
   }
 }
