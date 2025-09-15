@@ -4,14 +4,15 @@
 
 1. [Overview](#overview)
 2. [Testing Strategy](#testing-strategy)
-3. [Unit Testing](#unit-testing)
-4. [Integration Testing](#integration-testing)
-5. [End-to-End Testing](#end-to-end-testing)
-6. [Performance Testing](#performance-testing)
-7. [Security Testing](#security-testing)
-8. [Test Coverage](#test-coverage)
-9. [CI/CD Integration](#cicd-integration)
-10. [Related Documentation](#related-documentation)
+3. [Human Testing](#human-testing).
+4. [Unit Testing](#unit-testing)
+5. [Integration Testing](#integration-testing)
+6. [End-to-End Testing](#end-to-end-testing)
+7. [Performance Testing](#performance-testing)
+8. [Security Testing](#security-testing)
+9. [Test Coverage](#test-coverage)
+10. [CI/CD Integration](#cicd-integration)
+11. [Related Documentation](#related-documentation)
 
 ## Overview
 
@@ -22,31 +23,56 @@ This guide outlines the comprehensive testing strategy for the SCRUM Project Man
 ### Testing Pyramid
 
 ```
-            /\
-           /  \
-          / E2E \
-         /________\
-        /          \
-       / Integration\
-      /______________\
-     /                \
-    /   Unit Tests     \
-   /____________________\
+              /\            <--------
+             /  \                   |
+            / HT \                  Manual Testing (UX Experience)
+           /______\         <-------!
+          /   E2E  \                |
+         /__________\               |
+        /            \              
+       /  Integration \             Automatic Testing (Logic, Integration and Prevent Regressions
+      /________________\            
+     /                  \           |
+    /      Unit Tests    \          |
+   /______________________\  <-------
 ```
 
 ### Test Types Distribution
 
-- **Unit Tests**: 70% - Fast, isolated component testing
+-**Human Testing**: 5% - Manual, User Experiece UI testing
+- **Unit Tests**: 65% - Fast, isolated component testing
 - **Integration Tests**: 20% - Service interaction testing
 - **E2E Tests**: 10% - Critical user journey testing
 
 ### Testing Principles
 
-1. **Test First**: Write tests before implementation (TDD)
-2. **Fast Feedback**: Tests run quickly in development
-3. **Isolation**: Tests are independent and repeatable
-4. **Coverage**: Maintain minimum 80% code coverage
-5. **Documentation**: Tests serve as living documentation
+1. **User Centric**: User Experience and satisfaction is the focus. This means "The app must work as expected"
+2. **Test First**: Write tests before implementation (TDD)
+3. **Fast Feedback**: Tests run quickly in development
+4. **Isolation**: Tests are independent and repeatable
+5. **Coverage**: Maintain minimum 80% code coverage
+6. **Documentation**: Tests serve as living documentation
+
+## Human Testing
+
+This must be focused in an smooth and clear flow along the user works, providing:
+
+- Proper user identification and permissions
+- Easy UI interpretation (should be as much intutitive and clear as possible)
+- Clear content distribution and association
+- Clear actions, buttons, links, forms, and other navigation elements
+- Ease, smooth and clear interactions (good management of events and feedback in all types of user interfaces)
+- Forms and data validations
+- Clear feeadback
+- Context help
+- Smooth and quick transitions
+- Support, Help
+- High performance and low demanding user device resources (CPU, Memory, GPU, Storage) 
+- Low bandwidth and energy consumption
+
+*Note: Some of these goals could be stablished like KPIs, but most of them are part of the look&feel of an application. So, those should be confirmed with end users feedback, if possible.*
+
+Do not forget to test your applications and answer this question: Is this something I will LOVE to use? (if the answer is not a clear YES, improve it)
 
 ## Unit Testing
 

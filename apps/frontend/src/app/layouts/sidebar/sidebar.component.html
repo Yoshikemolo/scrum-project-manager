@@ -1,0 +1,302 @@
+<!-- Sidebar Component Template -->
+<nav 
+  class="sidebar" 
+  [class.collapsed]="isCollapsed"
+  [class.mobile]="isMobile"
+  [class.expanded]="expanded"
+  [attr.aria-label]="'sidebar.mainNavigation' | translate"
+  role="navigation"
+>
+  <!-- Header Section -->
+  <div class="sidebar-header">
+    <a 
+      class="logo-container" 
+      (click)="navigateHome()"
+      [attr.aria-label]="'sidebar.goHome' | translate"
+      tabindex="0"
+      (keydown.enter)="navigateHome()"
+      (keydown.space)="navigateHome()"
+    >
+      <img 
+        [src]="isCollapsed ? 'assets/logo-icon.svg' : 'assets/logo-full.svg'" 
+        [alt]="'sidebar.logoAlt' | translate"
+        class="logo"
+        [class.logo-collapsed]="isCollapsed"
+      />
+      <span class="logo-text" *ngIf="!isCollapsed">
+        {{ 'sidebar.appName' | translate }}
+      </span>
+    </a>
+    
+    <button 
+      mat-icon-button
+      class="collapse-toggle"
+      (click)="toggleCollapse.emit()"
+      [matTooltip]="(isCollapsed ? 'sidebar.expand' : 'sidebar.collapse') | translate"
+      matTooltipPosition="right"
+      [attr.aria-label]="(isCollapsed ? 'sidebar.expand' : 'sidebar.collapse') | translate"
+      [attr.aria-expanded]="!isCollapsed"
+    >
+      <mat-icon>{{ isCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+    </button>
+  </div>
+
+  <!-- Search Bar (when not collapsed) -->
+  <div class="sidebar-search" *ngIf="!isCollapsed">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-icon matPrefix>search</mat-icon>
+      <input 
+        matInput
+        type="search"
+        [placeholder]="'sidebar.searchMenu' | translate"
+        [(ngModel)]="searchQuery"
+        (input)="filterMenuItems()"
+        [attr.aria-label]="'sidebar.searchMenu' | translate"
+      />
+      <button 
+        mat-icon-button 
+        matSuffix 
+        *ngIf="searchQuery"
+        (click)="clearSearch()"
+        [attr.aria-label]="'sidebar.clearSearch' | translate"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+
+  <!-- Navigation Menu -->
+  <mat-nav-list class="sidebar-menu" role="list">
+    <ng-container *ngFor="let item of filteredMenuItems; trackBy: trackById">
+      <!-- Divider -->
+      <mat-divider 
+        *ngIf="item.divider" 
+        class="menu-divider"
+        [attr.aria-hidden]="true"
+      ></mat-divider>
+      
+      <!-- Single Menu Item (no children) -->
+      <a 
+        *ngIf="!item.children && !item.divider && hasPermission(item)"
+        mat-list-item 
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+        (click)="onNavigate(item)"
+        [matTooltip]="isCollapsed ? (item.label | translate) : ''"
+        matTooltipPosition="right"
+        class="menu-item"
+        [class.menu-item-collapsed]="isCollapsed"
+        [attr.aria-label]="item.label | translate"
+        [attr.aria-current]="isActiveRoute(item.route) ? 'page' : null"
+        matRipple
+      >
+        <mat-icon matListItemIcon [class.icon-collapsed]="isCollapsed">
+          {{ item.icon }}
+        </mat-icon>
+        <span matListItemTitle class="menu-label" *ngIf="!isCollapsed">
+          {{ item.label | translate }}
+        </span>
+        <span 
+          *ngIf="item.badge && !isCollapsed" 
+          class="badge"
+          [class.badge-primary]="item.badgeColor === 'primary'"
+          [class.badge-accent]="item.badgeColor === 'accent'"
+          [class.badge-warn]="item.badgeColor === 'warn'"
+          [attr.aria-label]="('sidebar.badgeCount' | translate: {count: item.badge})"
+        >
+          {{ item.badge }}
+        </span>
+      </a>
+
+      <!-- Expandable Menu Item (with children) -->
+      <mat-expansion-panel 
+        *ngIf="item.children && !isCollapsed && hasPermission(item)"
+        class="menu-expansion"
+        [expanded]="isExpanded(item.id)"
+        (expandedChange)="toggleExpansion(item.id, $event)"
+        [attr.aria-label]="item.label | translate"
+      >
+        <mat-expansion-panel-header 
+          class="menu-item expansion-header"
+          [collapsedHeight]="'48px'"
+          [expandedHeight]="'48px'"
+        >
+          <mat-panel-title class="expansion-title">
+            <mat-icon class="menu-icon">{{ item.icon }}</mat-icon>
+            <span class="menu-label">{{ item.label | translate }}</span>
+            <span 
+              *ngIf="item.badge" 
+              class="badge"
+              [class.badge-primary]="item.badgeColor === 'primary'"
+              [class.badge-accent]="item.badgeColor === 'accent'"
+              [class.badge-warn]="item.badgeColor === 'warn'"
+            >
+              {{ item.badge }}
+            </span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        
+        <mat-nav-list class="submenu" role="list">
+          <a 
+            *ngFor="let child of item.children; trackBy: trackById"
+            mat-list-item
+            [routerLink]="child.route"
+            routerLinkActive="active"
+            (click)="onNavigate(child)"
+            class="submenu-item"
+            [hidden]="!hasPermission(child)"
+            [attr.aria-label]="child.label | translate"
+            matRipple
+          >
+            <mat-icon matListItemIcon class="submenu-icon">
+              {{ child.icon }}
+            </mat-icon>
+            <span matListItemTitle class="submenu-label">
+              {{ child.label | translate }}
+            </span>
+            <span 
+              *ngIf="child.badge" 
+              class="badge badge-small"
+              [class.badge-primary]="child.badgeColor === 'primary'"
+              [class.badge-accent]="child.badgeColor === 'accent'"
+              [class.badge-warn]="child.badgeColor === 'warn'"
+            >
+              {{ child.badge }}
+            </span>
+          </a>
+        </mat-nav-list>
+      </mat-expansion-panel>
+
+      <!-- Collapsed menu with children (dropdown on hover) -->
+      <div 
+        *ngIf="item.children && isCollapsed && hasPermission(item)"
+        class="collapsed-dropdown"
+        [matTooltip]="item.label | translate"
+        matTooltipPosition="right"
+        (mouseenter)="showDropdown(item.id)"
+        (mouseleave)="hideDropdown(item.id)"
+      >
+        <a
+          mat-list-item
+          class="menu-item menu-item-collapsed"
+          [attr.aria-label]="item.label | translate"
+          [attr.aria-expanded]="isDropdownOpen(item.id)"
+          matRipple
+        >
+          <mat-icon matListItemIcon class="icon-collapsed">
+            {{ item.icon }}
+          </mat-icon>
+        </a>
+        
+        <div 
+          class="dropdown-menu"
+          [class.show]="isDropdownOpen(item.id)"
+          [@slideIn]
+        >
+          <div class="dropdown-header">
+            {{ item.label | translate }}
+          </div>
+          <a 
+            *ngFor="let child of item.children; trackBy: trackById"
+            [routerLink]="child.route"
+            routerLinkActive="active"
+            (click)="onNavigate(child)"
+            class="dropdown-item"
+            [hidden]="!hasPermission(child)"
+            [attr.aria-label]="child.label | translate"
+          >
+            <mat-icon class="dropdown-icon">{{ child.icon }}</mat-icon>
+            <span>{{ child.label | translate }}</span>
+          </a>
+        </div>
+      </div>
+    </ng-container>
+  </mat-nav-list>
+
+  <!-- Footer Section -->
+  <div class="sidebar-footer">
+    <!-- User Section -->
+    <div 
+      class="user-section" 
+      *ngIf="currentUser()"
+      [matTooltip]="!isCollapsed ? '' : (currentUser()?.name || '')"
+      matTooltipPosition="right"
+    >
+      <img 
+        [src]="currentUser()?.avatar || 'assets/images/default-avatar.png'" 
+        [alt]="currentUser()?.name || 'User'"
+        class="user-avatar"
+        (error)="handleAvatarError($event)"
+      />
+      <div class="user-info" *ngIf="!isCollapsed">
+        <span class="user-name">{{ currentUser()?.name }}</span>
+        <span class="user-role">{{ currentUser()?.role }}</span>
+      </div>
+      <button
+        mat-icon-button
+        class="user-menu-button"
+        [matMenuTriggerFor]="userMenu"
+        *ngIf="!isCollapsed"
+        [attr.aria-label]="'sidebar.userMenu' | translate"
+      >
+        <mat-icon>more_vert</mat-icon>
+      </button>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button 
+        mat-icon-button
+        (click)="toggleTheme()"
+        [matTooltip]="('sidebar.' + (isDarkTheme() ? 'lightMode' : 'darkMode')) | translate"
+        matTooltipPosition="right"
+        [attr.aria-label]="('sidebar.' + (isDarkTheme() ? 'lightMode' : 'darkMode')) | translate"
+        class="action-button"
+      >
+        <mat-icon>{{ isDarkTheme() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+      
+      <button 
+        mat-icon-button
+        routerLink="/settings"
+        [matTooltip]="'sidebar.settings' | translate"
+        matTooltipPosition="right"
+        [attr.aria-label]="'sidebar.settings' | translate"
+        class="action-button"
+        *ngIf="!isCollapsed"
+      >
+        <mat-icon>settings</mat-icon>
+      </button>
+      
+      <button 
+        mat-icon-button
+        (click)="logout()"
+        [matTooltip]="'sidebar.logout' | translate"
+        matTooltipPosition="right"
+        [attr.aria-label]="'sidebar.logout' | translate"
+        class="action-button"
+        *ngIf="!isCollapsed"
+      >
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- User Menu -->
+<mat-menu #userMenu="matMenu" class="user-dropdown-menu">
+  <button mat-menu-item routerLink="/profile">
+    <mat-icon>person</mat-icon>
+    <span>{{ 'sidebar.profile' | translate }}</span>
+  </button>
+  <button mat-menu-item routerLink="/settings">
+    <mat-icon>settings</mat-icon>
+    <span>{{ 'sidebar.settings' | translate }}</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="logout()">
+    <mat-icon>logout</mat-icon>
+    <span>{{ 'sidebar.logout' | translate }}</span>
+  </button>
+</mat-menu>

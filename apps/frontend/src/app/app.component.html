@@ -1,85 +1,159 @@
-<!-- Main Application Container -->
-<div class="app-container" [ngClass]="layoutClass()" [attr.data-theme]="theme()">
+<!-- =============================================
+     MAIN APPLICATION CONTAINER
+     Root container that manages themes and layouts
+     ============================================= -->
+<div class="app-container" 
+     [ngClass]="layoutClass()" 
+     [attr.data-theme]="theme()">
   
-  <!-- Loading Bar -->
+  <!-- =============================================
+       GLOBAL LOADING INDICATOR
+       Shows application-wide loading state
+       ============================================= -->
   @if (isLoading()) {
     <mat-progress-bar 
       mode="indeterminate" 
       class="global-loading-bar"
-      color="primary">
+      color="primary"
+      aria-label="Loading application">
     </mat-progress-bar>
   }
 
-  <!-- Skip Navigation Links (Accessibility) -->
-  <a href="#main-content" class="skip-link">Skip to main content</a>
-  <a href="#main-navigation" class="skip-link">Skip to navigation</a>
+  <!-- =============================================
+       ACCESSIBILITY: SKIP NAVIGATION LINKS
+       Allows keyboard users to skip to main content
+       ============================================= -->
+  <a href="#main-content" class="skip-link" tabindex="1">
+    Skip to main content
+  </a>
+  <a href="#main-navigation" class="skip-link" tabindex="2">
+    Skip to navigation
+  </a>
 
-  <!-- Application Header -->
+  <!-- =============================================
+       APPLICATION HEADER
+       Contains logo, search, user menu, notifications
+       ============================================= -->
   <app-header
     [sidebarExpanded]="sidebarExpanded()"
     [isMobile]="isMobile()"
     (toggleSidebar)="toggleSidebar()"
-    class="app-header">
+    class="app-header"
+    role="banner"
+    aria-label="Application header">
   </app-header>
 
-  <!-- Application Layout -->
+  <!-- =============================================
+       MAIN LAYOUT CONTAINER
+       Wraps sidebar and content area
+       ============================================= -->
   <div class="app-layout">
     
-    <!-- Sidebar Navigation -->
+    <!-- =============================================
+         SIDEBAR NAVIGATION
+         Main navigation menu with collapsible behavior
+         ============================================= -->
     <app-sidebar
       [expanded]="sidebarExpanded()"
       [mode]="sidebarMode()"
       [isMobile]="isMobile()"
       (toggle)="toggleSidebar()"
       id="main-navigation"
-      class="app-sidebar">
+      class="app-sidebar"
+      role="navigation"
+      [attr.aria-expanded]="sidebarExpanded()"
+      aria-label="Main navigation">
     </app-sidebar>
 
-    <!-- Main Content Area -->
+    <!-- =============================================
+         MAIN CONTENT AREA
+         Primary content container with router outlet
+         ============================================= -->
     <main 
       class="app-content" 
       id="main-content"
       [class.sidebar-expanded]="sidebarExpanded() && !isMobile()"
       [class.sidebar-collapsed]="!sidebarExpanded() && !isMobile()"
-      tabindex="-1">
+      tabindex="-1"
+      role="main"
+      aria-label="Main content">
       
-      <!-- Router Outlet with Animation -->
-      <div class="content-wrapper" [@routeAnimations]="outlet.activatedRouteData">
+      <!-- =============================================
+           ROUTER OUTLET WITH ANIMATIONS
+           Renders routed components with transitions
+           ============================================= -->
+      <div class="content-wrapper" 
+           [@routeAnimations]="outlet.activatedRouteData"
+           role="region"
+           aria-live="polite">
         <router-outlet #outlet="outlet"></router-outlet>
       </div>
 
-      <!-- Application Footer -->
+      <!-- =============================================
+           APPLICATION FOOTER
+           Contains copyright, links, version info
+           Hidden on mobile devices
+           ============================================= -->
       @if (!isMobile()) {
-        <app-footer class="app-footer"></app-footer>
+        <app-footer 
+          class="app-footer"
+          role="contentinfo"
+          aria-label="Application footer">
+        </app-footer>
       }
     </main>
   </div>
 
-  <!-- Global Components -->
+  <!-- =============================================
+       GLOBAL OVERLAY COMPONENTS
+       Components that appear above main content
+       ============================================= -->
   
-  <!-- Notification Center -->
-  <app-notification-center></app-notification-center>
+  <!-- Notification Center: Shows all notifications -->
+  <app-notification-center
+    role="complementary"
+    aria-label="Notification center">
+  </app-notification-center>
 
-  <!-- Toast Container -->
-  <app-toast-container></app-toast-container>
+  <!-- Toast Container: Shows temporary messages -->
+  <app-toast-container
+    role="status"
+    aria-live="polite"
+    aria-label="Toast notifications">
+  </app-toast-container>
 
-  <!-- Global Search Modal -->
-  <app-global-search></app-global-search>
+  <!-- Global Search Modal: Application-wide search -->
+  <app-global-search
+    role="search"
+    aria-label="Global search">
+  </app-global-search>
 
-  <!-- Keyboard Shortcuts Dialog -->
-  <app-keyboard-shortcuts-dialog></app-keyboard-shortcuts-dialog>
+  <!-- Keyboard Shortcuts Dialog: Shows all shortcuts -->
+  <app-keyboard-shortcuts-dialog
+    role="dialog"
+    aria-label="Keyboard shortcuts">
+  </app-keyboard-shortcuts-dialog>
 
-  <!-- Offline Indicator -->
+  <!-- =============================================
+       STATUS INDICATORS
+       Shows connection and device status
+       ============================================= -->
+  
+  <!-- Offline Indicator: Shows when no internet connection -->
   @if (!isOnline()) {
-    <div class="offline-indicator" @slideDown>
-      <mat-icon>cloud_off</mat-icon>
+    <div class="offline-indicator" 
+         @slideDown
+         role="alert"
+         aria-live="assertive">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
       <span>You are currently offline</span>
     </div>
   }
 
-  <!-- Touch Device Indicator (Development Only) -->
+  <!-- Touch Device Indicator: Development only -->
   @if (isTouchDevice() && !environment.production) {
-    <div class="touch-indicator">
+    <div class="touch-indicator"
+         aria-hidden="true">
       <mat-icon>touch_app</mat-icon>
     </div>
   }

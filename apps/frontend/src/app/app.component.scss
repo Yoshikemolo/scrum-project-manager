@@ -1,7 +1,17 @@
+// =============================================
+// APP COMPONENT STYLES
+// Main application container and layout styles
+// =============================================
+
+// Import shared styles
 @import '../styles/variables';
 @import '../styles/mixins';
 @import '../styles/animations';
 
+// =============================================
+// HOST ELEMENT
+// Ensures full viewport coverage
+// =============================================
 :host {
   display: block;
   width: 100%;
@@ -9,6 +19,10 @@
   overflow: hidden;
 }
 
+// =============================================
+// MAIN APPLICATION CONTAINER
+// Root container with theme support
+// =============================================
 .app-container {
   display: flex;
   flex-direction: column;
@@ -19,27 +33,36 @@
   transition: background-color 300ms ease-in-out;
   position: relative;
 
-  // Layout variants
+  // ---------------------------------------------
+  // Responsive Layout Variants
+  // ---------------------------------------------
+  
+  // Mobile layout adjustments
   &.layout-mobile {
     .app-layout {
-      padding-top: 56px;
+      padding-top: 56px; // Smaller header on mobile
     }
   }
 
+  // Tablet layout adjustments
   &.layout-tablet {
     .app-layout {
-      padding-top: 64px;
+      padding-top: 64px; // Standard header height
     }
   }
 
+  // Desktop layout adjustments
   &.layout-desktop {
     .app-layout {
-      padding-top: 64px;
+      padding-top: 64px; // Standard header height
     }
   }
 }
 
-// Global Loading Bar
+// =============================================
+// GLOBAL LOADING BAR
+// Top-of-screen loading indicator
+// =============================================
 .global-loading-bar {
   position: fixed;
   top: 0;
@@ -47,28 +70,43 @@
   right: 0;
   z-index: $z-index-loading;
   height: 3px;
+  
+  // Ensures it appears above all content
+  &::ng-deep .mat-progress-bar {
+    height: 3px;
+  }
 }
 
-// Skip Links (Accessibility)
+// =============================================
+// ACCESSIBILITY: SKIP LINKS
+// Hidden by default, visible on focus
+// =============================================
 .skip-link {
-  @include sr-only;
+  @include sr-only; // Visually hidden but accessible
 
   &:focus {
-    @include sr-only-focusable;
+    @include sr-only-focusable; // Becomes visible on focus
     position: fixed;
     top: 10px;
     left: 10px;
-    z-index: $z-index-modal + 1;
+    z-index: $z-index-modal + 1; // Above all modals
     padding: 8px 16px;
     background-color: var(--primary-color);
     color: white;
     text-decoration: none;
     border-radius: 4px;
     box-shadow: $shadow-lg;
+    font-weight: 500;
+    
+    // Smooth appearance animation
+    animation: fadeIn 200ms ease-out;
   }
 }
 
-// Application Header
+// =============================================
+// APPLICATION HEADER
+// Fixed top navigation bar
+// =============================================
 .app-header {
   position: fixed;
   top: 0;
@@ -79,21 +117,35 @@
   background-color: var(--surface-color);
   border-bottom: 1px solid var(--border-color);
   box-shadow: $shadow-sm;
+  
+  // Smooth transitions for theme changes
+  transition: background-color 300ms ease-in-out,
+              border-color 300ms ease-in-out;
 
+  // Mobile adjustments
   @include mobile {
-    height: 56px;
+    height: 56px; // Smaller header on mobile
   }
 }
 
-// Application Layout
+// =============================================
+// APPLICATION LAYOUT
+// Flex container for sidebar and content
+// =============================================
 .app-layout {
   display: flex;
   flex: 1;
   overflow: hidden;
   position: relative;
+  
+  // Ensures proper stacking context
+  isolation: isolate;
 }
 
-// Application Sidebar
+// =============================================
+// APPLICATION SIDEBAR
+// Navigation drawer with responsive behavior
+// =============================================
 .app-sidebar {
   position: fixed;
   top: 64px;
@@ -103,28 +155,48 @@
   width: 280px;
   background-color: var(--surface-color);
   border-right: 1px solid var(--border-color);
-  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  // Smooth slide animation
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 300ms ease-in-out;
+  
+  // Shadow for depth
+  box-shadow: $shadow-md;
 
+  // Mobile adjustments
   @include mobile {
-    top: 56px;
+    top: 56px; // Account for smaller header
     width: 100%;
-    max-width: 320px;
+    max-width: 320px; // Limit width on mobile
+    
+    // Overlay shadow when open
+    &.expanded {
+      box-shadow: $shadow-xl;
+    }
   }
 
+  // Tablet adjustments
   @include tablet {
-    width: 260px;
+    width: 260px; // Slightly narrower on tablets
   }
 }
 
-// Main Content Area
+// =============================================
+// MAIN CONTENT AREA
+// Primary content container
+// =============================================
 .app-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background-color: var(--background-color);
-  transition: margin-left 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  // Smooth margin transition for sidebar toggle
+  transition: margin-left 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 300ms ease-in-out;
 
+  // Sidebar expanded state
   &.sidebar-expanded {
     margin-left: 280px;
 
@@ -133,23 +205,32 @@
     }
   }
 
+  // Sidebar collapsed state
   &.sidebar-collapsed {
-    margin-left: 64px;
+    margin-left: 64px; // Mini sidebar width
   }
 
+  // Mobile: Full width regardless of sidebar
   @include mobile {
     margin-left: 0 !important;
   }
 }
 
-// Content Wrapper
+// =============================================
+// CONTENT WRAPPER
+// Scrollable content container
+// =============================================
 .content-wrapper {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px;
   position: relative;
+  
+  // Improved scroll performance
+  will-change: scroll-position;
 
+  // Responsive padding
   @include mobile {
     padding: 16px;
   }
@@ -158,22 +239,38 @@
     padding: 20px;
   }
 
-  // Smooth scrolling
+  // Smooth scrolling behavior
   @include smooth-scroll;
 
-  // Custom scrollbar
+  // Custom scrollbar styling
   @include custom-scrollbar;
+  
+  // Focus outline for accessibility
+  &:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
 }
 
-// Application Footer
+// =============================================
+// APPLICATION FOOTER
+// Bottom information bar
+// =============================================
 .app-footer {
   flex-shrink: 0;
   padding: 16px 24px;
   background-color: var(--surface-color);
   border-top: 1px solid var(--border-color);
+  
+  // Smooth transitions
+  transition: background-color 300ms ease-in-out,
+              border-color 300ms ease-in-out;
 }
 
-// Offline Indicator
+// =============================================
+// OFFLINE INDICATOR
+// Network status notification
+// =============================================
 .offline-indicator {
   position: fixed;
   bottom: 24px;
@@ -188,14 +285,29 @@
   color: white;
   border-radius: 8px;
   box-shadow: $shadow-md;
+  
+  // Entrance animation
   animation: slideUp 300ms ease-out;
+  
+  // Pulse animation for attention
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background-color: var(--warning-color);
+    animation: pulse 2s infinite;
+    opacity: 0.3;
+  }
 
+  // Icon sizing
   mat-icon {
     font-size: 20px;
     width: 20px;
     height: 20px;
   }
 
+  // Mobile adjustments
   @include mobile {
     bottom: 16px;
     left: 16px;
@@ -204,7 +316,10 @@
   }
 }
 
-// Touch Device Indicator (Development)
+// =============================================
+// TOUCH DEVICE INDICATOR
+// Development helper for touch detection
+// =============================================
 .touch-indicator {
   position: fixed;
   bottom: 16px;
@@ -219,9 +334,17 @@
   color: white;
   border-radius: 50%;
   pointer-events: none;
+  
+  // Subtle breathing animation
+  animation: breathe 3s ease-in-out infinite;
 }
 
-// Animations
+// =============================================
+// ANIMATIONS
+// Keyframe animations for various effects
+// =============================================
+
+// Slide up animation for notifications
 @keyframes slideUp {
   from {
     transform: translateX(-50%) translateY(100px);
@@ -233,38 +356,124 @@
   }
 }
 
-// Theme Transitions
+// Fade in animation
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Pulse animation for attention
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+// Breathing animation for indicators
+@keyframes breathe {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+// =============================================
+// THEME SUPPORT
+// CSS custom properties for theming
+// =============================================
+
+// Light theme variables
 [data-theme="light"] {
   --background-color: #{$light-background};
   --surface-color: #{$light-surface};
   --text-color: #{$light-text};
   --border-color: #{$light-border};
+  --primary-color: #{$light-primary};
+  --warning-color: #{$light-warning};
 }
 
+// Dark theme variables
 [data-theme="dark"] {
   --background-color: #{$dark-background};
   --surface-color: #{$dark-surface};
   --text-color: #{$dark-text};
   --border-color: #{$dark-border};
+  --primary-color: #{$dark-primary};
+  --warning-color: #{$dark-warning};
 }
 
-// Print Styles
+// =============================================
+// PRINT STYLES
+// Optimized layout for printing
+// =============================================
 @media print {
+  // Hide non-essential elements
   .app-header,
   .app-sidebar,
   .app-footer,
   .global-loading-bar,
   .offline-indicator,
-  .touch-indicator {
+  .touch-indicator,
+  .skip-link {
     display: none !important;
   }
 
+  // Full width content
   .app-content {
     margin-left: 0 !important;
   }
 
+  // Remove padding and enable overflow
   .content-wrapper {
     padding: 0;
     overflow: visible;
+  }
+  
+  // Ensure proper page breaks
+  .app-container {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+// =============================================
+// HIGH CONTRAST MODE
+// Accessibility support for high contrast
+// =============================================
+@media (prefers-contrast: high) {
+  .app-container {
+    // Stronger borders for better visibility
+    .app-header,
+    .app-sidebar,
+    .app-footer {
+      border-width: 2px;
+    }
+    
+    // Higher contrast focus states
+    .skip-link:focus {
+      outline: 3px solid currentColor;
+      outline-offset: 2px;
+    }
+  }
+}
+
+// =============================================
+// REDUCED MOTION
+// Respect user's motion preferences
+// =============================================
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

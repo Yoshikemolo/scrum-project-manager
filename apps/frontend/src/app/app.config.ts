@@ -1,38 +1,75 @@
 /**
- * Application configuration for bootstrapping the Angular application.
- * Provides all necessary providers, services, and configurations.
+ * Application configuration for Angular 20 with standalone components.
+ * Configures all providers, modules, and services for the application.
  * 
  * @module AppConfig
  */
 
-import { ApplicationConfig, importProvidersFrom, ErrorHandler } from '@angular/core';
-import { provideRouter, withComponentInputBinding, withViewTransitions, withRouterConfig, withInMemoryScrolling } from '@angular/router';
-import { provideAnimations } from '@angular/platform-browser/animations';
+import { ApplicationConfig, importProvidersFrom, isDevMode } from '@angular/core';
+import { provideRouter, withComponentInputBinding, withRouterConfig, withViewTransitions } from '@angular/router';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
 import { provideServiceWorker } from '@angular/service-worker';
+
+// NgRx Store
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
-import { provideRouterStore, routerReducer } from '@ngrx/router-store';
-import { TranslateModule } from '@ngx-translate/core';
-import { MAT_DATE_LOCALE } from '@angular/material/core';
+import { provideRouterStore } from '@ngrx/router-store';
+
+// Material Design
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
-import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
-import { MAT_TOOLTIP_DEFAULT_OPTIONS } from '@angular/material/tooltip';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
+import { MatNativeDateModule } from '@angular/material/core';
 
+// Toastr for notifications
+import { provideToastr } from 'ngx-toastr';
+
+// i18n
+import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { HttpClient } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+import localeEn from '@angular/common/locales/en';
+import localeFr from '@angular/common/locales/fr';
+import localeDe from '@angular/common/locales/de';
+
+// Application imports
 import { routes } from './app.routes';
-import { environment } from '../environments/environment';
-import { GlobalErrorHandler } from './core/handlers/global-error.handler';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
-import { loggingInterceptor } from './core/interceptors/logging.interceptor';
+import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { cacheInterceptor } from './core/interceptors/cache.interceptor';
-import { retryInterceptor } from './core/interceptors/retry.interceptor';
+import { ROOT_REDUCERS, metaReducers } from './store';
+import { AuthEffects } from './store/auth/auth.effects';
+import { environment } from '../environments/environment';
 
-/**
- * Main application configuration
- */
+// Register locales
+registerLocaleData(localeEs);
+registerLocaleData(localeEn);
+registerLocaleData(localeFr);
+registerLocaleData(localeDe);
+
+// Translation loader factory
+export function HttpLoaderFactory(http: HttpClient) {
+  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
+}
+
+// Date formats for different locales
+export const DATE_FORMATS = {
+  parse: {
+    dateInput: 'DD/MM/YYYY',
+  },
+  display: {
+    dateInput: 'DD/MM/YYYY',
+    monthYearLabel: 'MMM YYYY',
+    dateA11yLabel: 'DD/MM/YYYY',
+    monthYearA11yLabel: 'MMMM YYYY',
+  },
+};
+
 export const appConfig: ApplicationConfig = {
   providers: [
     // Router configuration
@@ -42,100 +79,120 @@ export const appConfig: ApplicationConfig = {
       withViewTransitions(),
       withRouterConfig({
         onSameUrlNavigation: 'reload',
-        canceledNavigationResolution: 'computed',
         paramsInheritanceStrategy: 'always',
-      }),
-      withInMemoryScrolling({
-        anchorScrolling: 'enabled',
-        scrollPositionRestoration: 'enabled',
       })
     ),
-
+    
     // Animations
-    provideAnimations(),
-
-    // HTTP Client with interceptors
+    provideAnimationsAsync(),
+    
+    // HTTP client with interceptors
     provideHttpClient(
-      withFetch(),
       withInterceptors([
         authInterceptor,
         errorInterceptor,
-        loggingInterceptor,
-        cacheInterceptor,
-        retryInterceptor,
-      ])
+        loadingInterceptor,
+        cacheInterceptor
+      ]),
+      withFetch()
     ),
-
-    // Service Worker for PWA
-    provideServiceWorker('ngsw-worker.js', {
-      enabled: environment.production,
-      registrationStrategy: 'registerWhenStable:30000',
+    
+    // NgRx Store configuration
+    provideStore(ROOT_REDUCERS, {
+      metaReducers,
+      runtimeChecks: {
+        strictStateImmutability: true,
+        strictActionImmutability: true,
+        strictStateSerializability: true,
+        strictActionSerializability: true,
+        strictActionWithinNgZone: true,
+        strictActionTypeUniqueness: true,
+      },
     }),
-
-    // NgRx Store
-    provideStore({
-      router: routerReducer,
-    }),
-    provideEffects([]),
+    
+    // NgRx Effects
+    provideEffects([
+      AuthEffects
+    ]),
+    
+    // NgRx Router Store
     provideRouterStore(),
+    
+    // NgRx DevTools (only in development)
     provideStoreDevtools({
       maxAge: 25,
-      logOnly: environment.production,
+      logOnly: !isDevMode(),
       autoPause: true,
       trace: false,
       traceLimit: 75,
+      connectInZone: true,
     }),
-
-    // Translation Module
+    
+    // Toastr notifications
+    provideToastr({
+      timeOut: 5000,
+      positionClass: 'toast-bottom-right',
+      preventDuplicates: true,
+      progressBar: true,
+      closeButton: true,
+      newestOnTop: true,
+      tapToDismiss: true,
+      maxOpened: 5,
+      autoDismiss: true,
+      enableHtml: true,
+    }),
+    
+    // i18n Translation module
     importProvidersFrom(
       TranslateModule.forRoot({
-        defaultLanguage: environment.i18n.defaultLanguage,
+        defaultLanguage: 'en',
+        loader: {
+          provide: TranslateLoader,
+          useFactory: HttpLoaderFactory,
+          deps: [HttpClient],
+        },
       })
     ),
-
-    // Material Configuration
-    {
-      provide: MAT_DATE_LOCALE,
-      useValue: 'en-US',
-    },
+    
+    // Material Date module
+    importProvidersFrom(MatNativeDateModule),
+    
+    // Material Form Field configuration
     {
       provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
       useValue: {
         appearance: 'outline',
-        floatLabel: 'always',
+        floatLabel: 'auto',
       },
     },
+    
+    // Material Snackbar configuration
     {
       provide: MAT_SNACK_BAR_DEFAULT_OPTIONS,
       useValue: {
-        duration: environment.ui.toastDuration,
+        duration: 5000,
         horizontalPosition: 'end',
         verticalPosition: 'bottom',
+        panelClass: ['custom-snackbar'],
       },
     },
+    
+    // Date format configuration
     {
-      provide: MAT_DIALOG_DEFAULT_OPTIONS,
-      useValue: {
-        hasBackdrop: true,
-        panelClass: 'app-dialog',
-        maxWidth: '90vw',
-        maxHeight: '90vh',
-      },
+      provide: MAT_DATE_FORMATS,
+      useValue: DATE_FORMATS,
     },
+    
+    // Date locale configuration
     {
-      provide: MAT_TOOLTIP_DEFAULT_OPTIONS,
-      useValue: {
-        showDelay: 500,
-        hideDelay: 100,
-        touchGestures: 'on',
-        position: 'above',
-      },
+      provide: MAT_DATE_LOCALE,
+      useValue: 'en-US',
     },
-
-    // Global Error Handler
-    {
-      provide: ErrorHandler,
-      useClass: GlobalErrorHandler,
-    },
+    
+    // Service Worker / PWA configuration
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: environment.production,
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
 };
