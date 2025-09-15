@@ -1,0 +1,131 @@
+/**
+ * Global SCSS Variables
+ * Defines design tokens and common values used throughout the application
+ */
+
+// Spacing scale
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-xxl: 48px;
+
+// Font sizes
+$font-size-xs: 11px;
+$font-size-sm: 12px;
+$font-size-md: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 20px;
+$font-size-xxl: 24px;
+$font-size-xxxl: 32px;
+
+// Font weights
+$font-weight-light: 300;
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// Line heights
+$line-height-tight: 1.2;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.75;
+
+// Border radius
+$border-radius-sm: 4px;
+$border-radius-md: 8px;
+$border-radius-lg: 12px;
+$border-radius-xl: 16px;
+$border-radius-full: 9999px;
+
+// Transitions
+$transition-fast: 150ms;
+$transition-base: 300ms;
+$transition-slow: 500ms;
+$transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+// Shadows
+$shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+$shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.12);
+
+// Z-index scale
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;
+$z-index-toast: 1080;
+
+// Breakpoints
+$breakpoint-xs: 320px;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
+
+// Container widths
+$container-sm: 540px;
+$container-md: 720px;
+$container-lg: 960px;
+$container-xl: 1140px;
+$container-xxl: 1320px;
+
+// Grid
+$grid-columns: 12;
+$grid-gutter: $spacing-md;
+
+// Component sizes
+$button-height-sm: 32px;
+$button-height-md: 40px;
+$button-height-lg: 48px;
+
+$input-height-sm: 32px;
+$input-height-md: 40px;
+$input-height-lg: 48px;
+
+$avatar-size-xs: 24px;
+$avatar-size-sm: 32px;
+$avatar-size-md: 40px;
+$avatar-size-lg: 56px;
+$avatar-size-xl: 72px;
+
+// Animation durations
+$animation-duration-fast: 200ms;
+$animation-duration-base: 400ms;
+$animation-duration-slow: 600ms;
+$animation-duration-slower: 800ms;
+
+// Opacity levels
+$opacity-disabled: 0.4;
+$opacity-hover: 0.8;
+$opacity-focus: 0.9;
+$opacity-backdrop: 0.5;
+
+// Border widths
+$border-width-thin: 1px;
+$border-width-base: 2px;
+$border-width-thick: 4px;
+
+// Export for use in TypeScript
+:export {
+  spacingXs: $spacing-xs;
+  spacingSm: $spacing-sm;
+  spacingMd: $spacing-md;
+  spacingLg: $spacing-lg;
+  spacingXl: $spacing-xl;
+  spacingXxl: $spacing-xxl;
+  
+  breakpointXs: $breakpoint-xs;
+  breakpointSm: $breakpoint-sm;
+  breakpointMd: $breakpoint-md;
+  breakpointLg: $breakpoint-lg;
+  breakpointXl: $breakpoint-xl;
+  breakpointXxl: $breakpoint-xxl;
+}

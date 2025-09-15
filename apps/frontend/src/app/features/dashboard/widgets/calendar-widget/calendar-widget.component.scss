@@ -1,0 +1,455 @@
+/**
+ * Calendar Widget Component Styles
+ * Styles for calendar display and event management
+ */
+@use '@angular/material' as mat;
+@use '../../../shared/styles/variables' as vars;
+@use '../../../shared/styles/mixins' as mixins;
+
+// Component variables
+$header-height: 64px;
+$weekday-height: 32px;
+$day-min-height: 80px;
+$day-compact-height: 60px;
+$event-height: 20px;
+$border-color: var(--divider-color);
+
+// Container
+.calendar-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface-color);
+  border-radius: vars.$border-radius-lg;
+  overflow: hidden;
+  
+  &--compact {
+    .calendar-widget__filters,
+    .calendar-widget__actions {
+      display: none;
+    }
+    
+    .calendar-day {
+      min-height: $day-compact-height;
+      
+      .event-title {
+        display: none;
+      }
+    }
+  }
+}
+
+// Header
+.calendar-widget__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: $header-height;
+  padding: vars.$spacing-md;
+  border-bottom: 1px solid $border-color;
+  
+  @include mixins.mobile {
+    flex-direction: column;
+    height: auto;
+    gap: vars.$spacing-sm;
+  }
+}
+
+.calendar-widget__title-section {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-xs;
+}
+
+.calendar-widget__title {
+  margin: 0;
+  font-size: vars.$font-size-lg;
+  font-weight: vars.$font-weight-medium;
+  color: var(--text-primary);
+}
+
+.calendar-widget__subtitle {
+  font-size: vars.$font-size-sm;
+  color: var(--text-secondary);
+}
+
+// Controls
+.calendar-widget__controls {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-md;
+  
+  @include mixins.mobile {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.calendar-widget__nav {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-xs;
+}
+
+.today-button {
+  min-width: 60px;
+  font-size: vars.$font-size-sm;
+}
+
+.calendar-widget__view-selector {
+  display: flex;
+  gap: vars.$spacing-xs;
+  padding: vars.$spacing-xs;
+  background: var(--background-color);
+  border-radius: vars.$border-radius-md;
+  
+  button {
+    &.active {
+      background: var(--primary-color);
+      color: white;
+    }
+  }
+}
+
+// Filters
+.calendar-widget__filters {
+  padding: vars.$spacing-sm vars.$spacing-md;
+  border-bottom: 1px solid $border-color;
+  
+  .chip-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+  }
+  
+  mat-chip-listbox {
+    display: flex;
+    gap: vars.$spacing-sm;
+    flex-wrap: wrap;
+  }
+}
+
+// Content
+.calendar-widget__content {
+  flex: 1;
+  overflow: auto;
+  padding: vars.$spacing-md;
+  
+  @include mixins.custom-scrollbar();
+}
+
+// Loading
+.calendar-widget__loading {
+  @include mixins.flex-center;
+  flex-direction: column;
+  height: 100%;
+  gap: vars.$spacing-md;
+  
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: vars.$font-size-sm;
+  }
+}
+
+// Calendar Grid
+.calendar-widget__calendar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.calendar-widget__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  height: $weekday-height;
+  margin-bottom: vars.$spacing-sm;
+}
+
+.weekday {
+  @include mixins.flex-center;
+  font-size: vars.$font-size-xs;
+  font-weight: vars.$font-weight-medium;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  
+  &.weekend {
+    color: var(--error-color);
+  }
+}
+
+.calendar-widget__grid {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-xs;
+}
+
+.calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: vars.$spacing-xs;
+}
+
+.calendar-day {
+  min-height: $day-min-height;
+  padding: vars.$spacing-xs;
+  background: var(--background-color);
+  border: 1px solid $border-color;
+  border-radius: vars.$border-radius-sm;
+  cursor: pointer;
+  transition: all vars.$transition-base vars.$transition-easing;
+  
+  &:hover {
+    background: var(--hover-color);
+    box-shadow: vars.$shadow-sm;
+  }
+  
+  &--other-month {
+    opacity: 0.4;
+    
+    .day-number {
+      color: var(--text-disabled);
+    }
+  }
+  
+  &--today {
+    background: var(--primary-color-light);
+    border-color: var(--primary-color);
+    
+    .day-number {
+      font-weight: vars.$font-weight-semibold;
+      color: var(--primary-color);
+    }
+  }
+  
+  &--weekend {
+    background: var(--weekend-background);
+  }
+  
+  &--has-events {
+    font-weight: vars.$font-weight-medium;
+  }
+}
+
+.day-number {
+  font-size: vars.$font-size-sm;
+  font-weight: vars.$font-weight-medium;
+  color: var(--text-primary);
+  margin-bottom: vars.$spacing-xs;
+}
+
+.day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-indicator {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: $event-height;
+  padding: 0 vars.$spacing-xs;
+  border-radius: vars.$border-radius-sm;
+  font-size: vars.$font-size-xs;
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.event-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.event-title {
+  @include mixins.truncate(1);
+  flex: 1;
+}
+
+.more-events {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: $event-height;
+  font-size: vars.$font-size-xs;
+  color: var(--text-secondary);
+}
+
+// Agenda View
+.calendar-widget__agenda {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-lg;
+}
+
+.agenda-section {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-sm;
+}
+
+.agenda-title {
+  margin: 0;
+  font-size: vars.$font-size-md;
+  font-weight: vars.$font-weight-medium;
+  color: var(--text-primary);
+  padding-bottom: vars.$spacing-xs;
+  border-bottom: 1px solid $border-color;
+}
+
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-xs;
+}
+
+.event-item {
+  display: flex;
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-sm;
+  background: var(--background-color);
+  border-radius: vars.$border-radius-sm;
+  cursor: pointer;
+  transition: all vars.$transition-base vars.$transition-easing;
+  
+  &:hover {
+    background: var(--hover-color);
+    transform: translateX(4px);
+  }
+}
+
+.event-time,
+.event-date {
+  flex-shrink: 0;
+  width: 60px;
+  font-size: vars.$font-size-sm;
+  color: var(--text-secondary);
+}
+
+.event-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-xs;
+}
+
+.event-header {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-xs;
+}
+
+.event-type-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.event-meta {
+  display: flex;
+  gap: vars.$spacing-md;
+  font-size: vars.$font-size-xs;
+  color: var(--text-secondary);
+}
+
+.meta-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  margin-right: 2px;
+}
+
+// Empty State
+.calendar-widget__empty {
+  @include mixins.flex-center;
+  flex-direction: column;
+  height: 200px;
+  gap: vars.$spacing-md;
+  
+  .empty-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--text-disabled);
+    opacity: 0.5;
+  }
+  
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: vars.$font-size-md;
+  }
+}
+
+// Actions
+.calendar-widget__actions {
+  padding: vars.$spacing-md;
+  border-top: 1px solid $border-color;
+  
+  button {
+    width: 100%;
+  }
+}
+
+// Dark mode
+@include mixins.dark-mode {
+  .calendar-widget {
+    &__weekdays {
+      .weekend {
+        color: var(--error-color-dark);
+      }
+    }
+    
+    .calendar-day {
+      &--today {
+        background: var(--primary-color-dark-light);
+      }
+      
+      &--weekend {
+        background: var(--weekend-background-dark);
+      }
+    }
+  }
+}
+
+// Responsive
+@include mixins.mobile {
+  .calendar-day {
+    min-height: 60px;
+    
+    .event-title {
+      display: none;
+    }
+  }
+  
+  .calendar-widget__view-selector {
+    display: none;
+  }
+}
+
+// Print
+@media print {
+  .calendar-widget {
+    &__controls,
+    &__filters,
+    &__actions {
+      display: none;
+    }
+  }
+}
+
+// Animations
+@include mixins.reduced-motion {
+  .calendar-widget * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
