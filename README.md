@@ -82,7 +82,7 @@ A comprehensive SCRUM project management platform built with modern technologies
                               │
                     ┌─────────┴──────────┐
                     │                    │
-            ┌───────▼────────┐ ┌────────▼───────┐
+            ┌───────▼─────────┐ ┌────────▼───────┐
             │  PostgreSQL DB  │ │  Redis Cache   │
             └─────────────────┘ └────────────────┘
 ```
@@ -118,13 +118,13 @@ A comprehensive SCRUM project management platform built with modern technologies
 
 ```
 scrum-project-manager/
-├── apps/                         # Applications
-│   ├── frontend/                 # Angular application
+├── apps/                        # Applications
+│   ├── frontend/                # Angular application
 │   ├── api-gateway/             # GraphQL API gateway
 │   ├── identity-service/        # Authentication service
 │   ├── projects-service/        # Projects management
 │   └── ai-assistant-service/    # AI integration service
-├── libs/                         # Shared libraries
+├── libs/                        # Shared libraries
 │   ├── shared/
 │   │   ├── interfaces/          # TypeScript interfaces
 │   │   ├── utils/               # Utility functions
@@ -232,7 +232,7 @@ See `.env.example` for all available configuration options. Key variables includ
 
 ```bash
 # Unit tests
-npm run test                  # Run all unit tests
+npm run test                 # Run all unit tests
 npm run test:watch           # Watch mode
 npm run test:cov             # Generate coverage report
 
