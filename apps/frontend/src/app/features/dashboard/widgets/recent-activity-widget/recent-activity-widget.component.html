@@ -1,0 +1,237 @@
+<!-- Recent Activity Widget Container -->
+<div class="recent-activity-widget" 
+     [class.recent-activity-widget--compact]="compact"
+     [@fadeIn]>
+  
+  <!-- Widget Header -->
+  <div class="recent-activity-widget__header">
+    <div class="recent-activity-widget__title-section">
+      <h3 class="recent-activity-widget__title">
+        {{ i18n.translate('activity.title') }}
+      </h3>
+      <div class="recent-activity-widget__stats" *ngIf="!compact">
+        <span class="stat">
+          <strong>{{ activityStats().today }}</strong> 
+          {{ i18n.translate('activity.todayCount') }}
+        </span>
+        <span class="stat">
+          <strong>{{ activityStats().total }}</strong> 
+          {{ i18n.translate('activity.totalCount') }}
+        </span>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="recent-activity-widget__actions">
+      <button mat-icon-button
+              (click)="markAllAsRead()"
+              [matTooltip]="i18n.translate('activity.markAllRead')">
+        <mat-icon fontIcon="done_all"></mat-icon>
+      </button>
+      
+      <button mat-icon-button
+              (click)="refresh()"
+              [matTooltip]="i18n.translate('common.refresh')">
+        <mat-icon fontIcon="refresh"></mat-icon>
+      </button>
+      
+      <button mat-icon-button
+              [matMenuTriggerFor]="activityMenu"
+              [matTooltip]="i18n.translate('common.moreOptions')">
+        <mat-icon fontIcon="more_vert"></mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Filters -->
+  <div class="recent-activity-widget__filters" *ngIf="showFilters && !compact">
+    <!-- Type Filter -->
+    <mat-chip-listbox 
+      [(ngModel)]="selectedType"
+      class="filter-chips">
+      <mat-chip-option 
+        *ngFor="let type of activityTypes" 
+        [value]="type"
+        (click)="filterByType(type)">
+        {{ getTypeLabel(type) }}
+      </mat-chip-option>
+    </mat-chip-listbox>
+    
+    <!-- Time Range Filter -->
+    <mat-chip-listbox 
+      [(ngModel)]="selectedTimeRange"
+      class="filter-chips">
+      <mat-chip-option 
+        *ngFor="let range of timeRanges" 
+        [value]="range"
+        (click)="filterByTimeRange(range)">
+        {{ getTimeRangeLabel(range) }}
+      </mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  
+  <!-- Content -->
+  <div class="recent-activity-widget__content">
+    <!-- Loading State -->
+    <div class="recent-activity-widget__loading" *ngIf="isLoading()">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>{{ i18n.translate('common.loading') }}</p>
+    </div>
+    
+    <!-- Activity List -->
+    <div class="recent-activity-widget__list" 
+         *ngIf="!isLoading() && filteredActivities().length > 0"
+         [@listAnimation]="filteredActivities().length">
+      
+      <!-- Grouped Activities -->
+      <div class="activity-group" 
+           *ngFor="let group of groupedActivities()">
+        
+        <!-- Group Header -->
+        <div class="activity-group__header">
+          <span class="activity-group__date">{{ group.date }}</span>
+          <span class="activity-group__count">
+            {{ group.items.length }} 
+            {{ group.items.length === 1 ? 
+               i18n.translate('activity.activity') : 
+               i18n.translate('activity.activities') }}
+          </span>
+        </div>
+        
+        <!-- Activity Items -->
+        <div class="activity-list">
+          <div class="activity-item" 
+               *ngFor="let activity of group.items"
+               [class.activity-item--expanded]="isActivityExpanded(activity.id)"
+               (click)="openActivity(activity)">
+            
+            <!-- Activity Icon -->
+            <div class="activity-item__icon"
+                 [style.background-color]="getActivityColor(activity) + '20'"
+                 [style.color]="getActivityColor(activity)">
+              <mat-icon [fontIcon]="getActivityIcon(activity)"></mat-icon>
+            </div>
+            
+            <!-- Activity Content -->
+            <div class="activity-item__content">
+              <!-- Main Description -->
+              <div class="activity-item__description" 
+                   [innerHTML]="getActivityDescription(activity)">
+              </div>
+              
+              <!-- Metadata -->
+              <div class="activity-item__meta">
+                <!-- User Avatar -->
+                <img [src]="activity.user.avatar" 
+                     [alt]="activity.user.name"
+                     class="activity-item__avatar"
+                     [matTooltip]="activity.user.name">
+                
+                <!-- Time -->
+                <span class="activity-item__time">
+                  {{ formatRelativeTime(activity.timestamp) }}
+                </span>
+                
+                <!-- Type Badge -->
+                <span class="activity-item__type"
+                      [style.background-color]="getActivityColor(activity) + '10'"
+                      [style.color]="getActivityColor(activity)">
+                  {{ activity.type }}
+                </span>
+              </div>
+              
+              <!-- Details (if expanded) -->
+              <div class="activity-item__details" 
+                   *ngIf="isActivityExpanded(activity.id) && activity.details">
+                <mat-divider></mat-divider>
+                <div class="details-content">
+                  <!-- Task Details -->
+                  <div *ngIf="activity.type === 'task' && activity.details">
+                    <p *ngIf="activity.details.storyPoints">
+                      <strong>{{ i18n.translate('activity.storyPoints') }}:</strong> 
+                      {{ activity.details.storyPoints }}
+                    </p>
+                    <p *ngIf="activity.details.assignee">
+                      <strong>{{ i18n.translate('activity.assignee') }}:</strong> 
+                      {{ activity.details.assignee }}
+                    </p>
+                  </div>
+                  
+                  <!-- Comment Details -->
+                  <div *ngIf="activity.type === 'comment' && activity.details">
+                    <p class="comment-text">{{ activity.details.comment }}</p>
+                  </div>
+                  
+                  <!-- Sprint Details -->
+                  <div *ngIf="activity.type === 'sprint' && activity.details">
+                    <p *ngIf="activity.details.duration">
+                      <strong>{{ i18n.translate('activity.duration') }}:</strong> 
+                      {{ activity.details.duration }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Expand Button -->
+            <button mat-icon-button
+                    class="activity-item__expand"
+                    *ngIf="activity.details"
+                    (click)="toggleActivityExpansion(activity.id); $event.stopPropagation()"
+                    [matTooltip]="isActivityExpanded(activity.id) ? 
+                                  i18n.translate('common.collapse') : 
+                                  i18n.translate('common.expand')">
+              <mat-icon [fontIcon]="isActivityExpanded(activity.id) ? 
+                                    'expand_less' : 'expand_more'"></mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Empty State -->
+    <div class="recent-activity-widget__empty" 
+         *ngIf="!isLoading() && filteredActivities().length === 0">
+      <mat-icon fontIcon="history" class="empty-icon"></mat-icon>
+      <p>{{ i18n.translate('activity.noActivities') }}</p>
+      <button mat-button color="primary" (click)="refresh()">
+        {{ i18n.translate('common.refresh') }}
+      </button>
+    </div>
+  </div>
+  
+  <!-- Load More -->
+  <div class="recent-activity-widget__footer" 
+       *ngIf="!compact && filteredActivities().length >= maxItems">
+    <button mat-button (click)="loadMore()">
+      {{ i18n.translate('common.loadMore') }}
+    </button>
+  </div>
+</div>
+
+<!-- Activity Menu -->
+<mat-menu #activityMenu="matMenu">
+  <button mat-menu-item (click)="markAllAsRead()">
+    <mat-icon fontIcon="done_all"></mat-icon>
+    <span>{{ i18n.translate('activity.markAllRead') }}</span>
+  </button>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="notifications_off"></mat-icon>
+    <span>{{ i18n.translate('activity.muteNotifications') }}</span>
+  </button>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="settings"></mat-icon>
+    <span>{{ i18n.translate('activity.settings') }}</span>
+  </button>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="download"></mat-icon>
+    <span>{{ i18n.translate('activity.export') }}</span>
+  </button>
+</mat-menu>

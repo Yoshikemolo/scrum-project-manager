@@ -1,0 +1,489 @@
+<div class="kanban" [@staggerAnimation]="filteredColumns().length">
+  <!-- Kanban Header -->
+  <div class="kanban__header">
+    <div class="kanban__title-section">
+      <h1 class="kanban__title">
+        <mat-icon>view_kanban</mat-icon>
+        {{ 'kanban.title' | translate }}
+      </h1>
+      <div class="kanban__stats">
+        <span class="stat">
+          <mat-icon>task_alt</mat-icon>
+          {{ totalTasks() }} {{ 'kanban.tasks' | translate }}
+        </span>
+        <span class="stat">
+          <mat-icon>check_circle</mat-icon>
+          {{ completionRate() }}% {{ 'kanban.complete' | translate }}
+        </span>
+      </div>
+    </div>
+
+    <div class="kanban__controls">
+      <!-- Search -->
+      <mat-form-field class="kanban__search" appearance="outline">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput 
+               #searchInput
+               [(ngModel)]="searchQuery"
+               [placeholder]="'kanban.search' | translate"
+               (keydown.escape)="searchQuery = ''">
+        <button mat-icon-button matSuffix 
+                *ngIf="searchQuery()"
+                (click)="searchQuery = ''">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <!-- Filters -->
+      <button mat-stroked-button [matMenuTriggerFor]="filterMenu">
+        <mat-icon>filter_list</mat-icon>
+        {{ 'kanban.filters' | translate }}
+        <mat-badge *ngIf="selectedFilters().assignee || selectedFilters().priority || selectedFilters().labels.length > 0"
+                   [content]="'!'"
+                   matBadgeColor="accent"
+                   matBadgeSize="small">
+        </mat-badge>
+      </button>
+
+      <!-- View Options -->
+      <div class="kanban__view-options">
+        <button mat-icon-button 
+                [matTooltip]="'kanban.compact_view' | translate"
+                [class.active]="isCompactView()"
+                (click)="toggleCompactView()">
+          <mat-icon>view_compact</mat-icon>
+        </button>
+        <button mat-icon-button 
+                [matTooltip]="viewMode() === 'board' ? ('kanban.list_view' | translate) : ('kanban.board_view' | translate)"
+                (click)="toggleViewMode()">
+          <mat-icon>{{ viewMode() === 'board' ? 'view_list' : 'view_column' }}</mat-icon>
+        </button>
+      </div>
+
+      <!-- Actions -->
+      <button mat-icon-button 
+              [matTooltip]="'kanban.refresh' | translate"
+              (click)="loadTasks()"
+              [disabled]="isLoading()">
+        <mat-icon [class.spin]="isLoading()">refresh</mat-icon>
+      </button>
+
+      <button mat-icon-button 
+              [matTooltip]="'kanban.export' | translate"
+              (click)="exportBoard()">
+        <mat-icon>download</mat-icon>
+      </button>
+
+      <button mat-raised-button color="primary" 
+              (click)="showQuickAdd.set(true)">
+        <mat-icon>add</mat-icon>
+        {{ 'kanban.new_task' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Bulk Actions Bar -->
+  <div class="kanban__bulk-actions" 
+       *ngIf="selectedTasks().size > 0"
+       [@slideIn]>
+    <span class="bulk-count">
+      {{ selectedTasks().size }} {{ 'kanban.selected' | translate }}
+    </span>
+    <div class="bulk-actions">
+      <button mat-button [matMenuTriggerFor]="bulkMoveMenu">
+        <mat-icon>drive_file_move</mat-icon>
+        {{ 'kanban.move' | translate }}
+      </button>
+      <button mat-button color="warn" (click)="bulkDelete()">
+        <mat-icon>delete</mat-icon>
+        {{ 'kanban.delete' | translate }}
+      </button>
+      <button mat-button (click)="clearSelection()">
+        {{ 'kanban.clear_selection' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Add Form -->
+  <mat-card class="kanban__quick-add" 
+            *ngIf="showQuickAdd()"
+            [@cardAnimation]>
+    <form [formGroup]="quickAddForm" (ngSubmit)="createTask()">
+      <h3>{{ 'kanban.quick_add_task' | translate }}</h3>
+      
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'kanban.task_title' | translate }}</mat-label>
+        <input matInput formControlName="title" autofocus>
+        <mat-error *ngIf="quickAddForm.get('title')?.hasError('required')">
+          {{ 'kanban.title_required' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'kanban.description' | translate }}</mat-label>
+        <textarea matInput formControlName="description" rows="2"></textarea>
+      </mat-form-field>
+
+      <div class="quick-add-row">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'kanban.priority' | translate }}</mat-label>
+          <mat-select formControlName="priority">
+            <mat-option value="low">{{ 'kanban.priority.low' | translate }}</mat-option>
+            <mat-option value="medium">{{ 'kanban.priority.medium' | translate }}</mat-option>
+            <mat-option value="high">{{ 'kanban.priority.high' | translate }}</mat-option>
+            <mat-option value="critical">{{ 'kanban.priority.critical' | translate }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'kanban.assignee' | translate }}</mat-label>
+          <mat-select formControlName="assignee">
+            <mat-option [value]="null">{{ 'kanban.unassigned' | translate }}</mat-option>
+            <mat-option *ngFor="let user of users()" [value]="user">
+              {{ user.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'kanban.story_points' | translate }}</mat-label>
+          <input matInput type="number" formControlName="storyPoints" min="1" max="13">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'kanban.due_date' | translate }}</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="dueDate">
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <div class="quick-add-actions">
+        <button mat-button type="button" (click)="showQuickAdd.set(false)">
+          {{ 'kanban.cancel' | translate }}
+        </button>
+        <button mat-raised-button color="primary" type="submit">
+          <mat-icon>add</mat-icon>
+          {{ 'kanban.create_task' | translate }}
+        </button>
+      </div>
+    </form>
+  </mat-card>
+
+  <!-- Kanban Board -->
+  <div class="kanban__board" 
+       [class.kanban__board--compact]="isCompactView()"
+       *ngIf="viewMode() === 'board' && !isLoading()">
+    
+    <div class="kanban__column" 
+         *ngFor="let column of filteredColumns()"
+         [class.kanban__column--over-limit]="column.limit && column.tasks.length > column.limit"
+         [class.kanban__column--hovered]="hoveredColumn() === column.id"
+         [@slideIn]>
+      
+      <!-- Column Header -->
+      <div class="column__header">
+        <div class="column__title">
+          <mat-icon [style.color]="column.color">{{ column.icon }}</mat-icon>
+          <span>{{ column.title }}</span>
+          <mat-badge [content]="column.tasks.length" 
+                     matBadgeColor="primary"
+                     matBadgeSize="small">
+          </mat-badge>
+        </div>
+        <div class="column__actions">
+          <span class="column__limit" 
+                *ngIf="column.limit"
+                [class.column__limit--exceeded]="column.tasks.length > column.limit">
+            {{ column.tasks.length }}/{{ column.limit }}
+          </span>
+          <button mat-icon-button [matMenuTriggerFor]="columnMenu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Column Progress -->
+      <mat-progress-bar 
+        *ngIf="column.limit"
+        mode="determinate"
+        [value]="(column.tasks.length / column.limit) * 100"
+        [color]="column.tasks.length > column.limit ? 'warn' : 'primary'">
+      </mat-progress-bar>
+
+      <!-- Tasks Container -->
+      <div class="column__tasks"
+           cdkDropList
+           [cdkDropListData]="column.tasks"
+           [id]="column.id"
+           (cdkDropListDropped)="onDrop($event, column.id)"
+           (cdkDropListEntered)="onDragEntered(column.id)"
+           (cdkDropListExited)="onDragExited()">
+        
+        <!-- Task Card -->
+        <mat-card class="task-card"
+                  *ngFor="let task of column.tasks; trackBy: trackByTaskId"
+                  cdkDrag
+                  [cdkDragData]="task"
+                  (cdkDragStarted)="onDragStarted(task)"
+                  (cdkDragEnded)="onDragEnded()"
+                  [class.task-card--selected]="selectedTasks().has(task.id)"
+                  [class.task-card--blocked]="task.blockedBy.length > 0"
+                  [class.task-card--compact]="isCompactView()"
+                  [@cardAnimation]
+                  matRipple>
+          
+          <!-- Task Header -->
+          <div class="task-card__header">
+            <div class="task-card__id">{{ task.id }}</div>
+            <div class="task-card__actions">
+              <mat-checkbox 
+                [checked]="selectedTasks().has(task.id)"
+                (change)="toggleTaskSelection(task.id)"
+                (click)="$event.stopPropagation()">
+              </mat-checkbox>
+              <button mat-icon-button 
+                      [matMenuTriggerFor]="taskMenu"
+                      (click)="$event.stopPropagation()">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Task Content -->
+          <div class="task-card__content" (click)="editTask(task)">
+            <h3 class="task-card__title">{{ task.title }}</h3>
+            <p class="task-card__description" *ngIf="!isCompactView() && task.description">
+              {{ task.description }}
+            </p>
+          </div>
+
+          <!-- Task Labels -->
+          <div class="task-card__labels" *ngIf="task.labels.length > 0">
+            <mat-chip *ngFor="let label of task.labels"
+                      [style.backgroundColor]="getLabelColor(label) + '20'"
+                      [style.color]="getLabelColor(label)">
+              {{ label }}
+            </mat-chip>
+          </div>
+
+          <!-- Task Meta -->
+          <div class="task-card__meta" *ngIf="!isCompactView()">
+            <!-- Priority -->
+            <div class="task-meta__item task-meta__priority"
+                 [matTooltip]="'Priority: ' + task.priority">
+              <mat-icon [color]="getPriorityColor(task.priority)">
+                {{ getPriorityIcon(task.priority) }}
+              </mat-icon>
+            </div>
+
+            <!-- Story Points -->
+            <div class="task-meta__item" 
+                 *ngIf="task.storyPoints"
+                 [matTooltip]="'Story Points'">
+              <mat-icon>assessment</mat-icon>
+              <span>{{ task.storyPoints }}</span>
+            </div>
+
+            <!-- Due Date -->
+            <div class="task-meta__item" 
+                 *ngIf="task.dueDate"
+                 [class.task-meta__item--urgent]="getDaysUntilDue(task.dueDate) <= 2"
+                 [matTooltip]="task.dueDate | date">
+              <mat-icon>event</mat-icon>
+              <span>{{ getDaysUntilDue(task.dueDate) }}d</span>
+            </div>
+
+            <!-- Attachments -->
+            <div class="task-meta__item" 
+                 *ngIf="task.attachments > 0"
+                 [matTooltip]="task.attachments + ' attachments'">
+              <mat-icon>attach_file</mat-icon>
+              <span>{{ task.attachments }}</span>
+            </div>
+
+            <!-- Comments -->
+            <div class="task-meta__item" 
+                 *ngIf="task.comments > 0"
+                 [matTooltip]="task.comments + ' comments'">
+              <mat-icon>comment</mat-icon>
+              <span>{{ task.comments }}</span>
+            </div>
+
+            <!-- Subtasks -->
+            <div class="task-meta__item" 
+                 *ngIf="task.subtasks.total > 0"
+                 [matTooltip]="task.subtasks.completed + '/' + task.subtasks.total + ' subtasks'">
+              <mat-icon>checklist</mat-icon>
+              <span>{{ task.subtasks.completed }}/{{ task.subtasks.total }}</span>
+            </div>
+          </div>
+
+          <!-- Task Progress Bars -->
+          <div class="task-card__progress" *ngIf="!isCompactView()">
+            <div class="progress-item" *ngIf="task.subtasks.total > 0">
+              <span class="progress-label">{{ 'kanban.subtasks' | translate }}</span>
+              <mat-progress-bar 
+                mode="determinate" 
+                [value]="getTaskProgress(task)"
+                color="primary">
+              </mat-progress-bar>
+            </div>
+            <div class="progress-item" *ngIf="task.timeTracking.estimated > 0">
+              <span class="progress-label">
+                {{ formatTime(task.timeTracking.logged) }}/{{ formatTime(task.timeTracking.estimated) }}
+              </span>
+              <mat-progress-bar 
+                mode="determinate" 
+                [value]="getTimeProgress(task)"
+                [color]="getTimeProgress(task) > 100 ? 'warn' : 'accent'">
+              </mat-progress-bar>
+            </div>
+          </div>
+
+          <!-- Task Footer -->
+          <div class="task-card__footer">
+            <!-- Assignee -->
+            <div class="task-card__assignee" *ngIf="task.assignee">
+              <div class="avatar" 
+                   [matTooltip]="task.assignee.name">
+                <img *ngIf="task.assignee.avatar" 
+                     [src]="task.assignee.avatar" 
+                     [alt]="task.assignee.name">
+                <span *ngIf="!task.assignee.avatar">
+                  {{ getUserInitials(task.assignee) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Blocked Indicator -->
+            <mat-icon class="task-card__blocked-icon" 
+                      *ngIf="task.blockedBy.length > 0"
+                      color="warn"
+                      [matTooltip]="'Blocked by: ' + task.blockedBy.join(', ')">
+              block
+            </mat-icon>
+          </div>
+
+          <!-- Task Menu -->
+          <mat-menu #taskMenu="matMenu">
+            <button mat-menu-item (click)="editTask(task)">
+              <mat-icon>edit</mat-icon>
+              <span>{{ 'kanban.edit' | translate }}</span>
+            </button>
+            <button mat-menu-item (click)="duplicateTask(task, column.id)">
+              <mat-icon>content_copy</mat-icon>
+              <span>{{ 'kanban.duplicate' | translate }}</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="deleteTask(task, column.id)" class="menu-item--danger">
+              <mat-icon>delete</mat-icon>
+              <span>{{ 'kanban.delete' | translate }}</span>
+            </button>
+          </mat-menu>
+        </mat-card>
+
+        <!-- Empty State -->
+        <div class="column__empty" 
+             *ngIf="column.tasks.length === 0"
+             [@fadeIn]>
+          <mat-icon>inbox</mat-icon>
+          <p>{{ 'kanban.no_tasks' | translate }}</p>
+        </div>
+      </div>
+
+      <!-- Column Menu -->
+      <mat-menu #columnMenu="matMenu">
+        <button mat-menu-item>
+          <mat-icon>add</mat-icon>
+          <span>{{ 'kanban.add_task_here' | translate }}</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>sort</mat-icon>
+          <span>{{ 'kanban.sort_tasks' | translate }}</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>archive</mat-icon>
+          <span>{{ 'kanban.archive_all' | translate }}</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item>
+          <mat-icon>settings</mat-icon>
+          <span>{{ 'kanban.column_settings' | translate }}</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="kanban__loading" *ngIf="isLoading()">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>{{ 'kanban.loading' | translate }}</p>
+  </div>
+</div>
+
+<!-- Filter Menu -->
+<mat-menu #filterMenu="matMenu" class="filter-menu">
+  <div class="filter-section">
+    <h4>{{ 'kanban.filter_by_assignee' | translate }}</h4>
+    <button mat-menu-item 
+            *ngFor="let user of users()"
+            (click)="applyFilter('assignee', user)"
+            [class.active]="selectedFilters().assignee?.id === user.id">
+      <div class="filter-user">
+        <div class="avatar-small">
+          <span>{{ getUserInitials(user) }}</span>
+        </div>
+        <span>{{ user.name }}</span>
+      </div>
+    </button>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <div class="filter-section">
+    <h4>{{ 'kanban.filter_by_priority' | translate }}</h4>
+    <button mat-menu-item 
+            *ngFor="let priority of ['low', 'medium', 'high', 'critical']"
+            (click)="applyFilter('priority', priority)"
+            [class.active]="selectedFilters().priority === priority">
+      <mat-icon [color]="getPriorityColor(priority)">
+        {{ getPriorityIcon(priority) }}
+      </mat-icon>
+      <span>{{ 'kanban.priority.' + priority | translate }}</span>
+    </button>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <div class="filter-section">
+    <h4>{{ 'kanban.filter_by_label' | translate }}</h4>
+    <div class="filter-labels">
+      <mat-chip *ngFor="let label of availableLabels()"
+                [selected]="selectedFilters().labels.includes(label)"
+                (click)="applyFilter('label', label)"
+                [style.backgroundColor]="selectedFilters().labels.includes(label) ? getLabelColor(label) : 'transparent'"
+                [style.color]="selectedFilters().labels.includes(label) ? 'white' : getLabelColor(label)"
+                [style.border]="'1px solid ' + getLabelColor(label)">
+        {{ label }}
+      </mat-chip>
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item (click)="applyFilter('clear', null)" class="clear-filters">
+    <mat-icon>clear</mat-icon>
+    <span>{{ 'kanban.clear_filters' | translate }}</span>
+  </button>
+</mat-menu>
+
+<!-- Bulk Move Menu -->
+<mat-menu #bulkMoveMenu="matMenu">
+  <button mat-menu-item 
+          *ngFor="let column of columns()"
+          (click)="bulkMove(column.id)">
+    <mat-icon [style.color]="column.color">{{ column.icon }}</mat-icon>
+    <span>{{ 'kanban.move_to' | translate }} {{ column.title }}</span>
+  </button>
+</mat-menu>

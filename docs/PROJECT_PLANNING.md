@@ -6,12 +6,11 @@
 2. [Current Status](#current-status)
 3. [Development Phases](#development-phases)
 4. [Sprint Planning](#sprint-planning)
-5. [Resource Allocation](#resource-allocation)
-6. [Risk Management](#risk-management)
-7. [Dependencies](#dependencies)
-8. [Deliverables](#deliverables)
-9. [Quality Assurance](#quality-assurance)
-10. [Related Documentation](#related-documentation)
+5. [Risk Management](#risk-management)
+6. [Dependencies](#dependencies)
+7. [Deliverables](#deliverables)
+8. [Quality Assurance](#quality-assurance)
+9. [Related Documentation](#related-documentation)
 
 ## Project Overview
 

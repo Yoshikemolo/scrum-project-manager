@@ -1,0 +1,140 @@
+<!-- Charts Widget Container -->
+<div class="charts-widget" 
+     [class.charts-widget--compact]="compact"
+     [@fadeIn]>
+  
+  <!-- Widget Header -->
+  <div class="charts-widget__header">
+    <div class="charts-widget__title-section">
+      <h3 class="charts-widget__title">{{ chartTitle() }}</h3>
+      <p class="charts-widget__description" *ngIf="!compact">
+        {{ chartDescription() }}
+      </p>
+    </div>
+    
+    <!-- Controls -->
+    <div class="charts-widget__controls" *ngIf="showControls">
+      <!-- Chart Type Selector -->
+      <mat-select 
+        [(ngModel)]="selectedChart"
+        (ngModelChange)="changeChartType($event)"
+        class="charts-widget__select"
+        [attr.aria-label]="i18n.translate('charts.selectType')">
+        <mat-option 
+          *ngFor="let type of chartTypes" 
+          [value]="type">
+          {{ getChartTypeLabel(type) }}
+        </mat-option>
+      </mat-select>
+      
+      <!-- Period Selector -->
+      <mat-select 
+        [(ngModel)]="selectedPeriod"
+        (ngModelChange)="changePeriod($event)"
+        class="charts-widget__select"
+        [attr.aria-label]="i18n.translate('charts.selectPeriod')">
+        <mat-option 
+          *ngFor="let period of chartPeriods" 
+          [value]="period">
+          {{ getPeriodLabel(period) }}
+        </mat-option>
+      </mat-select>
+      
+      <!-- Actions -->
+      <button 
+        mat-icon-button
+        (click)="refresh()"
+        [matTooltip]="i18n.translate('common.refresh')"
+        [attr.aria-label]="i18n.translate('common.refresh')">
+        <mat-icon fontIcon="refresh"></mat-icon>
+      </button>
+      
+      <button 
+        mat-icon-button
+        [matMenuTriggerFor]="chartMenu"
+        [matTooltip]="i18n.translate('common.moreOptions')"
+        [attr.aria-label]="i18n.translate('common.moreOptions')">
+        <mat-icon fontIcon="more_vert"></mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Chart Content -->
+  <div class="charts-widget__content" [@slideIn]>
+    <!-- Loading State -->
+    <div class="charts-widget__loading" *ngIf="isLoading()">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>{{ i18n.translate('common.loading') }}</p>
+    </div>
+    
+    <!-- Error State -->
+    <div class="charts-widget__error" *ngIf="error() && !isLoading()">
+      <mat-icon fontIcon="error_outline" class="error-icon"></mat-icon>
+      <p>{{ error() }}</p>
+      <button 
+        mat-button 
+        color="primary" 
+        (click)="refresh()">
+        {{ i18n.translate('common.retry') }}
+      </button>
+    </div>
+    
+    <!-- Chart Canvas -->
+    <div class="charts-widget__chart-container" 
+         *ngIf="!isLoading() && !error() && hasData()"
+         [class.charts-widget__chart-container--compact]="compact">
+      <canvas #chartCanvas></canvas>
+    </div>
+    
+    <!-- No Data State -->
+    <div class="charts-widget__empty" 
+         *ngIf="!isLoading() && !error() && !hasData()">
+      <mat-icon fontIcon="insert_chart_outlined" class="empty-icon"></mat-icon>
+      <p>{{ i18n.translate('charts.noData') }}</p>
+    </div>
+  </div>
+  
+  <!-- Quick Stats (if not compact) -->
+  <div class="charts-widget__stats" *ngIf="!compact && hasData()">
+    <div class="stat-item">
+      <span class="stat-label">{{ i18n.translate('charts.stats.dataPoints') }}</span>
+      <span class="stat-value">{{ chartData()?.labels?.length || 0 }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">{{ i18n.translate('charts.stats.series') }}</span>
+      <span class="stat-value">{{ chartData()?.datasets?.length || 0 }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">{{ i18n.translate('charts.stats.lastUpdated') }}</span>
+      <span class="stat-value">{{ i18n.translate('common.justNow') }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Menu -->
+<mat-menu #chartMenu="matMenu">
+  <button 
+    mat-menu-item 
+    (click)="exportChart()"
+    [disabled]="!hasData()">
+    <mat-icon fontIcon="download"></mat-icon>
+    <span>{{ i18n.translate('charts.export') }}</span>
+  </button>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="fullscreen"></mat-icon>
+    <span>{{ i18n.translate('charts.fullscreen') }}</span>
+  </button>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="settings"></mat-icon>
+    <span>{{ i18n.translate('charts.configure') }}</span>
+  </button>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="help_outline"></mat-icon>
+    <span>{{ i18n.translate('common.help') }}</span>
+  </button>
+</mat-menu>

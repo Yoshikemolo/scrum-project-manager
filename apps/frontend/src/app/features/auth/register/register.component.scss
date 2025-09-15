@@ -1,0 +1,561 @@
+@use '@angular/material' as mat;
+@use 'apps/frontend/src/styles/variables' as vars;
+@use 'apps/frontend/src/styles/mixins' as mixins;
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, vars.$secondary-color 0%, vars.$primary-color 100%);
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+
+  @include mixins.mobile {
+    padding: 0.5rem;
+  }
+}
+
+.register-card {
+  width: 100%;
+  max-width: 680px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98);
+  position: relative;
+  z-index: 1;
+
+  @include mixins.dark-mode {
+    background: rgba(30, 30, 30, 0.98);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  mat-card-header {
+    padding: 2rem 2rem 0;
+
+    @include mixins.mobile {
+      padding: 1.5rem 1.5rem 0;
+    }
+  }
+
+  mat-card-content {
+    padding: 1.5rem 2rem;
+
+    @include mixins.mobile {
+      padding: 1rem 1.5rem;
+    }
+  }
+
+  mat-card-footer {
+    padding: 0 2rem 2rem;
+
+    @include mixins.mobile {
+      padding: 0 1.5rem 1.5rem;
+    }
+  }
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  .logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+    animation: rotate 20s linear infinite;
+  }
+
+  .title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: vars.$text-primary;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.5px;
+
+    @include mixins.dark-mode {
+      color: vars.$text-primary-dark;
+    }
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    color: vars.$text-secondary;
+    margin: 0;
+
+    @include mixins.dark-mode {
+      color: vars.$text-secondary-dark;
+    }
+  }
+}
+
+.register-stepper {
+  background: transparent;
+  margin-bottom: 1rem;
+
+  ::ng-deep {
+    .mat-step-header {
+      .mat-step-icon {
+        background-color: vars.$primary-light;
+        color: vars.$primary-dark;
+      }
+
+      &.cdk-keyboard-focused,
+      &.cdk-program-focused,
+      &:hover {
+        background-color: vars.$background-hover;
+      }
+
+      .mat-step-label {
+        color: vars.$text-secondary;
+        font-weight: 500;
+      }
+
+      &.mat-step-header-selected {
+        .mat-step-icon {
+          background-color: vars.$primary-color;
+          color: white;
+        }
+
+        .mat-step-label {
+          color: vars.$text-primary;
+        }
+      }
+    }
+
+    .mat-stepper-horizontal-line {
+      border-top-color: vars.$border-color;
+    }
+  }
+}
+
+.step-form {
+  padding: 1rem 0;
+
+  .step-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: vars.$text-primary;
+    margin: 0 0 1.5rem;
+
+    @include mixins.dark-mode {
+      color: vars.$text-primary-dark;
+    }
+  }
+
+  .full-width {
+    width: 100%;
+    margin-bottom: 1.25rem;
+  }
+
+  .half-width {
+    width: calc(50% - 0.5rem);
+    margin-bottom: 1.25rem;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1rem;
+
+    @include mixins.mobile {
+      flex-direction: column;
+
+      .half-width {
+        width: 100%;
+      }
+    }
+  }
+
+  mat-form-field {
+    .mat-mdc-form-field-icon-prefix,
+    .mat-mdc-form-field-icon-suffix {
+      color: vars.$text-secondary;
+    }
+
+    &.mat-focused {
+      .mat-mdc-form-field-icon-prefix {
+        color: vars.$primary-color;
+      }
+    }
+
+    .success-icon {
+      color: vars.$success;
+    }
+
+    .error-icon {
+      color: vars.$error;
+    }
+  }
+
+  .password-strength {
+    margin: -0.75rem 0 1.25rem;
+    padding: 0 1rem;
+
+    .strength-bar {
+      height: 4px;
+      background-color: vars.$background-secondary;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+
+      .strength-fill {
+        height: 100%;
+        transition: width 0.3s ease, background-color 0.3s ease;
+
+        &.weak {
+          background-color: vars.$error;
+        }
+
+        &.medium {
+          background-color: vars.$warning;
+        }
+
+        &.strong {
+          background-color: vars.$success;
+        }
+      }
+    }
+
+    .strength-label {
+      font-size: 0.85rem;
+      color: vars.$text-secondary;
+      font-weight: 500;
+    }
+  }
+
+  .notification-preferences {
+    margin-bottom: 1.5rem;
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 500;
+      color: vars.$text-primary;
+      margin: 0 0 1rem;
+
+      @include mixins.dark-mode {
+        color: vars.$text-primary-dark;
+      }
+    }
+
+    mat-checkbox {
+      display: block;
+      margin-bottom: 0.75rem;
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        mat-icon {
+          font-size: 1.2rem;
+          width: 1.2rem;
+          height: 1.2rem;
+          color: vars.$text-secondary;
+        }
+      }
+    }
+  }
+
+  .terms-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: vars.$background-secondary;
+    border-radius: 8px;
+    border: 1px solid vars.$border-color;
+
+    @include mixins.dark-mode {
+      background-color: vars.$background-secondary-dark;
+      border-color: vars.$border-color-dark;
+    }
+
+    .terms-checkbox {
+      display: block;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+
+      a {
+        color: vars.$primary-color;
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .checkbox-error {
+      color: vars.$error;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+      margin-left: 1.75rem;
+      display: block;
+    }
+  }
+
+  .step-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid vars.$border-color;
+
+    @include mixins.dark-mode {
+      border-color: vars.$border-color-dark;
+    }
+
+    button {
+      mat-icon {
+        margin: 0 0.25rem;
+      }
+    }
+
+    .button-spinner {
+      display: inline-block;
+      margin-right: 8px;
+    }
+  }
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: vars.$error;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: vars.$error-light;
+  border-radius: 8px;
+  border: 1px solid vars.$error;
+
+  mat-icon {
+    font-size: 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+}
+
+.divider-container {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  position: relative;
+
+  mat-divider {
+    flex: 1;
+  }
+
+  .divider-text {
+    padding: 0 1rem;
+    color: vars.$text-secondary;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: white;
+    position: relative;
+    z-index: 1;
+
+    @include mixins.dark-mode {
+      background: vars.$background-dark;
+      color: vars.$text-secondary-dark;
+    }
+  }
+}
+
+.social-register {
+  display: flex;
+  gap: 0.75rem;
+
+  @include mixins.mobile {
+    flex-direction: column;
+  }
+
+  .social-button {
+    flex: 1;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: 1px solid vars.$border-color;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+      background-color: vars.$background-hover;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .social-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    &.google-button:hover {
+      border-color: #4285f4;
+      background-color: rgba(66, 133, 244, 0.05);
+    }
+
+    &.github-button:hover {
+      border-color: #333;
+      background-color: rgba(51, 51, 51, 0.05);
+    }
+
+    @include mixins.dark-mode {
+      border-color: vars.$border-color-dark;
+
+      &:hover:not(:disabled) {
+        background-color: vars.$background-hover-dark;
+      }
+    }
+  }
+}
+
+.footer-links {
+  text-align: center;
+
+  .login-prompt {
+    font-size: 0.95rem;
+    color: vars.$text-secondary;
+    margin: 0;
+
+    .login-link {
+      color: vars.$primary-color;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: vars.$primary-dark;
+        text-decoration: underline;
+      }
+    }
+
+    @include mixins.dark-mode {
+      color: vars.$text-secondary-dark;
+    }
+  }
+}
+
+// Background decoration
+.background-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+
+  .shape {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+
+    &.shape-1 {
+      width: 400px;
+      height: 400px;
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+      top: -200px;
+      right: -100px;
+      animation: morph 8s ease-in-out infinite;
+    }
+
+    &.shape-2 {
+      width: 300px;
+      height: 300px;
+      border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%;
+      bottom: -150px;
+      left: -150px;
+      animation: morph-reverse 10s ease-in-out infinite;
+    }
+
+    &.shape-3 {
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse 4s ease-in-out infinite;
+    }
+  }
+}
+
+// Animations
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes morph {
+  0%, 100% {
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    transform: rotate(0deg);
+  }
+  50% {
+    border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%;
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes morph-reverse {
+  0%, 100% {
+    border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%;
+    transform: rotate(0deg);
+  }
+  50% {
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    transform: rotate(-180deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.15;
+  }
+}
+
+// Accessibility
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .background-decoration {
+    display: none;
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .register-card {
+    border: 2px solid currentColor;
+  }
+
+  .social-button {
+    border-width: 2px;
+  }
+
+  .error-message,
+  .terms-section {
+    border-width: 2px;
+  }
+}

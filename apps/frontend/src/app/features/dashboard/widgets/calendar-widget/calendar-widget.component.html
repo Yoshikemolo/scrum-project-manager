@@ -1,0 +1,235 @@
+<!-- Calendar Widget Container -->
+<div class="calendar-widget" 
+     [class.calendar-widget--compact]="compact"
+     [@fadeIn]>
+  
+  <!-- Widget Header -->
+  <div class="calendar-widget__header">
+    <div class="calendar-widget__title-section">
+      <h3 class="calendar-widget__title">{{ i18n.translate('calendar.title') }}</h3>
+      <span class="calendar-widget__subtitle">{{ currentMonthYear() }}</span>
+    </div>
+    
+    <!-- Controls -->
+    <div class="calendar-widget__controls" *ngIf="showControls">
+      <!-- Navigation -->
+      <div class="calendar-widget__nav">
+        <button mat-icon-button 
+                (click)="previousPeriod()"
+                [attr.aria-label]="i18n.translate('calendar.previous')">
+          <mat-icon fontIcon="chevron_left"></mat-icon>
+        </button>
+        
+        <button mat-button 
+                (click)="goToToday()"
+                class="today-button">
+          {{ i18n.translate('calendar.today') }}
+        </button>
+        
+        <button mat-icon-button 
+                (click)="nextPeriod()"
+                [attr.aria-label]="i18n.translate('calendar.next')">
+          <mat-icon fontIcon="chevron_right"></mat-icon>
+        </button>
+      </div>
+      
+      <!-- View Selector -->
+      <div class="calendar-widget__view-selector">
+        <button mat-icon-button 
+                *ngFor="let view of calendarViews"
+                [class.active]="selectedView() === view"
+                (click)="changeView(view)"
+                [matTooltip]="getViewLabel(view)">
+          <mat-icon [fontIcon]="view === 'month' ? 'calendar_month' : 
+                               view === 'week' ? 'view_week' : 
+                               view === 'day' ? 'today' : 'list'"></mat-icon>
+        </button>
+      </div>
+      
+      <!-- Actions -->
+      <button mat-icon-button
+              (click)="refresh()"
+              [matTooltip]="i18n.translate('common.refresh')">
+        <mat-icon fontIcon="refresh"></mat-icon>
+      </button>
+      
+      <button mat-icon-button
+              [matMenuTriggerFor]="calendarMenu"
+              [matTooltip]="i18n.translate('common.moreOptions')">
+        <mat-icon fontIcon="more_vert"></mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Event Type Filters -->
+  <div class="calendar-widget__filters" *ngIf="showEventTypes && !compact">
+    <mat-chip-listbox [(ngModel)]="selectedEventType">
+      <mat-chip-option 
+        *ngFor="let type of eventTypes" 
+        [value]="type"
+        (click)="filterByType(type)">
+        <mat-icon [fontIcon]="getEventIcon(type)" 
+                  *ngIf="type !== 'all'"
+                  class="chip-icon"></mat-icon>
+        {{ getEventTypeLabel(type) }}
+      </mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  
+  <!-- Calendar Content -->
+  <div class="calendar-widget__content">
+    <!-- Loading State -->
+    <div class="calendar-widget__loading" *ngIf="isLoading()">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>{{ i18n.translate('common.loading') }}</p>
+    </div>
+    
+    <!-- Calendar View -->
+    <div class="calendar-widget__calendar" 
+         *ngIf="!isLoading() && selectedView() === 'month'"
+         [@slideIn]>
+      
+      <!-- Week Days Header -->
+      <div class="calendar-widget__weekdays">
+        <div class="weekday" 
+             *ngFor="let day of weekDays()"
+             [class.weekend]="day === weekDays()[0] || day === weekDays()[6]">
+          {{ day.substring(0, 3) }}
+        </div>
+      </div>
+      
+      <!-- Calendar Grid -->
+      <div class="calendar-widget__grid">
+        <div class="calendar-week" *ngFor="let week of calendarWeeks()">
+          <div class="calendar-day"
+               *ngFor="let day of week.days"
+               [class.calendar-day--other-month]="!day.isCurrentMonth"
+               [class.calendar-day--today]="day.isToday"
+               [class.calendar-day--weekend]="day.isWeekend"
+               [class.calendar-day--has-events]="day.events.length > 0"
+               (click)="selectDate(day)">
+            
+            <div class="day-number">{{ day.dayNumber }}</div>
+            
+            <!-- Event Indicators -->
+            <div class="day-events" *ngIf="day.events.length > 0">
+              <div class="event-indicator"
+                   *ngFor="let event of day.events.slice(0, 3)"
+                   [style.background-color]="event.color"
+                   [matTooltip]="event.title"
+                   (click)="openEvent(event); $event.stopPropagation()">
+                <mat-icon [fontIcon]="getEventIcon(event.type)" 
+                          class="event-icon"></mat-icon>
+                <span class="event-title">{{ event.title }}</span>
+              </div>
+              
+              <div class="more-events" 
+                   *ngIf="day.events.length > 3"
+                   [matBadge]="'+' + (day.events.length - 3)"
+                   matBadgeSize="small">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Agenda View -->
+    <div class="calendar-widget__agenda" 
+         *ngIf="!isLoading() && selectedView() === 'agenda'"
+         [@slideIn]>
+      
+      <!-- Today's Events -->
+      <div class="agenda-section" *ngIf="todayEvents().length > 0">
+        <h4 class="agenda-title">{{ i18n.translate('calendar.todayEvents') }}</h4>
+        <div class="event-list">
+          <div class="event-item" 
+               *ngFor="let event of todayEvents()"
+               (click)="openEvent(event)">
+            <div class="event-time">
+              {{ formatEventTime(event.start) }}
+            </div>
+            <div class="event-content">
+              <div class="event-header">
+                <mat-icon [fontIcon]="getEventIcon(event.type)" 
+                          [style.color]="event.color"
+                          class="event-type-icon"></mat-icon>
+                <span class="event-title">{{ event.title }}</span>
+              </div>
+              <div class="event-meta" *ngIf="event.location || event.participants">
+                <span *ngIf="event.location" class="event-location">
+                  <mat-icon fontIcon="location_on" class="meta-icon"></mat-icon>
+                  {{ event.location }}
+                </span>
+                <span *ngIf="event.participants" class="event-participants">
+                  <mat-icon fontIcon="people" class="meta-icon"></mat-icon>
+                  {{ event.participants.length }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Upcoming Events -->
+      <div class="agenda-section" *ngIf="upcomingEvents().length > 0">
+        <h4 class="agenda-title">{{ i18n.translate('calendar.upcoming') }}</h4>
+        <div class="event-list">
+          <div class="event-item" 
+               *ngFor="let event of upcomingEvents()"
+               (click)="openEvent(event)">
+            <div class="event-date">
+              {{ event.start | date:'MMM d' }}
+            </div>
+            <div class="event-content">
+              <span class="event-title">{{ event.title }}</span>
+              <mat-icon [fontIcon]="getEventIcon(event.type)" 
+                        [style.color]="event.color"
+                        class="event-type-icon"></mat-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- No Events -->
+      <div class="calendar-widget__empty" 
+           *ngIf="todayEvents().length === 0 && upcomingEvents().length === 0">
+        <mat-icon fontIcon="event_available" class="empty-icon"></mat-icon>
+        <p>{{ i18n.translate('calendar.noEvents') }}</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Quick Actions (if not compact) -->
+  <div class="calendar-widget__actions" *ngIf="!compact">
+    <button mat-button color="primary" (click)="createEvent()">
+      <mat-icon fontIcon="add"></mat-icon>
+      {{ i18n.translate('calendar.createEvent') }}
+    </button>
+  </div>
+</div>
+
+<!-- Calendar Menu -->
+<mat-menu #calendarMenu="matMenu">
+  <button mat-menu-item (click)="createEvent()">
+    <mat-icon fontIcon="add"></mat-icon>
+    <span>{{ i18n.translate('calendar.createEvent') }}</span>
+  </button>
+  
+  <button mat-menu-item (click)="exportCalendar()">
+    <mat-icon fontIcon="download"></mat-icon>
+    <span>{{ i18n.translate('calendar.export') }}</span>
+  </button>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="settings"></mat-icon>
+    <span>{{ i18n.translate('calendar.settings') }}</span>
+  </button>
+  
+  <button mat-menu-item>
+    <mat-icon fontIcon="help_outline"></mat-icon>
+    <span>{{ i18n.translate('common.help') }}</span>
+  </button>
+</mat-menu>

@@ -1,0 +1,256 @@
+<div class="two-factor-container" @fadeInOut>
+  <mat-card class="two-factor-card">
+    <mat-card-header>
+      <div class="two-factor-header">
+        <div class="icon-container">
+          <mat-icon class="shield-icon">verified_user</mat-icon>
+        </div>
+        <h1 class="title">Two-Factor Authentication</h1>
+        <p class="subtitle">Enter the verification code to access your account</p>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Method Selection Tabs -->
+      <mat-tab-group 
+        [(selectedIndex)]="selectedMethod" 
+        class="method-tabs"
+        (selectedIndexChange)="switchMethod($event === 0 ? 'app' : $event === 1 ? 'sms' : 'backup')"
+      >
+        <!-- Authenticator App Tab -->
+        <mat-tab [disabled]="!availableMethods[0].available">
+          <ng-template mat-tab-label>
+            <mat-icon>{{ availableMethods[0].icon }}</mat-icon>
+            <span>{{ availableMethods[0].label }}</span>
+          </ng-template>
+
+          <div class="tab-content" @fadeInOut>
+            <div class="method-description">
+              <mat-icon>info</mat-icon>
+              <span>Enter the 6-digit code from your authenticator app</span>
+            </div>
+
+            <!-- OTP Input Fields -->
+            <div class="otp-container" [class.shake]="shakeAnimation() === 'shake'">
+              <div class="otp-inputs">
+                <input
+                  *ngFor="let digit of otpValues(); let i = index"
+                  #otpInput
+                  type="text"
+                  class="otp-input"
+                  maxlength="1"
+                  inputmode="numeric"
+                  pattern="[0-9]"
+                  [value]="digit"
+                  [attr.aria-label]="'Digit ' + (i + 1)"
+                  [class.filled]="digit !== ''"
+                  [class.error]="verificationAttempts() > 0 && digit === ''"
+                  (input)="onOtpInput(i, $event)"
+                  (keydown)="onOtpKeydown(i, $event)"
+                  (paste)="onOtpPaste($event)"
+                  [disabled]="isLoading() || isBlocked()"
+                />
+              </div>
+            </div>
+
+            <!-- Resend Button -->
+            <div class="resend-section">
+              <button 
+                mat-button 
+                color="primary"
+                (click)="resendOtp()"
+                [disabled]="!canResend() || isLoading() || isBlocked()"
+              >
+                <mat-icon>refresh</mat-icon>
+                {{ getResendText() }}
+              </button>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- SMS Tab -->
+        <mat-tab [disabled]="!availableMethods[1].available">
+          <ng-template mat-tab-label>
+            <mat-icon>{{ availableMethods[1].icon }}</mat-icon>
+            <span>{{ availableMethods[1].label }}</span>
+          </ng-template>
+
+          <div class="tab-content" @fadeInOut>
+            <div class="method-description">
+              <mat-icon>info</mat-icon>
+              <span>Enter the code sent to {{ maskedPhoneNumber() }}</span>
+            </div>
+
+            <!-- OTP Input Fields (Same as app) -->
+            <div class="otp-container" [class.shake]="shakeAnimation() === 'shake'">
+              <div class="otp-inputs">
+                <input
+                  *ngFor="let digit of otpValues(); let i = index"
+                  #otpInput
+                  type="text"
+                  class="otp-input"
+                  maxlength="1"
+                  inputmode="numeric"
+                  pattern="[0-9]"
+                  [value]="digit"
+                  [attr.aria-label]="'Digit ' + (i + 1)"
+                  [class.filled]="digit !== ''"
+                  [class.error]="verificationAttempts() > 0 && digit === ''"
+                  (input)="onOtpInput(i, $event)"
+                  (keydown)="onOtpKeydown(i, $event)"
+                  (paste)="onOtpPaste($event)"
+                  [disabled]="isLoading() || isBlocked()"
+                />
+              </div>
+            </div>
+
+            <!-- Resend Button -->
+            <div class="resend-section">
+              <button 
+                mat-button 
+                color="primary"
+                (click)="resendOtp()"
+                [disabled]="!canResend() || isLoading() || isBlocked()"
+              >
+                <mat-icon>send</mat-icon>
+                {{ getResendText() }}
+              </button>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Backup Code Tab -->
+        <mat-tab [disabled]="!availableMethods[2].available">
+          <ng-template mat-tab-label>
+            <mat-icon>{{ availableMethods[2].icon }}</mat-icon>
+            <span>{{ availableMethods[2].label }}</span>
+          </ng-template>
+
+          <div class="tab-content" @fadeInOut>
+            <div class="method-description">
+              <mat-icon>info</mat-icon>
+              <span>Enter one of your 8-character backup codes</span>
+            </div>
+
+            <!-- Backup Code Input -->
+            <form [formGroup]="backupCodeForm" class="backup-form">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Backup Code</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  formControlName="code"
+                  placeholder="XXXX-XXXX"
+                  autocomplete="off"
+                  [attr.aria-label]="'Backup code input'"
+                  style="text-transform: uppercase;"
+                  maxlength="8"
+                />
+                <mat-icon matPrefix>vpn_key</mat-icon>
+                <mat-hint>Enter your 8-character backup code</mat-hint>
+                <mat-error *ngIf="backupCodeForm.get('code')?.hasError('required')">
+                  Backup code is required
+                </mat-error>
+                <mat-error *ngIf="backupCodeForm.get('code')?.hasError('pattern')">
+                  Invalid backup code format
+                </mat-error>
+              </mat-form-field>
+            </form>
+
+            <div class="backup-warning">
+              <mat-icon>warning</mat-icon>
+              <span>Each backup code can only be used once</span>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+
+      <!-- Trust Device Checkbox -->
+      <div class="trust-device">
+        <mat-checkbox 
+          [(ngModel)]="trustDevice" 
+          color="primary"
+          [disabled]="isLoading() || isBlocked()"
+        >
+          Trust this device for 30 days
+        </mat-checkbox>
+      </div>
+
+      <!-- Attempts Warning -->
+      <div class="attempts-warning" *ngIf="verificationAttempts() > 0 && !isBlocked()" @fadeInOut>
+        <mat-icon>warning</mat-icon>
+        <span>{{ maxAttempts - verificationAttempts() }} attempts remaining</span>
+      </div>
+
+      <!-- Blocked Message -->
+      <div class="blocked-message" *ngIf="isBlocked()" @fadeInOut>
+        <mat-icon>block</mat-icon>
+        <span>Too many failed attempts. Please try again later.</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button
+          mat-raised-button
+          color="primary"
+          class="verify-button"
+          (click)="selectedMethod() === 'backup' ? verifyBackupCode() : verifyOtp()"
+          [disabled]="isVerificationDisabled()"
+        >
+          <mat-spinner
+            *ngIf="isLoading()"
+            diameter="20"
+            class="button-spinner"
+          ></mat-spinner>
+          <span *ngIf="!isLoading()">
+            <mat-icon>lock_open</mat-icon>
+            Verify
+          </span>
+          <span *ngIf="isLoading()">Verifying...</span>
+        </button>
+
+        <button
+          mat-stroked-button
+          routerLink="/auth/login"
+          class="cancel-button"
+          [disabled]="isLoading()"
+        >
+          <mat-icon>close</mat-icon>
+          Cancel
+        </button>
+      </div>
+    </mat-card-content>
+
+    <mat-card-footer>
+      <div class="footer-links">
+        <div class="help-section">
+          <mat-icon>help_outline</mat-icon>
+          <div class="help-content">
+            <span>Having trouble?</span>
+            <div class="help-links">
+              <a href="#" (click)="$event.preventDefault()">
+                Lost your device?
+              </a>
+              <span class="separator">•</span>
+              <a href="#" (click)="$event.preventDefault()">
+                Can't receive codes?
+              </a>
+              <span class="separator">•</span>
+              <a href="/support" target="_blank" rel="noopener noreferrer">
+                Contact Support
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-card-footer>
+  </mat-card>
+
+  <!-- Background decoration -->
+  <div class="background-decoration">
+    <div class="grid-pattern"></div>
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+  </div>
+</div>

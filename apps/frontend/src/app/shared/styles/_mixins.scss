@@ -1,0 +1,306 @@
+/**
+ * Global SCSS Mixins
+ * Reusable style patterns and responsive utilities
+ */
+@use 'variables' as vars;
+
+// Responsive breakpoint mixins
+@mixin mobile {
+  @media (max-width: #{vars.$breakpoint-sm - 1px}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: #{vars.$breakpoint-sm}) and (max-width: #{vars.$breakpoint-md - 1px}) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: #{vars.$breakpoint-lg}) {
+    @content;
+  }
+}
+
+@mixin mobile-up {
+  @media (min-width: #{vars.$breakpoint-sm}) {
+    @content;
+  }
+}
+
+@mixin tablet-up {
+  @media (min-width: #{vars.$breakpoint-md}) {
+    @content;
+  }
+}
+
+@mixin desktop-up {
+  @media (min-width: #{vars.$breakpoint-lg}) {
+    @content;
+  }
+}
+
+// Dark mode mixin
+@mixin dark-mode {
+  @media (prefers-color-scheme: dark) {
+    @content;
+  }
+  
+  .dark-theme & {
+    @content;
+  }
+}
+
+// Light mode mixin
+@mixin light-mode {
+  @media (prefers-color-scheme: light) {
+    @content;
+  }
+  
+  .light-theme & {
+    @content;
+  }
+}
+
+// High contrast mode
+@mixin high-contrast {
+  @media (prefers-contrast: high) {
+    @content;
+  }
+}
+
+// Reduced motion
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+// Truncate text with ellipsis
+@mixin truncate($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// Focus visible styles
+@mixin focus-visible {
+  &:focus-visible {
+    outline: 2px solid var(--focus-color, #2196f3);
+    outline-offset: 2px;
+    @content;
+  }
+}
+
+// Hover effect
+@mixin hover-effect {
+  transition: all vars.$transition-base vars.$transition-easing;
+  
+  &:hover:not(:disabled) {
+    @content;
+  }
+}
+
+// Card style
+@mixin card($padding: vars.$spacing-md, $radius: vars.$border-radius-lg) {
+  background: var(--surface-color);
+  border-radius: $radius;
+  padding: $padding;
+  box-shadow: vars.$shadow-sm;
+  
+  @include dark-mode {
+    background: var(--surface-color-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+// Button reset
+@mixin button-reset {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: vars.$opacity-disabled;
+  }
+}
+
+// Scrollbar styles
+@mixin custom-scrollbar($width: 6px, $track-color: transparent) {
+  &::-webkit-scrollbar {
+    width: $width;
+    height: $width;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $track-color;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.2));
+    border-radius: vars.$border-radius-full;
+    
+    &:hover {
+      background: var(--scrollbar-thumb-hover, rgba(0, 0, 0, 0.3));
+    }
+  }
+  
+  @include dark-mode {
+    &::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb-dark, rgba(255, 255, 255, 0.2));
+      
+      &:hover {
+        background: var(--scrollbar-thumb-hover-dark, rgba(255, 255, 255, 0.3));
+      }
+    }
+  }
+}
+
+// Skeleton loading animation
+@mixin skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.1) 25%,
+    rgba(0, 0, 0, 0.05) 50%,
+    rgba(0, 0, 0, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  
+  @include dark-mode {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.1) 25%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.1) 75%
+    );
+    background-size: 200% 100%;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// Flex center
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Absolute center
+@mixin absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// Aspect ratio
+@mixin aspect-ratio($width: 1, $height: 1) {
+  position: relative;
+  
+  &::before {
+    content: '';
+    display: block;
+    padding-bottom: percentage($height / $width);
+  }
+  
+  > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// Glass morphism effect
+@mixin glassmorphism($blur: 10px, $opacity: 0.1) {
+  background: rgba(255, 255, 255, $opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  @include dark-mode {
+    background: rgba(0, 0, 0, $opacity);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+// Grid layout
+@mixin grid-layout($columns: vars.$grid-columns, $gap: vars.$grid-gutter) {
+  display: grid;
+  grid-template-columns: repeat($columns, 1fr);
+  gap: $gap;
+  
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+  
+  @include tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// Container
+@mixin container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 vars.$spacing-md;
+  
+  @media (min-width: #{vars.$breakpoint-sm}) {
+    max-width: vars.$container-sm;
+  }
+  
+  @media (min-width: #{vars.$breakpoint-md}) {
+    max-width: vars.$container-md;
+  }
+  
+  @media (min-width: #{vars.$breakpoint-lg}) {
+    max-width: vars.$container-lg;
+  }
+  
+  @media (min-width: #{vars.$breakpoint-xl}) {
+    max-width: vars.$container-xl;
+  }
+  
+  @media (min-width: #{vars.$breakpoint-xxl}) {
+    max-width: vars.$container-xxl;
+  }
+}
+
+// Print styles
+@mixin print-only {
+  @media print {
+    @content;
+  }
+}
+
+@mixin no-print {
+  @media print {
+    display: none !important;
+  }
+}

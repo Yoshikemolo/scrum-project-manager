@@ -1,0 +1,262 @@
+<div class="search-modal" [@slideIn] (click)="close.emit()">
+  <div class="search-container" (click)="$event.stopPropagation()" [@fadeIn]>
+    <!-- Search Header -->
+    <div class="search-header">
+      <mat-form-field class="search-input" appearance="outline">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput
+               #searchInput
+               [formControl]="searchControl"
+               [placeholder]="'search.placeholder' | translate"
+               autocomplete="off"
+               spellcheck="false">
+        <button mat-icon-button matSuffix 
+                *ngIf="searchControl.value"
+                (click)="clearSearch()">
+          <mat-icon>clear</mat-icon>
+        </button>
+        <mat-spinner matSuffix 
+                     *ngIf="isSearching()"
+                     diameter="20">
+        </mat-spinner>
+      </mat-form-field>
+
+      <button mat-icon-button 
+              class="search-close"
+              (click)="close.emit()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Category Filters -->
+    <div class="search-categories" *ngIf="searchControl.value">
+      <button class="category-chip"
+              *ngFor="let category of categories()"
+              [class.active]="selectedCategory() === category.id"
+              (click)="selectCategory(category.id)">
+        <mat-icon>{{ category.icon }}</mat-icon>
+        <span>{{ category.label | translate }}</span>
+        <span class="category-count" *ngIf="category.count > 0">
+          {{ category.count }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Search Content -->
+    <div class="search-content">
+      <!-- Initial State - No Search -->
+      <div class="search-initial" 
+           *ngIf="!searchControl.value && !isSearching()"
+           [@fadeIn]>
+        
+        <!-- Recent Searches -->
+        <div class="search-section" *ngIf="recentSearches().length > 0">
+          <div class="section-header">
+            <h3>{{ 'search.recent' | translate }}</h3>
+            <button mat-button (click)="clearRecentSearches()">
+              {{ 'search.clear' | translate }}
+            </button>
+          </div>
+          <div class="search-suggestions">
+            <button class="suggestion-item"
+                    *ngFor="let search of recentSearches()"
+                    (click)="performQuickSearch(search)">
+              <mat-icon>history</mat-icon>
+              <span>{{ search }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Popular Searches -->
+        <div class="search-section">
+          <div class="section-header">
+            <h3>{{ 'search.popular' | translate }}</h3>
+          </div>
+          <div class="search-suggestions">
+            <button class="suggestion-item"
+                    *ngFor="let search of popularSearches()"
+                    (click)="performQuickSearch(search)">
+              <mat-icon>trending_up</mat-icon>
+              <span>{{ search }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="search-section">
+          <div class="section-header">
+            <h3>{{ 'search.suggestions' | translate }}</h3>
+          </div>
+          <div class="search-chips">
+            <mat-chip *ngFor="let suggestion of suggestions()"
+                      (click)="performQuickSearch(suggestion)">
+              {{ suggestion }}
+            </mat-chip>
+          </div>
+        </div>
+
+        <!-- Keyboard Shortcuts -->
+        <div class="search-shortcuts">
+          <div class="shortcut" *ngFor="let shortcut of shortcuts()">
+            <kbd>{{ shortcut.key }}</kbd>
+            <span>{{ shortcut.description | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Results -->
+      <div class="search-results" 
+           *ngIf="searchControl.value && !isSearching() && hasResults()"
+           [@staggerResults]="filteredResults().length">
+        
+        <div class="search-result"
+             *ngFor="let result of filteredResults(); let i = index"
+             [class.selected]="selectedIndex() === i"
+             (click)="selectResult(result)"
+             (mouseenter)="selectedIndex.set(i)"
+             matRipple>
+          
+          <div class="result-icon" [class]="'result-icon--' + result.type">
+            <mat-icon>{{ result.icon }}</mat-icon>
+          </div>
+          
+          <div class="result-content">
+            <div class="result-title">
+              {{ result.title }}
+              <mat-chip class="result-type" size="small">
+                {{ 'search.type.' + result.type | translate }}
+              </mat-chip>
+            </div>
+            <div class="result-description" *ngIf="result.description">
+              {{ result.description }}
+            </div>
+            <div class="result-meta" *ngIf="result.metadata">
+              <span class="meta-item">
+                <mat-icon>person</mat-icon>
+                {{ result.metadata.author }}
+              </span>
+              <span class="meta-item">
+                <mat-icon>schedule</mat-icon>
+                {{ formatDate(result.metadata.lastModified) }}
+              </span>
+            </div>
+            <div class="result-highlights" *ngIf="result.highlights?.length">
+              <span class="highlight" *ngFor="let highlight of result.highlights">
+                ...{{ highlight }}...
+              </span>
+            </div>
+          </div>
+          
+          <div class="result-actions">
+            <button mat-icon-button 
+                    [matTooltip]="'search.open_in_new' | translate"
+                    (click)="$event.stopPropagation(); selectResult(result)">
+              <mat-icon>open_in_new</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- See All Results -->
+        <div class="search-footer" *ngIf="searchResults().length > 5">
+          <button mat-button color="primary" (click)="performGlobalSearch()">
+            {{ 'search.see_all' | translate }} ({{ searchResults().length }})
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- No Results -->
+      <div class="search-empty" 
+           *ngIf="searchControl.value && !isSearching() && !hasResults()"
+           [@fadeIn]>
+        <mat-icon>search_off</mat-icon>
+        <h3>{{ noResultsMessage() }}</h3>
+        <p>{{ 'search.try_different' | translate }}</p>
+        
+        <div class="search-tips">
+          <h4>{{ 'search.tips.title' | translate }}</h4>
+          <ul>
+            <li>{{ 'search.tips.spelling' | translate }}</li>
+            <li>{{ 'search.tips.keywords' | translate }}</li>
+            <li>{{ 'search.tips.filters' | translate }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Advanced Filters -->
+      <div class="search-advanced" 
+           *ngIf="showAdvanced()"
+           [@slideIn]>
+        <h3>{{ 'search.advanced.title' | translate }}</h3>
+        
+        <div class="advanced-filters">
+          <!-- Date Range -->
+          <div class="filter-group">
+            <label>{{ 'search.advanced.date_range' | translate }}</label>
+            <div class="date-range">
+              <mat-form-field appearance="outline">
+                <input matInput 
+                       [matDatepicker]="startPicker" 
+                       placeholder="Start date">
+                <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                <mat-datepicker #startPicker></mat-datepicker>
+              </mat-form-field>
+              <span>-</span>
+              <mat-form-field appearance="outline">
+                <input matInput 
+                       [matDatepicker]="endPicker" 
+                       placeholder="End date">
+                <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                <mat-datepicker #endPicker></mat-datepicker>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Other Filters -->
+          <div class="filter-group">
+            <label>{{ 'search.advanced.status' | translate }}</label>
+            <mat-chip-set>
+              <mat-chip *ngFor="let status of ['open', 'in-progress', 'completed', 'archived']"
+                        (click)="applyAdvancedFilter('status', status)">
+                {{ 'status.' + status | translate }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+
+          <div class="filter-group">
+            <label>{{ 'search.advanced.priority' | translate }}</label>
+            <mat-chip-set>
+              <mat-chip *ngFor="let priority of ['low', 'medium', 'high', 'critical']"
+                        (click)="applyAdvancedFilter('priority', priority)">
+                {{ 'priority.' + priority | translate }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+        </div>
+
+        <div class="advanced-actions">
+          <button mat-button (click)="showAdvanced.set(false)">
+            {{ 'search.advanced.cancel' | translate }}
+          </button>
+          <button mat-raised-button color="primary">
+            {{ 'search.advanced.apply' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Footer Info -->
+    <div class="search-info">
+      <span class="info-item">
+        <mat-icon>lightbulb</mat-icon>
+        {{ 'search.tip' | translate }}
+      </span>
+      <button mat-button 
+              class="advanced-toggle"
+              (click)="toggleAdvanced()">
+        <mat-icon>tune</mat-icon>
+        {{ 'search.advanced' | translate }}
+      </button>
+    </div>
+  </div>
+</div>

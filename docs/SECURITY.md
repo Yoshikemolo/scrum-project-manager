@@ -97,6 +97,8 @@ export async function verifyPassword(
 - No common passwords
 - No user information
 
+* **IMPORTANT NOTE:** Take into account a possible hashing collisions when using long combinations of user + password + other fields to create bcrypt hashes. [See more about this issue](https://medium.com/@rajat29gupta/bcrypt-and-the-okta-incident-what-developers-need-to-know-9d13a446738a). Depends you use case, configuration of such fields to create the session hash you can be exposed to have collision between hashes (two or more combinations of different inputs will produce the same hash).*
+
 ## Authorization
 
 ### RBAC Implementation
