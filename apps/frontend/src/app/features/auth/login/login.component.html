@@ -1,0 +1,167 @@
+<div class="login-container" @fadeInOut>
+  <mat-card class="login-card" [class.shake]="shakeAnimation() === 'shake'">
+    <mat-card-header>
+      <div class="login-header">
+        <img src="assets/logo.svg" alt="SCRUM Project Manager" class="logo" />
+        <h1 class="title">Welcome Back</h1>
+        <p class="subtitle">Sign in to continue to your dashboard</p>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <!-- Email Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email Address</mat-label>
+          <input
+            matInput
+            type="email"
+            formControlName="email"
+            placeholder="Enter your email"
+            autocomplete="email"
+            [attr.aria-label]="'Email address input'"
+            [attr.aria-invalid]="hasError('email')"
+            [attr.aria-describedby]="hasError('email') ? 'email-error' : null"
+          />
+          <mat-icon matPrefix>email</mat-icon>
+          <mat-error id="email-error" *ngIf="hasError('email')">
+            {{ getErrorMessage('email') }}
+          </mat-error>
+          <mat-hint>Use your work or personal email</mat-hint>
+        </mat-form-field>
+
+        <!-- Password Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            [attr.aria-label]="'Password input'"
+            [attr.aria-invalid]="hasError('password')"
+            [attr.aria-describedby]="hasError('password') ? 'password-error' : null"
+          />
+          <mat-icon matPrefix>lock</mat-icon>
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+            matTooltip="{{ hidePassword() ? 'Show password' : 'Hide password' }}"
+          >
+            <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+          </button>
+          <mat-error id="password-error" *ngIf="hasError('password')">
+            {{ getErrorMessage('password') }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Remember Me & Forgot Password -->
+        <div class="form-options">
+          <mat-checkbox formControlName="rememberMe" color="primary">
+            Remember me
+          </mat-checkbox>
+          <a routerLink="/auth/forgot-password" class="forgot-password-link">
+            Forgot password?
+          </a>
+        </div>
+
+        <!-- Login Attempts Warning -->
+        <div class="attempts-warning" *ngIf="loginAttempts() > 0 && !isBlocked()" @fadeInOut>
+          <mat-icon>warning</mat-icon>
+          <span>{{ getRemainingAttempts() }} login attempts remaining</span>
+        </div>
+
+        <!-- Blocked Message -->
+        <div class="blocked-message" *ngIf="isBlocked()" @fadeInOut>
+          <mat-icon>block</mat-icon>
+          <span>Account temporarily blocked due to multiple failed attempts</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="full-width submit-button"
+          [disabled]="isLoginDisabled()"
+          [attr.aria-busy]="isLoading()"
+        >
+          <mat-spinner
+            *ngIf="isLoading()"
+            diameter="20"
+            class="button-spinner"
+          ></mat-spinner>
+          <span *ngIf="!isLoading()">Sign In</span>
+          <span *ngIf="isLoading()">Signing in...</span>
+        </button>
+
+        <!-- Error Message from Server -->
+        <div class="error-message" *ngIf="authError$ | async as error" @fadeInOut>
+          <mat-icon>error</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider-container">
+          <mat-divider></mat-divider>
+          <span class="divider-text">OR</span>
+          <mat-divider></mat-divider>
+        </div>
+
+        <!-- Social Login Buttons -->
+        <div class="social-login">
+          <button
+            mat-stroked-button
+            type="button"
+            class="social-button google-button"
+            (click)="socialLogin('google')"
+            [disabled]="isLoading() || isBlocked()"
+            matTooltip="Sign in with Google"
+          >
+            <img src="assets/icons/google.svg" alt="Google" class="social-icon" />
+            <span>Continue with Google</span>
+          </button>
+
+          <button
+            mat-stroked-button
+            type="button"
+            class="social-button github-button"
+            (click)="socialLogin('github')"
+            [disabled]="isLoading() || isBlocked()"
+            matTooltip="Sign in with GitHub"
+          >
+            <img src="assets/icons/github.svg" alt="GitHub" class="social-icon" />
+            <span>Continue with GitHub</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+
+    <mat-card-footer>
+      <div class="footer-links">
+        <p class="signup-prompt">
+          Don't have an account?
+          <a routerLink="/auth/register" class="signup-link">Sign up for free</a>
+        </p>
+        <div class="help-links">
+          <a href="/help" target="_blank" rel="noopener noreferrer">Help</a>
+          <span class="separator">•</span>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+          <span class="separator">•</span>
+          <a href="/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+        </div>
+      </div>
+    </mat-card-footer>
+  </mat-card>
+
+  <!-- Background decoration -->
+  <div class="background-decoration">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+  </div>
+</div>
