@@ -1,0 +1,551 @@
+@use '@angular/material' as mat;
+@use 'apps/frontend/src/styles/variables' as vars;
+@use 'apps/frontend/src/styles/mixins' as mixins;
+
+.two-factor-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, vars.$primary-color 0%, vars.$secondary-color 100%);
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+
+  @include mixins.mobile {
+    padding: 0.5rem;
+  }
+}
+
+.two-factor-card {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98);
+  position: relative;
+  z-index: 1;
+
+  @include mixins.dark-mode {
+    background: rgba(30, 30, 30, 0.98);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  mat-card-header {
+    padding: 2rem 2rem 0;
+
+    @include mixins.mobile {
+      padding: 1.5rem 1.5rem 0;
+    }
+  }
+
+  mat-card-content {
+    padding: 1.5rem 2rem;
+
+    @include mixins.mobile {
+      padding: 1rem 1.5rem;
+    }
+  }
+
+  mat-card-footer {
+    padding: 0 2rem 2rem;
+
+    @include mixins.mobile {
+      padding: 0 1.5rem 1.5rem;
+    }
+  }
+}
+
+.two-factor-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  .icon-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, vars.$success-light, vars.$success);
+    margin-bottom: 1rem;
+    animation: pulse 2s ease-in-out infinite;
+
+    .shield-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      color: white;
+    }
+  }
+
+  .title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: vars.$text-primary;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.5px;
+
+    @include mixins.dark-mode {
+      color: vars.$text-primary-dark;
+    }
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: vars.$text-secondary;
+    margin: 0;
+    line-height: 1.5;
+
+    @include mixins.dark-mode {
+      color: vars.$text-secondary-dark;
+    }
+  }
+}
+
+// Method Tabs
+.method-tabs {
+  margin-bottom: 1.5rem;
+
+  ::ng-deep {
+    .mat-mdc-tab-list {
+      background: transparent;
+    }
+
+    .mat-mdc-tab {
+      min-width: auto;
+      flex: 1;
+
+      .mat-mdc-tab-label-content {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        mat-icon {
+          font-size: 1.2rem;
+          width: 1.2rem;
+          height: 1.2rem;
+        }
+
+        span {
+          @include mixins.mobile {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+}
+
+.tab-content {
+  padding: 1rem 0;
+
+  .method-description {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background-color: vars.$info-light;
+    border-radius: 8px;
+    border: 1px solid vars.$info;
+    margin-bottom: 1.5rem;
+    color: vars.$info-dark;
+    font-size: 0.9rem;
+
+    mat-icon {
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+  }
+}
+
+// OTP Input Container
+.otp-container {
+  margin-bottom: 1.5rem;
+
+  &.shake {
+    animation: shake 0.6s;
+  }
+
+  .otp-inputs {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+
+    @include mixins.mobile {
+      gap: 0.5rem;
+    }
+  }
+
+  .otp-input {
+    width: 50px;
+    height: 60px;
+    border: 2px solid vars.$border-color;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    background: white;
+    color: vars.$text-primary;
+
+    @include mixins.mobile {
+      width: 40px;
+      height: 50px;
+      font-size: 1.25rem;
+    }
+
+    @include mixins.dark-mode {
+      background: vars.$background-secondary-dark;
+      border-color: vars.$border-color-dark;
+      color: vars.$text-primary-dark;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: vars.$primary-color;
+      box-shadow: 0 0 0 3px rgba(vars.$primary-color, 0.1);
+      transform: scale(1.05);
+    }
+
+    &.filled {
+      border-color: vars.$success;
+      background-color: vars.$success-light;
+      color: vars.$success-dark;
+    }
+
+    &.error {
+      border-color: vars.$error;
+      background-color: vars.$error-light;
+      animation: shake 0.3s;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    // Remove number input spinners
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  }
+}
+
+// Resend Section
+.resend-section {
+  text-align: center;
+  margin-bottom: 1rem;
+
+  button {
+    mat-icon {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// Backup Form
+.backup-form {
+  .full-width {
+    width: 100%;
+  }
+
+  mat-form-field {
+    margin-bottom: 1rem;
+  }
+}
+
+.backup-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: vars.$warning-light;
+  border-radius: 8px;
+  border: 1px solid vars.$warning;
+  color: vars.$warning-dark;
+  font-size: 0.85rem;
+
+  mat-icon {
+    font-size: 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+}
+
+// Trust Device
+.trust-device {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: vars.$background-secondary;
+  border-radius: 8px;
+  border: 1px solid vars.$border-color;
+
+  @include mixins.dark-mode {
+    background-color: vars.$background-secondary-dark;
+    border-color: vars.$border-color-dark;
+  }
+
+  mat-checkbox {
+    width: 100%;
+  }
+}
+
+// Warnings
+.attempts-warning,
+.blocked-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+
+  mat-icon {
+    font-size: 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+}
+
+.attempts-warning {
+  background-color: vars.$warning-light;
+  color: vars.$warning-dark;
+  border: 1px solid vars.$warning;
+}
+
+.blocked-message {
+  background-color: vars.$error-light;
+  color: vars.$error-dark;
+  border: 1px solid vars.$error;
+}
+
+// Action Buttons
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+  @include mixins.mobile {
+    flex-direction: column;
+  }
+
+  button {
+    flex: 1;
+    height: 48px;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    mat-icon {
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+
+    .button-spinner {
+      display: inline-block;
+      margin-right: 8px;
+    }
+  }
+
+  .verify-button {
+    &:not(:disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(vars.$primary-color, 0.3);
+    }
+  }
+}
+
+// Footer
+.footer-links {
+  .help-section {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+
+    mat-icon {
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+      color: vars.$text-secondary;
+      margin-top: 2px;
+    }
+
+    .help-content {
+      flex: 1;
+
+      span {
+        display: block;
+        font-size: 0.9rem;
+        color: vars.$text-secondary;
+        margin-bottom: 0.5rem;
+
+        @include mixins.dark-mode {
+          color: vars.$text-secondary-dark;
+        }
+      }
+
+      .help-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        font-size: 0.85rem;
+
+        a {
+          color: vars.$primary-color;
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.3s ease;
+
+          &:hover {
+            color: vars.$primary-dark;
+            text-decoration: underline;
+          }
+        }
+
+        .separator {
+          color: vars.$text-disabled;
+        }
+      }
+    }
+  }
+}
+
+// Background decoration
+.background-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+
+  .grid-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: grid-move 10s linear infinite;
+  }
+
+  .floating-shape {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border-radius: 50%;
+
+    &.shape-1 {
+      width: 200px;
+      height: 200px;
+      top: 10%;
+      left: -100px;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    &.shape-2 {
+      width: 150px;
+      height: 150px;
+      top: 60%;
+      right: -75px;
+      animation: float 6s ease-in-out infinite reverse;
+    }
+
+    &.shape-3 {
+      width: 100px;
+      height: 100px;
+      bottom: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: pulse 4s ease-in-out infinite;
+    }
+  }
+}
+
+// Animations
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.15;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+@keyframes grid-move {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+// Accessibility
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .background-decoration {
+    display: none;
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .two-factor-card {
+    border: 2px solid currentColor;
+  }
+
+  .otp-input {
+    border-width: 3px;
+  }
+
+  .attempts-warning,
+  .blocked-message,
+  .method-description,
+  .backup-warning {
+    border-width: 2px;
+  }
+}
