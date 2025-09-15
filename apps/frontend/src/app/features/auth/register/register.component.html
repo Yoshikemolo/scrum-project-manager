@@ -1,0 +1,395 @@
+<div class="register-container" @fadeInOut>
+  <mat-card class="register-card">
+    <mat-card-header>
+      <div class="register-header">
+        <img src="assets/logo.svg" alt="SCRUM Project Manager" class="logo" />
+        <h1 class="title">Create Your Account</h1>
+        <p class="subtitle">Join thousands of teams using SCRUM Project Manager</p>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Progress Stepper -->
+      <mat-stepper #stepper [selectedIndex]="currentStep()" class="register-stepper">
+        <!-- Step 1: Account Information -->
+        <mat-step [stepControl]="accountForm" [editable]="true">
+          <ng-template matStepLabel>Account</ng-template>
+          
+          <form [formGroup]="accountForm" class="step-form" @slideIn>
+            <h2 class="step-title">Account Information</h2>
+            
+            <!-- Email Field -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Email Address</mat-label>
+              <input
+                matInput
+                type="email"
+                formControlName="email"
+                placeholder="Enter your email"
+                autocomplete="email"
+                [attr.aria-label]="'Email address'"
+                [attr.aria-invalid]="hasError('account', 'email')"
+              />
+              <mat-icon matPrefix>email</mat-icon>
+              <mat-icon matSuffix *ngIf="emailAvailable() === true" class="success-icon">check_circle</mat-icon>
+              <mat-icon matSuffix *ngIf="emailAvailable() === false" class="error-icon">cancel</mat-icon>
+              <mat-error *ngIf="hasError('account', 'email')">
+                {{ getErrorMessage('account', 'email') }}
+              </mat-error>
+              <mat-hint>We'll use this for login and notifications</mat-hint>
+            </mat-form-field>
+
+            <!-- Password Field -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Password</mat-label>
+              <input
+                matInput
+                [type]="hidePassword() ? 'password' : 'text'"
+                formControlName="password"
+                placeholder="Create a strong password"
+                autocomplete="new-password"
+                [attr.aria-label]="'Password'"
+                [attr.aria-invalid]="hasError('account', 'password')"
+              />
+              <mat-icon matPrefix>lock</mat-icon>
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+              >
+                <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+              </button>
+              <mat-error *ngIf="hasError('account', 'password')">
+                {{ getErrorMessage('account', 'password') }}
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Password Strength Indicator -->
+            <div class="password-strength" *ngIf="accountForm.get('password')?.value">
+              <div class="strength-bar">
+                <div 
+                  class="strength-fill" 
+                  [style.width.%]="passwordStrength()"
+                  [class.weak]="passwordStrength() < 30"
+                  [class.medium]="passwordStrength() >= 30 && passwordStrength() < 60"
+                  [class.strong]="passwordStrength() >= 60"
+                ></div>
+              </div>
+              <span class="strength-label">{{ getPasswordStrengthLabel() }}</span>
+            </div>
+
+            <!-- Confirm Password Field -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Confirm Password</mat-label>
+              <input
+                matInput
+                [type]="hideConfirmPassword() ? 'password' : 'text'"
+                formControlName="confirmPassword"
+                placeholder="Re-enter your password"
+                autocomplete="new-password"
+                [attr.aria-label]="'Confirm password'"
+                [attr.aria-invalid]="hasError('account', 'confirmPassword')"
+              />
+              <mat-icon matPrefix>lock_outline</mat-icon>
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="toggleConfirmPasswordVisibility()"
+                [attr.aria-label]="hideConfirmPassword() ? 'Show password' : 'Hide password'"
+              >
+                <mat-icon>{{ hideConfirmPassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+              </button>
+              <mat-error *ngIf="hasError('account', 'confirmPassword')">
+                {{ getErrorMessage('account', 'confirmPassword') }}
+              </mat-error>
+            </mat-form-field>
+
+            <div class="step-actions">
+              <button mat-button routerLink="/auth/login" type="button">Back to Login</button>
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="button"
+                (click)="nextStep()"
+                [disabled]="!canProceed()"
+              >
+                Next
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 2: Profile Information -->
+        <mat-step [stepControl]="profileForm" [editable]="true">
+          <ng-template matStepLabel>Profile</ng-template>
+          
+          <form [formGroup]="profileForm" class="step-form" @slideIn>
+            <h2 class="step-title">Profile Information</h2>
+            
+            <div class="form-row">
+              <!-- First Name Field -->
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>First Name</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  formControlName="firstName"
+                  placeholder="Enter your first name"
+                  autocomplete="given-name"
+                  [attr.aria-label]="'First name'"
+                />
+                <mat-icon matPrefix>person</mat-icon>
+                <mat-error *ngIf="hasError('profile', 'firstName')">
+                  {{ getErrorMessage('profile', 'firstName') }}
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Last Name Field -->
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>Last Name</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  formControlName="lastName"
+                  placeholder="Enter your last name"
+                  autocomplete="family-name"
+                  [attr.aria-label]="'Last name'"
+                />
+                <mat-icon matPrefix>person_outline</mat-icon>
+                <mat-error *ngIf="hasError('profile', 'lastName')">
+                  {{ getErrorMessage('profile', 'lastName') }}
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <!-- Phone Field -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Phone Number (Optional)</mat-label>
+              <input
+                matInput
+                type="tel"
+                formControlName="phone"
+                placeholder="+1 (555) 123-4567"
+                autocomplete="tel"
+                [attr.aria-label]="'Phone number'"
+              />
+              <mat-icon matPrefix>phone</mat-icon>
+              <mat-hint>Used for two-factor authentication</mat-hint>
+            </mat-form-field>
+
+            <!-- Company Field -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Company (Optional)</mat-label>
+              <input
+                matInput
+                type="text"
+                formControlName="company"
+                placeholder="Enter your company name"
+                autocomplete="organization"
+                [attr.aria-label]="'Company name'"
+              />
+              <mat-icon matPrefix>business</mat-icon>
+              <mat-error *ngIf="hasError('profile', 'company')">
+                {{ getErrorMessage('profile', 'company') }}
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Role Field -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Your Role</mat-label>
+              <mat-select formControlName="role" [attr.aria-label]="'Role selection'">
+                <mat-option *ngFor="let role of roles" [value]="role.value">
+                  {{ role.label }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>work</mat-icon>
+              <mat-error *ngIf="hasError('profile', 'role')">
+                {{ getErrorMessage('profile', 'role') }}
+              </mat-error>
+            </mat-form-field>
+
+            <div class="step-actions">
+              <button mat-button type="button" (click)="previousStep()">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="button"
+                (click)="nextStep()"
+                [disabled]="!canProceed()"
+              >
+                Next
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 3: Preferences -->
+        <mat-step [stepControl]="preferencesForm">
+          <ng-template matStepLabel>Preferences</ng-template>
+          
+          <form [formGroup]="preferencesForm" class="step-form" @slideIn>
+            <h2 class="step-title">Preferences & Terms</h2>
+            
+            <div class="form-row">
+              <!-- Language Field -->
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>Language</mat-label>
+                <mat-select formControlName="language" [attr.aria-label]="'Language selection'">
+                  <mat-option value="en">English</mat-option>
+                  <mat-option value="es">Español</mat-option>
+                  <mat-option value="fr">Français</mat-option>
+                  <mat-option value="de">Deutsch</mat-option>
+                  <mat-option value="pt">Português</mat-option>
+                  <mat-option value="it">Italiano</mat-option>
+                  <mat-option value="ja">日本語</mat-option>
+                  <mat-option value="zh">中文</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>language</mat-icon>
+              </mat-form-field>
+
+              <!-- Timezone Field -->
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>Timezone</mat-label>
+                <mat-select formControlName="timezone" [attr.aria-label]="'Timezone selection'">
+                  <mat-option *ngFor="let tz of timezones" [value]="tz.value">
+                    {{ tz.label }}
+                  </mat-option>
+                </mat-select>
+                <mat-icon matPrefix>schedule</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Notification Preferences -->
+            <div class="notification-preferences">
+              <h3 class="section-title">Notification Preferences</h3>
+              
+              <mat-checkbox formControlName="emailNotifications" color="primary">
+                <span class="checkbox-label">
+                  <mat-icon>email</mat-icon>
+                  Email notifications for important updates
+                </span>
+              </mat-checkbox>
+
+              <mat-checkbox formControlName="pushNotifications" color="primary">
+                <span class="checkbox-label">
+                  <mat-icon>notifications</mat-icon>
+                  Browser push notifications
+                </span>
+              </mat-checkbox>
+
+              <mat-checkbox formControlName="marketingEmails" color="primary">
+                <span class="checkbox-label">
+                  <mat-icon>campaign</mat-icon>
+                  Marketing emails and product updates
+                </span>
+              </mat-checkbox>
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="terms-section">
+              <mat-checkbox formControlName="terms" color="primary" class="terms-checkbox">
+                I accept the 
+                <a href="/terms" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>
+              </mat-checkbox>
+              <mat-error *ngIf="hasError('preferences', 'terms')" class="checkbox-error">
+                {{ getErrorMessage('preferences', 'terms') }}
+              </mat-error>
+
+              <mat-checkbox formControlName="privacy" color="primary" class="terms-checkbox">
+                I have read and agree to the 
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+              </mat-checkbox>
+              <mat-error *ngIf="hasError('preferences', 'privacy')" class="checkbox-error">
+                You must agree to the privacy policy
+              </mat-error>
+            </div>
+
+            <div class="step-actions">
+              <button mat-button type="button" (click)="previousStep()">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="submit"
+                (click)="onSubmit()"
+                [disabled]="!canProceed() || isLoading()"
+              >
+                <mat-spinner
+                  *ngIf="isLoading()"
+                  diameter="20"
+                  class="button-spinner"
+                ></mat-spinner>
+                <span *ngIf="!isLoading()">Create Account</span>
+                <span *ngIf="isLoading()">Creating...</span>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+      </mat-stepper>
+
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="authError$ | async as error" @fadeInOut>
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider-container">
+        <mat-divider></mat-divider>
+        <span class="divider-text">OR</span>
+        <mat-divider></mat-divider>
+      </div>
+
+      <!-- Social Registration -->
+      <div class="social-register">
+        <button
+          mat-stroked-button
+          type="button"
+          class="social-button google-button"
+          (click)="socialRegister('google')"
+          [disabled]="isLoading()"
+        >
+          <img src="assets/icons/google.svg" alt="Google" class="social-icon" />
+          <span>Sign up with Google</span>
+        </button>
+
+        <button
+          mat-stroked-button
+          type="button"
+          class="social-button github-button"
+          (click)="socialRegister('github')"
+          [disabled]="isLoading()"
+        >
+          <img src="assets/icons/github.svg" alt="GitHub" class="social-icon" />
+          <span>Sign up with GitHub</span>
+        </button>
+      </div>
+    </mat-card-content>
+
+    <mat-card-footer>
+      <div class="footer-links">
+        <p class="login-prompt">
+          Already have an account?
+          <a routerLink="/auth/login" class="login-link">Sign in</a>
+        </p>
+      </div>
+    </mat-card-footer>
+  </mat-card>
+
+  <!-- Background decoration -->
+  <div class="background-decoration">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+</div>
