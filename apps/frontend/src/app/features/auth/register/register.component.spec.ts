@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -5,17 +6,31 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+=======
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Store } from '@ngrx/store';
+import { of } from 'rxjs';
+>>>>>>> feature/SPM-016-projects-tasks
 
 import { RegisterComponent } from './register.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { LoadingService } from '../../../core/services/loading.service';
+<<<<<<< HEAD
 import { ThemeService } from '../../../core/services/theme.service';
 import { ShortcutService } from '../../../core/services/shortcut.service';
 import * as AuthActions from '../../../store/auth/auth.actions';
+=======
+import { AuthActions } from '../../../store/auth/auth.actions';
+>>>>>>> feature/SPM-016-projects-tasks
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
   let fixture: ComponentFixture<RegisterComponent>;
+<<<<<<< HEAD
   let store: MockStore;
   let router: Router;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
@@ -36,11 +51,27 @@ describe('RegisterComponent', () => {
     const shortcutServiceSpy = jasmine.createSpyObj('ShortcutService', ['add', 'remove']);
     const translateServiceSpy = jasmine.createSpyObj('TranslateService', ['instant']);
     translateServiceSpy.instant.and.returnValue('translated text');
+=======
+  let store: jasmine.SpyObj<Store>;
+  let router: jasmine.SpyObj<Router>;
+  let authService: jasmine.SpyObj<AuthService>;
+  let snackBar: jasmine.SpyObj<MatSnackBar>;
+
+  beforeEach(async () => {
+    const storeSpy = jasmine.createSpyObj('Store', ['dispatch', 'select']);
+    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    const authServiceSpy = jasmine.createSpyObj('AuthService', ['checkEmailAvailability']);
+    const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
+
+    storeSpy.select.and.returnValue(of(null));
+    authServiceSpy.checkEmailAvailability.and.returnValue(Promise.resolve(true));
+>>>>>>> feature/SPM-016-projects-tasks
 
     await TestBed.configureTestingModule({
       imports: [
         RegisterComponent,
         ReactiveFormsModule,
+<<<<<<< HEAD
         BrowserAnimationsModule,
         TranslateModule.forRoot()
       ],
@@ -65,6 +96,27 @@ describe('RegisterComponent', () => {
 
     spyOn(router, 'navigate');
     spyOn(store, 'dispatch');
+=======
+        BrowserAnimationsModule
+      ],
+      providers: [
+        { provide: Store, useValue: storeSpy },
+        { provide: Router, useValue: routerSpy },
+        { provide: AuthService, useValue: authServiceSpy },
+        { provide: MatSnackBar, useValue: snackBarSpy },
+        LoadingService
+      ]
+    }).compileComponents();
+
+    store = TestBed.inject(Store) as jasmine.SpyObj<Store>;
+    router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+    authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+    snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
+
+    fixture = TestBed.createComponent(RegisterComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+>>>>>>> feature/SPM-016-projects-tasks
   });
 
   it('should create', () => {
@@ -72,14 +124,19 @@ describe('RegisterComponent', () => {
   });
 
   describe('Form Initialization', () => {
+<<<<<<< HEAD
     it('should initialize all form groups', () => {
       fixture.detectChanges();
       
+=======
+    it('should initialize all three forms', () => {
+>>>>>>> feature/SPM-016-projects-tasks
       expect(component.accountForm).toBeDefined();
       expect(component.profileForm).toBeDefined();
       expect(component.preferencesForm).toBeDefined();
     });
 
+<<<<<<< HEAD
     it('should set default timezone', () => {
       fixture.detectChanges();
       
@@ -211,11 +268,89 @@ describe('RegisterComponent', () => {
       
       expect(component.accountForm.hasError('passwordMismatch')).toBe(false);
       expect(component.passwordMatch()).toBe(true);
+=======
+    it('should initialize account form with validators', () => {
+      const emailControl = component.accountForm.get('email');
+      const passwordControl = component.accountForm.get('password');
+      const confirmPasswordControl = component.accountForm.get('confirmPassword');
+
+      expect(emailControl?.hasError('required')).toBeTruthy();
+      expect(passwordControl?.hasError('required')).toBeTruthy();
+      expect(confirmPasswordControl?.hasError('required')).toBeTruthy();
+    });
+
+    it('should initialize profile form with validators', () => {
+      const firstNameControl = component.profileForm.get('firstName');
+      const lastNameControl = component.profileForm.get('lastName');
+      const roleControl = component.profileForm.get('role');
+
+      expect(firstNameControl?.hasError('required')).toBeTruthy();
+      expect(lastNameControl?.hasError('required')).toBeTruthy();
+      expect(roleControl?.hasError('required')).toBeTruthy();
+    });
+
+    it('should initialize preferences form with default values', () => {
+      expect(component.preferencesForm.get('language')?.value).toBe('en');
+      expect(component.preferencesForm.get('timezone')?.value).toBe('UTC');
+      expect(component.preferencesForm.get('emailNotifications')?.value).toBe(true);
+      expect(component.preferencesForm.get('pushNotifications')?.value).toBe(true);
+      expect(component.preferencesForm.get('marketingEmails')?.value).toBe(false);
+    });
+  });
+
+  describe('Email Validation', () => {
+    it('should validate email format', () => {
+      const emailControl = component.accountForm.get('email');
+      
+      emailControl?.setValue('invalid');
+      expect(emailControl?.hasError('email')).toBeTruthy();
+      
+      emailControl?.setValue('test@example.com');
+      expect(emailControl?.valid).toBeTruthy();
+    });
+
+    it('should check email availability', async () => {
+      const emailControl = component.accountForm.get('email');
+      emailControl?.setValue('test@example.com');
+      
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      expect(authService.checkEmailAvailability).toHaveBeenCalledWith('test@example.com');
+      expect(component.emailAvailable()).toBe(true);
+    });
+
+    it('should mark email as taken if not available', async () => {
+      authService.checkEmailAvailability.and.returnValue(Promise.resolve(false));
+      
+      const emailControl = component.accountForm.get('email');
+      emailControl?.setValue('taken@example.com');
+      
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      expect(component.emailAvailable()).toBe(false);
+      expect(emailControl?.hasError('emailTaken')).toBeTruthy();
+    });
+  });
+
+  describe('Password Validation', () => {
+    it('should validate password strength', () => {
+      const passwordControl = component.accountForm.get('password');
+      
+      passwordControl?.setValue('weak');
+      expect(passwordControl?.hasError('minlength')).toBeTruthy();
+      
+      passwordControl?.setValue('weakpassword');
+      expect(passwordControl?.hasError('passwordStrength')).toBeTruthy();
+      
+      passwordControl?.setValue('StrongPass123!');
+      expect(passwordControl?.valid).toBeTruthy();
+>>>>>>> feature/SPM-016-projects-tasks
     });
 
     it('should calculate password strength', () => {
       const passwordControl = component.accountForm.get('password');
       
+<<<<<<< HEAD
       passwordControl?.setValue('');
       expect(component.passwordStrength()).toBe(0);
       
@@ -311,11 +446,74 @@ describe('RegisterComponent', () => {
       
       expect(termsControl?.valid).toBe(true);
       expect(privacyControl?.valid).toBe(true);
+=======
+      passwordControl?.setValue('weak');
+      expect(component.passwordStrength()).toBeLessThan(30);
+      
+      passwordControl?.setValue('MediumPass1');
+      expect(component.passwordStrength()).toBeGreaterThan(30);
+      expect(component.passwordStrength()).toBeLessThan(60);
+      
+      passwordControl?.setValue('StrongPass123!');
+      expect(component.passwordStrength()).toBeGreaterThanOrEqual(60);
+    });
+
+    it('should validate password match', () => {
+      const passwordControl = component.accountForm.get('password');
+      const confirmPasswordControl = component.accountForm.get('confirmPassword');
+      
+      passwordControl?.setValue('Password123!');
+      confirmPasswordControl?.setValue('DifferentPass123!');
+      
+      component.accountForm.updateValueAndValidity();
+      expect(component.accountForm.hasError('passwordMismatch')).toBeTruthy();
+      
+      confirmPasswordControl?.setValue('Password123!');
+      component.accountForm.updateValueAndValidity();
+      expect(component.accountForm.hasError('passwordMismatch')).toBeFalsy();
+    });
+  });
+
+  describe('Step Navigation', () => {
+    it('should start at step 0', () => {
+      expect(component.currentStep()).toBe(0);
+    });
+
+    it('should not proceed to next step with invalid form', () => {
+      component.nextStep();
+      expect(component.currentStep()).toBe(0);
+    });
+
+    it('should proceed to next step with valid form', () => {
+      // Fill account form
+      component.accountForm.patchValue({
+        email: 'test@example.com',
+        password: 'Password123!',
+        confirmPassword: 'Password123!'
+      });
+      component.emailAvailable.set(true);
+      
+      component.nextStep();
+      expect(component.currentStep()).toBe(1);
+    });
+
+    it('should go back to previous step', () => {
+      component.currentStep.set(1);
+      component.previousStep();
+      expect(component.currentStep()).toBe(0);
+    });
+
+    it('should not go back from first step', () => {
+      component.currentStep.set(0);
+      component.previousStep();
+      expect(component.currentStep()).toBe(0);
+>>>>>>> feature/SPM-016-projects-tasks
     });
   });
 
   describe('Form Submission', () => {
     beforeEach(() => {
+<<<<<<< HEAD
       fixture.detectChanges();
       
       // Fill all forms with valid data
@@ -376,10 +574,83 @@ describe('RegisterComponent', () => {
       await component.onSubmit();
       
       expect(store.dispatch).not.toHaveBeenCalled();
+=======
+      // Fill all forms with valid data
+      component.accountForm.patchValue({
+        email: 'test@example.com',
+        password: 'Password123!',
+        confirmPassword: 'Password123!'
+      });
+      component.emailAvailable.set(true);
+
+      component.profileForm.patchValue({
+        firstName: 'John',
+        lastName: 'Doe',
+        phone: '+1234567890',
+        company: 'Test Company',
+        role: 'developer'
+      });
+
+      component.preferencesForm.patchValue({
+        language: 'en',
+        timezone: 'UTC',
+        emailNotifications: true,
+        pushNotifications: true,
+        marketingEmails: false,
+        terms: true,
+        privacy: true
+      });
+    });
+
+    it('should dispatch register action with valid data', () => {
+      component.onSubmit();
+
+      expect(store.dispatch).toHaveBeenCalledWith(
+        AuthActions.register({
+          userData: jasmine.objectContaining({
+            email: 'test@example.com',
+            firstName: 'John',
+            lastName: 'Doe',
+            role: 'developer'
+          })
+        })
+      );
+    });
+
+    it('should not submit with invalid forms', () => {
+      component.accountForm.get('email')?.setValue('');
+      component.onSubmit();
+
+      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Please fill in all required fields correctly',
+        'Close',
+        jasmine.any(Object)
+      );
+    });
+
+    it('should include preferences in registration data', () => {
+      component.onSubmit();
+
+      expect(store.dispatch).toHaveBeenCalledWith(
+        AuthActions.register({
+          userData: jasmine.objectContaining({
+            preferences: jasmine.objectContaining({
+              language: 'en',
+              timezone: 'UTC',
+              emailNotifications: true,
+              pushNotifications: true,
+              marketingEmails: false
+            })
+          })
+        })
+      );
+>>>>>>> feature/SPM-016-projects-tasks
     });
   });
 
   describe('Social Registration', () => {
+<<<<<<< HEAD
     beforeEach(() => {
       fixture.detectChanges();
     });
@@ -388,21 +659,31 @@ describe('RegisterComponent', () => {
       await component.socialRegister('google');
       
       expect(component.socialRegistrationLoading()).toBe('google');
+=======
+    it('should dispatch social login action for Google', () => {
+      component.socialRegister('google');
+>>>>>>> feature/SPM-016-projects-tasks
       expect(store.dispatch).toHaveBeenCalledWith(
         AuthActions.socialLogin({ provider: 'google' })
       );
     });
 
+<<<<<<< HEAD
     it('should handle GitHub registration', async () => {
       await component.socialRegister('github');
       
       expect(component.socialRegistrationLoading()).toBe('github');
+=======
+    it('should dispatch social login action for GitHub', () => {
+      component.socialRegister('github');
+>>>>>>> feature/SPM-016-projects-tasks
       expect(store.dispatch).toHaveBeenCalledWith(
         AuthActions.socialLogin({ provider: 'github' })
       );
     });
   });
 
+<<<<<<< HEAD
   describe('Profile Picture Upload', () => {
     it('should handle valid image upload', () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
@@ -451,10 +732,22 @@ describe('RegisterComponent', () => {
       expect(shortcutService.remove).toHaveBeenCalledWith('alt+n');
       expect(shortcutService.remove).toHaveBeenCalledWith('alt+p');
       expect(shortcutService.remove).toHaveBeenCalledWith('ctrl+enter');
+=======
+  describe('Error Handling', () => {
+    it('should display registration error', () => {
+      component['handleRegistrationError']('Email already exists');
+      
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Registration failed: Email already exists',
+        'Close',
+        jasmine.any(Object)
+      );
+>>>>>>> feature/SPM-016-projects-tasks
     });
   });
 
   describe('Navigation', () => {
+<<<<<<< HEAD
     it('should navigate to login', () => {
       component.navigateToLogin();
       
@@ -469,3 +762,26 @@ describe('RegisterComponent', () => {
     }));
   });
 });
+=======
+    it('should navigate to dashboard when authenticated', () => {
+      store.select.and.returnValue(of(true));
+      
+      component.ngOnInit();
+      
+      expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+    });
+  });
+
+  describe('Cleanup', () => {
+    it('should unsubscribe on destroy', () => {
+      spyOn(component['destroy$'], 'next');
+      spyOn(component['destroy$'], 'complete');
+      
+      component.ngOnDestroy();
+      
+      expect(component['destroy$'].next).toHaveBeenCalled();
+      expect(component['destroy$'].complete).toHaveBeenCalled();
+    });
+  });
+});
+>>>>>>> feature/SPM-016-projects-tasks

@@ -16,7 +16,11 @@
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
 - [Project Status](#project-status)
+<<<<<<< HEAD
 - [Roadmap](#roadmap)
+=======
+- [Roadmap]( 3roadmap)
+>>>>>>> feature/SPM-016-projects-tasks
 - [Getting Started](#getting-started)
 - [Development](#development)
 - [Testing](#testing)
@@ -156,9 +160,12 @@ scrum-project-manager/
 | Backend  | Projects               | Design        | Entities + Schema (`Project{id,name}`) | 4 weeks | JR    |
 | Backend  | AI Assistant           | Planned       | `/recommendations` mock                | 4 weeks | JR    |
 | Frontend | Shell + Router         | ✅ Done        | Kanban (read-only)                     | 2 weeks | —     |
+<<<<<<< HEAD
 | Frontend | Auth Module            | ✅ Done        | Login + Register components            | Done    | JR    |
 | Frontend | Dashboard              | ✅ Done        | KPI Cards + Charts                     | Done    | JR    |
 | Frontend | Projects Module        | ✅ Done        | Project List component                 | Done    | JR    |
+=======
+>>>>>>> feature/SPM-016-projects-tasks
 | DevOps   | docker-compose.dev     | Design        | Postgres + Redis + services            | 2 weeks | —     |
 | DevOps   | CI/CD (GitHub Actions) | Planned       | Lint + Build + Test on PRs             | 2 weeks | —     |
 | Docs     | Compodoc               | ✅ Done        | Link from README                       | 1 day   | —     |

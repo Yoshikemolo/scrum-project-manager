@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div class="dashboard-container" [@fadeInUp]>
   <!-- Dashboard Header -->
   <div class="dashboard-header">
@@ -358,3 +359,232 @@
     </button>
   </mat-menu>
 </div>
+=======
+<!-- Dashboard Container -->
+<div class="dashboard" [class.dashboard--loading]="isLoading()">
+  
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="dashboard__loading">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p>Loading dashboard...</p>
+    </div>
+  } @else {
+    
+    <!-- Header -->
+    <header class="dashboard__header">
+      <div class="dashboard__header-left">
+        <h1 class="dashboard__title">Dashboard</h1>
+        <span class="dashboard__subtitle">Welcome back!</span>
+      </div>
+      
+      <div class="dashboard__header-center">
+        <!-- Search -->
+        <div class="dashboard__search">
+          <mat-icon fontIcon="search" class="dashboard__search-icon"></mat-icon>
+          <input 
+            type="text"
+            class="dashboard__search-input"
+            placeholder="Search widgets..."
+            [(ngModel)]="searchQuery"
+            (input)="searchQuery.set($event.target.value)">
+        </div>
+      </div>
+      
+      <div class="dashboard__header-right">
+        <!-- Layout Switcher -->
+        <div class="dashboard__layout-switcher">
+          <button mat-icon-button 
+                  [class.active]="layout() === 'grid'"
+                  (click)="changeLayout('grid')"
+                  matTooltip="Grid view">
+            <mat-icon fontIcon="grid_view"></mat-icon>
+          </button>
+          <button mat-icon-button 
+                  [class.active]="layout() === 'list'"
+                  (click)="changeLayout('list')"
+                  matTooltip="List view">
+            <mat-icon fontIcon="view_list"></mat-icon>
+          </button>
+          <button mat-icon-button 
+                  [class.active]="layout() === 'compact'"
+                  (click)="changeLayout('compact')"
+                  matTooltip="Compact view">
+            <mat-icon fontIcon="view_compact"></mat-icon>
+          </button>
+        </div>
+        
+        <!-- Actions -->
+        <button mat-icon-button 
+                (click)="toggleEditMode()"
+                [class.active]="isEditMode()"
+                matTooltip="Edit mode">
+          <mat-icon fontIcon="edit"></mat-icon>
+        </button>
+        
+        <button mat-icon-button 
+                (click)="refreshAll()"
+                matTooltip="Refresh all">
+          <mat-icon fontIcon="refresh"></mat-icon>
+        </button>
+        
+        <button mat-icon-button 
+                [matMenuTriggerFor]="dashboardMenu"
+                matTooltip="More options">
+          <mat-icon fontIcon="more_vert"></mat-icon>
+        </button>
+      </div>
+    </header>
+    
+    <!-- Edit Mode Banner -->
+    @if (isEditMode()) {
+      <div class="dashboard__edit-banner">
+        <mat-icon fontIcon="info"></mat-icon>
+        <span>Edit mode is active. Drag widgets to reorder, click settings to configure.</span>
+        <button mat-button (click)="addWidget()">
+          <mat-icon fontIcon="add"></mat-icon>
+          Add Widget
+        </button>
+        <button mat-button (click)="resetLayout()" color="warn">
+          <mat-icon fontIcon="restore"></mat-icon>
+          Reset Layout
+        </button>
+      </div>
+    }
+    
+    <!-- Widgets Grid -->
+    <div [ngClass]="gridClasses()"
+         cdkDropList
+         [cdkDropListData]="filteredWidgets()"
+         (cdkDropListDropped)="onWidgetDrop($event)"
+         [@staggerAnimation]="filteredWidgets().length">
+      
+      @for (widget of filteredWidgets(); track trackByWidgetId($index, widget)) {
+        <div class="dashboard__widget"
+             [class]="getWidgetSizeClass(widget)"
+             [class.dashboard__widget--refreshing]="refreshing().has(widget.id)"
+             [class.dashboard__widget--expanded]="expandedWidget() === widget.id"
+             cdkDrag
+             [cdkDragDisabled]="!isEditMode()"
+             [@widgetAnimation]>
+          
+          <!-- Widget Header -->
+          <div class="dashboard__widget-header" cdkDragHandle>
+            <div class="dashboard__widget-title">
+              <mat-icon [fontIcon]="widget.icon" class="dashboard__widget-icon"></mat-icon>
+              <h3>{{ widget.title }}</h3>
+            </div>
+            
+            <div class="dashboard__widget-actions">
+              @if (refreshing().has(widget.id)) {
+                <mat-spinner diameter="16"></mat-spinner>
+              }
+              
+              <button mat-icon-button 
+                      (click)="refreshWidget(widget)"
+                      matTooltip="Refresh"
+                      [disabled]="refreshing().has(widget.id)">
+                <mat-icon fontIcon="refresh"></mat-icon>
+              </button>
+              
+              <button mat-icon-button 
+                      (click)="expandWidget(widget)"
+                      matTooltip="{{ expandedWidget() === widget.id ? 'Minimize' : 'Maximize' }}">
+                <mat-icon [fontIcon]="expandedWidget() === widget.id ? 'close_fullscreen' : 'open_in_full'"></mat-icon>
+              </button>
+              
+              @if (isEditMode()) {
+                <button mat-icon-button 
+                        (click)="configureWidget(widget)"
+                        matTooltip="Configure">
+                  <mat-icon fontIcon="settings"></mat-icon>
+                </button>
+                
+                <button mat-icon-button 
+                        (click)="removeWidget(widget)"
+                        matTooltip="Remove"
+                        color="warn">
+                  <mat-icon fontIcon="close"></mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+          
+          <!-- Widget Content -->
+          <div class="dashboard__widget-content">
+            <ng-container [ngSwitch]="widget.type">
+              <app-stats-widget *ngSwitchCase="'stats'"></app-stats-widget>
+              <app-sprint-progress-widget *ngSwitchCase="'sprint-progress'"></app-sprint-progress-widget>
+              <app-tasks-widget *ngSwitchCase="'tasks'"></app-tasks-widget>
+              <app-team-activity-widget *ngSwitchCase="'team-activity'"></app-team-activity-widget>
+              <app-charts-widget *ngSwitchCase="'charts'"></app-charts-widget>
+              <app-calendar-widget *ngSwitchCase="'calendar'"></app-calendar-widget>
+              <app-recent-activity-widget *ngSwitchCase="'recent-activity'"></app-recent-activity-widget>
+              <app-weather-widget *ngSwitchCase="'weather'"></app-weather-widget>
+              
+              <!-- Default/Unknown Widget -->
+              <div *ngSwitchDefault class="dashboard__widget-placeholder">
+                <mat-icon fontIcon="widgets"></mat-icon>
+                <p>Widget not found</p>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      }
+      
+      <!-- Empty State -->
+      @if (filteredWidgets().length === 0) {
+        <div class="dashboard__empty">
+          <mat-icon fontIcon="dashboard"></mat-icon>
+          <h3>No widgets to display</h3>
+          <p>
+            @if (searchQuery()) {
+              No widgets found matching "{{ searchQuery() }}"
+            } @else {
+              Add widgets to customize your dashboard
+            }
+          </p>
+          @if (!searchQuery()) {
+            <button mat-raised-button color="primary" (click)="addWidget()">
+              <mat-icon fontIcon="add"></mat-icon>
+              Add Widget
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Dashboard Menu -->
+<mat-menu #dashboardMenu="matMenu">
+  <button mat-menu-item (click)="addWidget()">
+    <mat-icon fontIcon="add"></mat-icon>
+    <span>Add Widget</span>
+  </button>
+  
+  <button mat-menu-item (click)="toggleEditMode()">
+    <mat-icon fontIcon="edit"></mat-icon>
+    <span>{{ isEditMode() ? 'Exit Edit Mode' : 'Edit Mode' }}</span>
+  </button>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item (click)="exportConfiguration()">
+    <mat-icon fontIcon="download"></mat-icon>
+    <span>Export Configuration</span>
+  </button>
+  
+  <button mat-menu-item (click)="importConfiguration()">
+    <mat-icon fontIcon="upload"></mat-icon>
+    <span>Import Configuration</span>
+  </button>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item (click)="resetLayout()">
+    <mat-icon fontIcon="restore"></mat-icon>
+    <span>Reset to Default</span>
+  </button>
+</mat-menu>
+>>>>>>> feature/SPM-016-projects-tasks

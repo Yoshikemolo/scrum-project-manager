@@ -1,369 +1,492 @@
-/**
- * @fileoverview Header Component
- * @module HeaderComponent
- * 
- * Main application header component that provides:
- * - Navigation menu toggle
- * - Global search functionality
- * - User profile menu
- * - Theme switching
- * - Language selection
- * - Notifications access
- * - Quick actions
- * 
- * @author SCRUM Project Manager Team
- * @copyright 2025 Ximplicity Software Solutions
- */
-
-import { 
-  Component, 
-  Input, 
-  Output, 
-  EventEmitter, 
-  inject, 
-  signal, 
-  computed,
-  OnInit,
-  OnDestroy,
-  ChangeDetectionStrategy,
-  ViewChild,
-  ElementRef
-} from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatRippleModule } from '@angular/material/core';
 import { Store } from '@ngrx/store';
-import { Subject, fromEvent } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
+import { trigger, transition, style, animate, state } from '@angular/animations';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
-import { ShortcutService } from '../../core/services/shortcut.service';
-import { LoadingService } from '../../core/services/loading.service';
 import { NotificationService } from '../../core/services/notification.service';
-import * as AuthActions from '../../store/auth/auth.actions';
+import { WebSocketService } from '../../core/services/websocket.service';
+import { ShortcutService } from '../../core/services/shortcut.service';
+import { LocaleService } from '../../core/services/locale.service';
+import { AuthActions } from '../../store/auth/auth.actions';
+import { NotificationActions } from '../../store/notifications/notification.actions';
+import { selectUser, selectIsAuthenticated } from '../../store/auth/auth.selectors';
+import { selectUnreadNotificationsCount, selectRecentNotifications } from '../../store/notifications/notification.selectors';
+import { User } from '../../shared/interfaces/user.interface';
+import { Notification } from '../../shared/interfaces/notification.interface';
 
 /**
- * Language option interface
- */
-interface LanguageOption {
-  code: string;
-  name: string;
-}
-
-/**
- * Header component for the application
- * 
- * @example
- * ```html
- * <app-header 
- *   [sidenavOpened]="isSidenavOpen"
- *   (toggleSidenav)="onToggleSidenav()"
- *   (toggleNotifications)="onToggleNotifications()">
- * </app-header>
- * ```
+ * Application header component with navigation and user controls
+ * Implements responsive design with mobile menu support
  */
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule,
-    FormsModule,
+    RouterLink,
+    RouterLinkActive,
+    ReactiveFormsModule,
     MatToolbarModule,
-    MatIconModule,
     MatButtonModule,
+    MatIconModule,
     MatMenuModule,
     MatBadgeModule,
     MatTooltipModule,
-    MatInputModule,
-    MatFormFieldModule,
     MatDividerModule,
-    MatProgressBarModule,
-    TranslateModule
+    MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatProgressSpinnerModule,
+    MatChipsModule,
+    MatRippleModule
   ],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  animations: [
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ transform: 'translateY(-100%)', opacity: 0 }),
+        animate('300ms ease-out', style({ transform: 'translateY(0)', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ transform: 'translateY(-100%)', opacity: 0 }))
+      ])
+    ]),
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('200ms ease-out', style({ opacity: 1 }))
+      ])
+    ]),
+    trigger('badgePulse', [
+      state('pulse', style({ transform: 'scale(1)' })),
+      transition('* => pulse', [
+        animate('300ms', style({ transform: 'scale(1.2)' })),
+        animate('300ms', style({ transform: 'scale(1)' }))
+      ])
+    ])
+  ]
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  // Service injections
-  private readonly store = inject(Store);
-  private readonly authService = inject(AuthService);
-  private readonly themeService = inject(ThemeService);
-  private readonly translateService = inject(TranslateService);
-  private readonly shortcutService = inject(ShortcutService);
-  private readonly loadingService = inject(LoadingService);
-  private readonly notificationService = inject(NotificationService);
-  
-  // Component lifecycle
-  private readonly destroy$ = new Subject<void>();
-  
-  /**
-   * Whether the sidenav is currently opened
-   */
-  @Input() sidenavOpened = false;
-  
-  /**
-   * Event emitted when sidenav toggle is requested
-   */
-  @Output() toggleSidenav = new EventEmitter<void>();
-  
-  /**
-   * Event emitted when notifications panel toggle is requested
-   */
-  @Output() toggleNotifications = new EventEmitter<void>();
-  
-  /**
-   * Reference to search input element
-   */
-  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
-  
+  // Dependency injection
+  private store = inject(Store);
+  private authService = inject(AuthService);
+  private themeService = inject(ThemeService);
+  private notificationService = inject(NotificationService);
+  private webSocketService = inject(WebSocketService);
+  private shortcutService = inject(ShortcutService);
+  private localeService = inject(LocaleService);
+
   // Component state
-  searchQuery = '';
-  currentLanguage = signal(this.translateService.currentLang);
-  scrolled = signal(false);
-  
-  // Computed signals from services
-  isLoading = computed(() => this.loadingService.isLoading());
-  unreadNotifications = computed(() => this.notificationService.unreadCount());
-  
-  // User information computed from auth service
-  userName = computed(() => {
-    const user = this.authService.currentUser();
-    return user ? `${user.firstName} ${user.lastName}`.trim() : '';
+  user = signal<User | null>(null);
+  isAuthenticated = signal(false);
+  isDarkMode = signal(false);
+  isMobileMenuOpen = signal(false);
+  isSearchFocused = signal(false);
+  isNotificationOpen = signal(false);
+  unreadCount = signal(0);
+  recentNotifications = signal<Notification[]>([]);
+  searchControl = new FormControl('');
+  searchResults = signal<any[]>([]);
+  isSearching = signal(false);
+  userInitials = computed(() => {
+    const user = this.user();
+    if (!user) return '';
+    return `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
   });
+  notificationBadgeAnimation = signal('');
+  currentLanguage = signal('en');
+  onlineStatus = signal('online');
   
-  userEmail = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.email || '';
-  });
-  
-  userAvatar = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.avatar || null;
-  });
-  
-  userRole = computed(() => {
-    const user = this.authService.currentUser();
-    return user?.roles?.[0]?.name || '';
-  });
-  
-  // Theme state
-  isDarkTheme = computed(() => {
-    return this.themeService.currentTheme() === 'dark';
-  });
-  
-  /**
-   * Available languages for the application
-   */
-  readonly availableLanguages: ReadonlyArray<LanguageOption> = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'pt', name: 'Português' },
-    { code: 'it', name: 'Italiano' },
-    { code: 'ja', name: '日本語' },
-    { code: 'zh', name: '中文' }
+  // Observables
+  private destroy$ = new Subject<void>();
+  user$ = this.store.select(selectUser);
+  isAuthenticated$ = this.store.select(selectIsAuthenticated);
+  unreadCount$ = this.store.select(selectUnreadNotificationsCount);
+  recentNotifications$ = this.store.select(selectRecentNotifications);
+
+  // Navigation items
+  navigationItems = [
+    { label: 'Dashboard', route: '/dashboard', icon: 'dashboard', permissions: [] },
+    { label: 'Projects', route: '/projects', icon: 'folder', permissions: ['view_projects'] },
+    { label: 'Tasks', route: '/tasks', icon: 'task_alt', permissions: ['view_tasks'] },
+    { label: 'Sprints', route: '/sprints', icon: 'speed', permissions: ['view_sprints'] },
+    { label: 'Team', route: '/team', icon: 'groups', permissions: ['view_team'] },
+    { label: 'Reports', route: '/reports', icon: 'analytics', permissions: ['view_reports'] }
   ];
-  
-  /**
-   * Component initialization
-   */
+
+  // Language options
+  languages = [
+    { code: 'en', label: 'English', flag: '🇬🇧' },
+    { code: 'es', label: 'Español', flag: '🇪🇸' },
+    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { code: 'pt', label: 'Português', flag: '🇵🇹' },
+    { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+    { code: 'ja', label: '日本語', flag: '🇯🇵' },
+    { code: 'zh', label: '中文', flag: '🇨🇳' }
+  ];
+
   ngOnInit(): void {
-    this.setupScrollListener();
+    this.subscribeToUserState();
+    this.subscribeToNotifications();
+    this.subscribeToTheme();
+    this.setupSearch();
     this.setupKeyboardShortcuts();
+    this.setupWebSocketListeners();
     this.loadUserPreferences();
   }
-  
-  /**
-   * Component cleanup
-   */
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
-  
+
   /**
-   * Setup scroll listener for header elevation effect
-   * @private
+   * Subscribe to user state
    */
-  private setupScrollListener(): void {
-    fromEvent(window, 'scroll')
-      .pipe(
-        debounceTime(10),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => {
-        this.scrolled.set(window.scrollY > 10);
-      });
+  private subscribeToUserState(): void {
+    this.user$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      this.user.set(user);
+    });
+
+    this.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe(isAuth => {
+      this.isAuthenticated.set(isAuth);
+    });
   }
-  
+
   /**
-   * Setup keyboard shortcuts
-   * @private
+   * Subscribe to notifications
    */
-  private setupKeyboardShortcuts(): void {
-    // Global search shortcut (Ctrl/Cmd + K)
-    this.shortcutService.add({
-      keys: 'ctrl+k,cmd+k',
-      description: 'Focus global search',
-      handler: () => {
-        this.searchInput?.nativeElement.focus();
-        return false;
+  private subscribeToNotifications(): void {
+    this.unreadCount$.pipe(takeUntil(this.destroy$)).subscribe(count => {
+      const prevCount = this.unreadCount();
+      this.unreadCount.set(count);
+      
+      // Animate badge when count increases
+      if (count > prevCount) {
+        this.animateNotificationBadge();
+        this.playNotificationSound();
       }
     });
-    
-    // Toggle theme shortcut (Ctrl/Cmd + Shift + T)
+
+    this.recentNotifications$.pipe(takeUntil(this.destroy$)).subscribe(notifications => {
+      this.recentNotifications.set(notifications || []);
+    });
+  }
+
+  /**
+   * Subscribe to theme changes
+   */
+  private subscribeToTheme(): void {
+    this.themeService.isDarkTheme$.pipe(takeUntil(this.destroy$)).subscribe(isDark => {
+      this.isDarkMode.set(isDark);
+    });
+  }
+
+  /**
+   * Setup search functionality
+   */
+  private setupSearch(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap(query => {
+          if (!query || query.length < 2) {
+            this.searchResults.set([]);
+            return of([]);
+          }
+          this.isSearching.set(true);
+          return this.performSearch(query);
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(results => {
+        this.searchResults.set(results);
+        this.isSearching.set(false);
+      });
+  }
+
+  /**
+   * Perform search
+   */
+  private async performSearch(query: string): Promise<any[]> {
+    // This would call a search service
+    // For now, returning mock results
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const mockResults = [
+          { type: 'project', title: 'Project Alpha', description: 'Main project', route: '/projects/1' },
+          { type: 'task', title: 'Task #123', description: 'Fix bug in header', route: '/tasks/123' },
+          { type: 'user', title: 'John Doe', description: 'Developer', route: '/team/johndoe' }
+        ].filter(item => 
+          item.title.toLowerCase().includes(query.toLowerCase()) ||
+          item.description.toLowerCase().includes(query.toLowerCase())
+        );
+        resolve(mockResults);
+      }, 500);
+    });
+  }
+
+  /**
+   * Setup keyboard shortcuts
+   */
+  private setupKeyboardShortcuts(): void {
+    // Search shortcut (Ctrl/Cmd + K)
+    this.shortcutService.add({
+      keys: 'ctrl+k,cmd+k',
+      description: 'Focus search',
+      action: () => this.focusSearch()
+    });
+
+    // Notifications shortcut (Ctrl/Cmd + N)
+    this.shortcutService.add({
+      keys: 'ctrl+n,cmd+n',
+      description: 'Open notifications',
+      action: () => this.toggleNotifications()
+    });
+
+    // Theme toggle shortcut (Ctrl/Cmd + Shift + T)
     this.shortcutService.add({
       keys: 'ctrl+shift+t,cmd+shift+t',
       description: 'Toggle theme',
-      handler: () => {
-        this.toggleTheme();
-        return false;
-      }
+      action: () => this.toggleTheme()
     });
   }
-  
+
   /**
-   * Load user preferences from storage
-   * @private
+   * Setup WebSocket listeners
+   */
+  private setupWebSocketListeners(): void {
+    // Listen for real-time notifications
+    this.webSocketService.on('notification')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(notification => {
+        this.store.dispatch(NotificationActions.addNotification({ notification }));
+      });
+
+    // Listen for user status updates
+    this.webSocketService.on('userStatus')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        this.onlineStatus.set(status);
+      });
+  }
+
+  /**
+   * Load user preferences
    */
   private loadUserPreferences(): void {
-    // Load saved language preference
-    const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage && this.isValidLanguage(savedLanguage)) {
-      this.translateService.use(savedLanguage);
-      this.currentLanguage.set(savedLanguage);
-    }
-  }
-  
-  /**
-   * Check if a language code is valid
-   * @param code Language code to validate
-   * @returns True if the language code is valid
-   * @private
-   */
-  private isValidLanguage(code: string): boolean {
-    return this.availableLanguages.some(lang => lang.code === code);
-  }
-  
-  /**
-   * Handle global search
-   */
-  onSearch(): void {
-    const query = this.searchQuery.trim();
-    if (query) {
-      // TODO: Implement global search functionality
-      console.log('Searching for:', query);
+    const user = this.user();
+    if (user?.preferences) {
+      this.currentLanguage.set(user.preferences.language || 'en');
+      this.localeService.setLocale(user.preferences.language || 'en');
       
-      // For now, just show a notification
-      this.notificationService.info(
-        this.translateService.instant('header.searchInProgress', { query })
-      );
+      if (user.preferences.theme) {
+        this.themeService.setTheme(user.preferences.theme);
+      }
     }
   }
-  
+
   /**
-   * Clear search input
+   * Toggle mobile menu
    */
-  clearSearch(): void {
-    this.searchQuery = '';
-    this.searchInput?.nativeElement.focus();
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen.update(isOpen => !isOpen);
   }
-  
+
   /**
-   * Toggle application theme
+   * Toggle theme
    */
   toggleTheme(): void {
     this.themeService.toggleTheme();
-    
-    // Show notification
-    const theme = this.isDarkTheme() ? 'dark' : 'light';
-    this.notificationService.success(
-      this.translateService.instant('header.themeChanged', { theme })
-    );
   }
-  
+
   /**
-   * Change application language
-   * @param languageCode The language code to switch to
+   * Toggle notifications panel
    */
-  changeLanguage(languageCode: string): void {
-    if (this.isValidLanguage(languageCode)) {
-      this.translateService.use(languageCode);
-      this.currentLanguage.set(languageCode);
-      localStorage.setItem('language', languageCode);
-      
-      // Show notification
-      const language = this.availableLanguages.find(l => l.code === languageCode)?.name;
-      this.notificationService.success(
-        this.translateService.instant('header.languageChanged', { language })
-      );
+  toggleNotifications(): void {
+    this.isNotificationOpen.update(isOpen => !isOpen);
+    
+    if (this.isNotificationOpen()) {
+      // Mark notifications as read when opened
+      this.store.dispatch(NotificationActions.markAllAsRead());
     }
   }
-  
+
   /**
-   * Show keyboard shortcuts dialog
+   * Focus search input
    */
-  showKeyboardShortcuts(): void {
-    // TODO: Implement keyboard shortcuts dialog
-    console.log('Show keyboard shortcuts dialog');
-    
-    // For now, just show a notification
-    this.notificationService.info(
-      this.translateService.instant('header.shortcutsComingSoon')
-    );
+  focusSearch(): void {
+    this.isSearchFocused.set(true);
+    // Focus would be handled by ViewChild in template
   }
-  
+
   /**
-   * Handle avatar image load error
-   * @param event The error event
+   * Clear search
    */
-  handleAvatarError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    if (img) {
-      img.src = 'assets/images/default-avatar.png';
-    }
+  clearSearch(): void {
+    this.searchControl.setValue('');
+    this.searchResults.set([]);
+    this.isSearchFocused.set(false);
   }
-  
+
   /**
-   * Logout the current user
+   * Handle search result click
+   */
+  onSearchResultClick(result: any): void {
+    // Navigate to result
+    // Router would be injected and used here
+    this.clearSearch();
+  }
+
+  /**
+   * Logout user
    */
   logout(): void {
-    // Show confirmation dialog
-    if (confirm(this.translateService.instant('header.logoutConfirm'))) {
-      this.store.dispatch(AuthActions.logout());
-      
-      // Clear local storage
-      localStorage.removeItem('language');
-      
-      // Show notification
-      this.notificationService.info(
-        this.translateService.instant('header.logoutSuccess')
-      );
+    this.store.dispatch(AuthActions.logout());
+  }
+
+  /**
+   * Change language
+   */
+  changeLanguage(code: string): void {
+    this.currentLanguage.set(code);
+    this.localeService.setLocale(code);
+    
+    // Save preference
+    const user = this.user();
+    if (user) {
+      this.authService.updateUserPreferences({ language: code });
     }
   }
-  
+
   /**
-   * TrackBy function for language options
-   * @param index The index of the item
-   * @param item The language option
-   * @returns The unique identifier for the item
+   * Animate notification badge
    */
-  trackByLanguageCode(index: number, item: LanguageOption): string {
-    return item.code;
+  private animateNotificationBadge(): void {
+    this.notificationBadgeAnimation.set('pulse');
+    setTimeout(() => this.notificationBadgeAnimation.set(''), 600);
+  }
+
+  /**
+   * Play notification sound
+   */
+  private playNotificationSound(): void {
+    if (this.user()?.preferences?.soundEnabled) {
+      const audio = new Audio('/assets/sounds/notification.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {
+        // Handle autoplay restrictions
+      });
+    }
+  }
+
+  /**
+   * Check if user has permission
+   */
+  hasPermission(permissions: string[]): boolean {
+    if (permissions.length === 0) return true;
+    
+    const user = this.user();
+    if (!user) return false;
+    
+    return permissions.some(permission => 
+      user.permissions?.includes(permission) || false
+    );
+  }
+
+  /**
+   * Get notification icon
+   */
+  getNotificationIcon(type: string): string {
+    const iconMap: { [key: string]: string } = {
+      'task': 'task_alt',
+      'comment': 'comment',
+      'mention': 'alternate_email',
+      'sprint': 'speed',
+      'project': 'folder',
+      'team': 'groups',
+      'system': 'info'
+    };
+    return iconMap[type] || 'notifications';
+  }
+
+  /**
+   * Get notification color
+   */
+  getNotificationColor(type: string): string {
+    const colorMap: { [key: string]: string } = {
+      'task': 'primary',
+      'comment': 'accent',
+      'mention': 'warn',
+      'sprint': 'primary',
+      'project': 'primary',
+      'team': 'accent',
+      'system': 'basic'
+    };
+    return colorMap[type] || 'basic';
+  }
+
+  /**
+   * Format notification time
+   */
+  formatNotificationTime(date: Date | string): string {
+    const now = new Date();
+    const notificationDate = new Date(date);
+    const diff = now.getTime() - notificationDate.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return notificationDate.toLocaleDateString();
+  }
+
+  /**
+   * Get user avatar URL
+   */
+  getUserAvatar(): string {
+    const user = this.user();
+    if (user?.avatarUrl) {
+      return user.avatarUrl;
+    }
+    // Return default avatar or generate based on initials
+    return `/assets/avatars/default.png`;
+  }
+
+  /**
+   * Get online status color
+   */
+  getStatusColor(): string {
+    const statusColors: { [key: string]: string } = {
+      'online': 'success',
+      'away': 'warning',
+      'busy': 'error',
+      'offline': 'disabled'
+    };
+    return statusColors[this.onlineStatus()] || 'disabled';
   }
 }

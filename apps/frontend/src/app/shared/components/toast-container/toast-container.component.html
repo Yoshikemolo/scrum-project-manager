@@ -1,0 +1,107 @@
+<!-- Toast Container with responsive positioning -->
+<div [ngClass]="containerClasses()" 
+     role="region" 
+     aria-live="polite" 
+     aria-label="Notifications">
+  
+  <div class="toast-wrapper" 
+       [@.disabled]="animatedToasts().length === 0">
+    
+    @for (toast of animatedToasts(); track trackByToastId($index, toast)) {
+      <div class="toast"
+           [ngClass]="[getSeverityClass(toast.severity), {
+             'toast--closable': toast.closable,
+             'toast--with-actions': toast.actions && toast.actions.length > 0,
+             'toast--swiping': toast.swipeOffset !== 0
+           }]"
+           [style.transform]="'translateX(' + toast.swipeOffset + 'px)'"
+           [style.transition]="toast.swipeOffset === 0 ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none'"
+           [@toastAnimation]="{
+             value: toast.animationState,
+             params: {
+               enterTransform: getEnterTransform(),
+               leaveTransform: getLeaveTransform()
+             }
+           }"
+           (click)="onToastClick(toast, $event)"
+           (touchstart)="onTouchStart($event, toast)"
+           (touchmove)="onTouchMove($event, toast)"
+           (touchend)="onTouchEnd($event, toast)"
+           role="alert"
+           [attr.aria-labelledby]="'toast-title-' + toast.id"
+           [attr.aria-describedby]="toast.message ? 'toast-message-' + toast.id : null">
+        
+        <!-- Progress bar for auto-dismiss -->
+        @if (shouldShowProgress(toast)) {
+          <div class="toast__progress"
+               [@progressBar]="{
+                 value: 'running',
+                 params: { duration: getProgressDuration(toast) }
+               }"
+               role="progressbar"
+               [attr.aria-valuemax]="100"
+               [attr.aria-valuenow]="0">
+          </div>
+        }
+        
+        <div class="toast__content">
+          <!-- Icon -->
+          <mat-icon class="toast__icon" 
+                    [fontIcon]="toast.icon || getSeverityIcon(toast.severity)"
+                    aria-hidden="true">
+          </mat-icon>
+          
+          <!-- Text content -->
+          <div class="toast__text">
+            <h3 class="toast__title" 
+                [id]="'toast-title-' + toast.id">
+              {{ toast.title }}
+            </h3>
+            
+            @if (toast.message) {
+              <p class="toast__message" 
+                 [id]="'toast-message-' + toast.id">
+                {{ toast.message }}
+              </p>
+            }
+            
+            <!-- Action buttons -->
+            @if (toast.actions && toast.actions.length > 0) {
+              <div class="toast__actions">
+                @for (action of toast.actions; track action.label) {
+                  <button mat-button 
+                          [color]="action.color || 'primary'"
+                          (click)="onActionClick(action, toast, $event)"
+                          class="toast__action"
+                          type="button">
+                    {{ action.label }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+          
+          <!-- Close button -->
+          @if (toast.closable !== false) {
+            <button mat-icon-button 
+                    class="toast__close"
+                    (click)="onCloseClick(toast, $event)"
+                    [attr.aria-label]="'Close notification: ' + toast.title"
+                    type="button">
+              <mat-icon fontIcon="close" aria-hidden="true"></mat-icon>
+            </button>
+          }
+        </div>
+        
+        <!-- Touch indicator for mobile -->
+        @if (isMobile() && toast.isSwipeable) {
+          <div class="toast__swipe-indicator" 
+               [style.opacity]="Math.min(Math.abs(toast.swipeOffset) / 100, 1)"
+               aria-hidden="true">
+            <mat-icon fontIcon="swipe" class="toast__swipe-icon"></mat-icon>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

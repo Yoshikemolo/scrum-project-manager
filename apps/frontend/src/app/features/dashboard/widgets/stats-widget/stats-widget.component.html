@@ -1,0 +1,155 @@
+<!-- Stats Widget Container -->
+<div class="stats-widget" [class.stats-widget--compact]="compact">
+  
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="stats-widget__loading">
+      <div class="stats-widget__skeleton">
+        @for (item of [1,2,3,4]; track item) {
+          <div class="stats-widget__skeleton-card">
+            <div class="skeleton-icon"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-title"></div>
+              <div class="skeleton-value"></div>
+              <div class="skeleton-change"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    
+    <!-- Stats Grid -->
+    <div class="stats-widget__grid" [@statAnimation]>
+      
+      <!-- Primary Stats -->
+      <div class="stats-widget__primary">
+        @for (stat of primaryStats(); track trackByStatId($index, stat)) {
+          <div class="stats-widget__card"
+               [class.stats-widget__card--clickable]="stat.link"
+               (click)="onStatClick(stat)"
+               matRipple
+               [@statAnimation]>
+            
+            <!-- Card Icon -->
+            <div class="stats-widget__icon" 
+                 [style.background-color]="stat.color + '20'"
+                 [style.color]="stat.color">
+              <mat-icon [fontIcon]="stat.icon"></mat-icon>
+            </div>
+            
+            <!-- Card Content -->
+            <div class="stats-widget__content">
+              <h4 class="stats-widget__title">{{ stat.title }}</h4>
+              
+              <div class="stats-widget__value-row">
+                <span class="stats-widget__value" 
+                      [@valueChange]="animateValues()">
+                  {{ stat.value }}
+                </span>
+                @if (stat.unit) {
+                  <span class="stats-widget__unit">{{ stat.unit }}</span>
+                }
+              </div>
+              
+              <!-- Change Indicator -->
+              @if (stat.change !== undefined && stat.change !== 0) {
+                <div class="stats-widget__change"
+                     [style.color]="getChangeColor(stat.changeType, stat.id !== 'burndown')">
+                  <mat-icon [fontIcon]="getChangeIcon(stat.changeType)"
+                            class="stats-widget__change-icon">
+                  </mat-icon>
+                  <span>{{ stat.change > 0 ? '+' : '' }}{{ stat.change }}%</span>
+                </div>
+              }
+              
+              <!-- Progress Bar -->
+              @if (stat.progress !== undefined) {
+                <div class="stats-widget__progress">
+                  <mat-progress-bar 
+                    mode="determinate"
+                    [value]="stat.progress"
+                    [color]="getProgressColor(stat.progress)">
+                  </mat-progress-bar>
+                  @if (stat.target) {
+                    <span class="stats-widget__target"
+                          [matTooltip]="'Target: ' + stat.target">
+                      {{ Math.round(stat.progress) }}%
+                    </span>
+                  }
+                </div>
+              }
+              
+              <!-- Description Tooltip -->
+              @if (stat.description) {
+                <mat-icon fontIcon="info"
+                          class="stats-widget__info"
+                          [matTooltip]="stat.description">
+                </mat-icon>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      
+      <!-- Secondary Stats (if not compact) -->
+      @if (!compact && secondaryStats().length > 0) {
+        <div class="stats-widget__secondary">
+          @for (stat of secondaryStats(); track trackByStatId($index, stat)) {
+            <div class="stats-widget__mini-card"
+                 [class.stats-widget__mini-card--clickable]="stat.link"
+                 (click)="onStatClick(stat)"
+                 matRipple
+                 [@statAnimation]>
+              
+              <div class="stats-widget__mini-header">
+                <mat-icon [fontIcon]="stat.icon"
+                          [style.color]="stat.color"
+                          class="stats-widget__mini-icon">
+                </mat-icon>
+                <span class="stats-widget__mini-title">{{ stat.title }}</span>
+              </div>
+              
+              <div class="stats-widget__mini-value">
+                <span [@valueChange]="animateValues()">{{ stat.value }}</span>
+                @if (stat.unit) {
+                  <span class="stats-widget__mini-unit">{{ stat.unit }}</span>
+                }
+              </div>
+              
+              @if (stat.progress !== undefined) {
+                <mat-progress-bar 
+                  mode="determinate"
+                  [value]="stat.progress"
+                  class="stats-widget__mini-progress">
+                </mat-progress-bar>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="stats-widget__actions">
+      <button class="stats-widget__action" 
+              (click)="refresh()"
+              [matTooltip]="'Refresh statistics'">
+        <mat-icon fontIcon="refresh"></mat-icon>
+        <span>Refresh</span>
+      </button>
+      
+      <button class="stats-widget__action"
+              [matTooltip]="'View detailed analytics'">
+        <mat-icon fontIcon="analytics"></mat-icon>
+        <span>View Details</span>
+      </button>
+      
+      <button class="stats-widget__action"
+              [matTooltip]="'Export statistics'">
+        <mat-icon fontIcon="download"></mat-icon>
+        <span>Export</span>
+      </button>
+    </div>
+  }
+</div>

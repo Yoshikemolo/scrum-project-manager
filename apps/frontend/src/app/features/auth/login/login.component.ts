@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 import { Component, OnInit, OnDestroy, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl } from '@angular/forms';
+=======
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+>>>>>>> feature/SPM-016-projects-tasks
 import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,6 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+<<<<<<< HEAD
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -42,6 +49,26 @@ import { selectAuthLoading, selectAuthError } from '../../../store/auth/auth.sel
  * - Internationalization support
  * - Responsive design
  * - Accessibility compliant
+=======
+import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Store } from '@ngrx/store';
+import { Subject, takeUntil } from 'rxjs';
+import { trigger, transition, style, animate, state } from '@angular/animations';
+
+import { AuthService } from '../../../core/services/auth.service';
+import { LoadingService } from '../../../core/services/loading.service';
+import { LocalStorageService } from '../../../core/services/local-storage.service';
+import { AuthActions } from '../../../store/auth/auth.actions';
+import { selectAuthError, selectIsAuthenticated, selectIsLoading } from '../../../store/auth/auth.selectors';
+import { LoginRequest } from '../../../shared/interfaces/auth.interface';
+
+/**
+ * Login component for user authentication
+ * Implements reactive forms with comprehensive validation
+ * Supports remember me functionality and social login options
+>>>>>>> feature/SPM-016-projects-tasks
  */
 @Component({
   selector: 'app-login',
@@ -57,14 +84,21 @@ import { selectAuthLoading, selectAuthError } from '../../../store/auth/auth.sel
     MatCheckboxModule,
     MatIconModule,
     MatProgressSpinnerModule,
+<<<<<<< HEAD
     MatTooltipModule,
     MatDividerModule,
     MatSnackBarModule,
     TranslateModule
+=======
+    MatDividerModule,
+    MatTooltipModule,
+    MatSnackBarModule
+>>>>>>> feature/SPM-016-projects-tasks
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
   animations: [
+<<<<<<< HEAD
     trigger('slideIn', [
       transition(':enter', [
         style({ transform: 'translateY(-20px)', opacity: 0 }),
@@ -75,11 +109,21 @@ import { selectAuthLoading, selectAuthError } from '../../../store/auth/auth.sel
       transition(':enter', [
         style({ opacity: 0 }),
         animate('500ms ease-in', style({ opacity: 1 }))
+=======
+    trigger('fadeInOut', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(20px)' }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ opacity: 0, transform: 'translateY(-20px)' }))
+>>>>>>> feature/SPM-016-projects-tasks
       ])
     ]),
     trigger('shake', [
       state('shake', style({ transform: 'translateX(0)' })),
       transition('* => shake', [
+<<<<<<< HEAD
         animate('600ms', keyframes([
           style({ transform: 'translateX(-10px)', offset: 0.1 }),
           style({ transform: 'translateX(10px)', offset: 0.3 }),
@@ -87,11 +131,18 @@ import { selectAuthLoading, selectAuthError } from '../../../store/auth/auth.sel
           style({ transform: 'translateX(10px)', offset: 0.7 }),
           style({ transform: 'translateX(0)', offset: 1 })
         ]))
+=======
+        animate('600ms', style({ transform: 'translateX(-10px)' })),
+        animate('600ms', style({ transform: 'translateX(10px)' })),
+        animate('600ms', style({ transform: 'translateX(-10px)' })),
+        animate('600ms', style({ transform: 'translateX(0)' }))
+>>>>>>> feature/SPM-016-projects-tasks
       ])
     ])
   ]
 })
 export class LoginComponent implements OnInit, OnDestroy {
+<<<<<<< HEAD
   // Form and validation
   loginForm!: FormGroup;
   hidePassword = signal(true);
@@ -164,6 +215,66 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.removeKeyboardShortcuts();
   }
   
+=======
+  // Dependency injection
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private store = inject(Store);
+  private authService = inject(AuthService);
+  private loadingService = inject(LoadingService);
+  private localStorage = inject(LocalStorageService);
+  private snackBar = inject(MatSnackBar);
+
+  // Component state
+  loginForm!: FormGroup;
+  hidePassword = signal(true);
+  isLoading = signal(false);
+  loginAttempts = signal(0);
+  maxLoginAttempts = 5;
+  isBlocked = signal(false);
+  blockDuration = 300000; // 5 minutes in milliseconds
+  shakeAnimation = signal('');
+  
+  // Observables
+  private destroy$ = new Subject<void>();
+  authError$ = this.store.select(selectAuthError);
+  isAuthenticated$ = this.store.select(selectIsAuthenticated);
+  loading$ = this.store.select(selectIsLoading);
+
+  // Error messages for form validation
+  errorMessages = {
+    email: {
+      required: 'Email is required',
+      email: 'Please enter a valid email address',
+      pattern: 'Please enter a valid email format'
+    },
+    password: {
+      required: 'Password is required',
+      minlength: 'Password must be at least 8 characters',
+      maxlength: 'Password cannot exceed 128 characters'
+    }
+  };
+
+  ngOnInit(): void {
+    this.initializeForm();
+    this.checkBlockedStatus();
+    this.loadRememberedEmail();
+    this.subscribeToAuthState();
+    
+    // Check if user is already authenticated
+    this.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe(isAuth => {
+      if (isAuth) {
+        this.router.navigate(['/dashboard']);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+>>>>>>> feature/SPM-016-projects-tasks
   /**
    * Initialize the login form with validators
    */
@@ -172,16 +283,25 @@ export class LoginComponent implements OnInit, OnDestroy {
       email: ['', [
         Validators.required,
         Validators.email,
+<<<<<<< HEAD
         this.emailDomainValidator
+=======
+        Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
+>>>>>>> feature/SPM-016-projects-tasks
       ]],
       password: ['', [
         Validators.required,
         Validators.minLength(8),
+<<<<<<< HEAD
         Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/)
+=======
+        Validators.maxLength(128)
+>>>>>>> feature/SPM-016-projects-tasks
       ]],
       rememberMe: [false]
     });
   }
+<<<<<<< HEAD
   
   /**
    * Custom validator for email domain
@@ -280,10 +400,63 @@ export class LoginComponent implements OnInit, OnDestroy {
    */
   async onSubmit(): Promise<void> {
     if (this.loginForm.invalid || this.isLoginDisabled()) {
+=======
+
+  /**
+   * Check if user is blocked from too many failed attempts
+   */
+  private checkBlockedStatus(): void {
+    const blockUntil = this.localStorage.getItem<number>('loginBlockedUntil');
+    if (blockUntil && blockUntil > Date.now()) {
+      this.isBlocked.set(true);
+      const remainingTime = blockUntil - Date.now();
+      setTimeout(() => {
+        this.isBlocked.set(false);
+        this.loginAttempts.set(0);
+        this.localStorage.removeItem('loginBlockedUntil');
+      }, remainingTime);
+    }
+  }
+
+  /**
+   * Load remembered email if remember me was checked
+   */
+  private loadRememberedEmail(): void {
+    const rememberedEmail = this.localStorage.getItem<string>('rememberedEmail');
+    if (rememberedEmail) {
+      this.loginForm.patchValue({
+        email: rememberedEmail,
+        rememberMe: true
+      });
+    }
+  }
+
+  /**
+   * Subscribe to authentication state changes
+   */
+  private subscribeToAuthState(): void {
+    this.loading$.pipe(takeUntil(this.destroy$)).subscribe(loading => {
+      this.isLoading.set(loading);
+    });
+
+    this.authError$.pipe(takeUntil(this.destroy$)).subscribe(error => {
+      if (error) {
+        this.handleLoginError(error);
+      }
+    });
+  }
+
+  /**
+   * Handle form submission
+   */
+  onSubmit(): void {
+    if (this.loginForm.invalid) {
+>>>>>>> feature/SPM-016-projects-tasks
       this.markFormGroupTouched(this.loginForm);
       this.shakeForm();
       return;
     }
+<<<<<<< HEAD
     
     this.isSubmitting.set(true);
     const { email, password, rememberMe } = this.loginForm.value;
@@ -331,12 +504,127 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
   
+=======
+
+    if (this.isBlocked()) {
+      this.showBlockedMessage();
+      return;
+    }
+
+    const { email, password, rememberMe } = this.loginForm.value;
+
+    // Handle remember me
+    if (rememberMe) {
+      this.localStorage.setItem('rememberedEmail', email);
+    } else {
+      this.localStorage.removeItem('rememberedEmail');
+    }
+
+    // Dispatch login action
+    const loginRequest: LoginRequest = { email, password };
+    this.store.dispatch(AuthActions.login({ credentials: loginRequest }));
+  }
+
+  /**
+   * Handle login errors
+   */
+  private handleLoginError(error: string): void {
+    this.loginAttempts.update(attempts => attempts + 1);
+    
+    if (this.loginAttempts() >= this.maxLoginAttempts) {
+      this.blockUser();
+    } else {
+      const remainingAttempts = this.maxLoginAttempts - this.loginAttempts();
+      this.snackBar.open(
+        `Login failed: ${error}. ${remainingAttempts} attempts remaining.`,
+        'Close',
+        {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        }
+      );
+      this.shakeForm();
+    }
+  }
+
+  /**
+   * Block user after too many failed attempts
+   */
+  private blockUser(): void {
+    const blockUntil = Date.now() + this.blockDuration;
+    this.localStorage.setItem('loginBlockedUntil', blockUntil);
+    this.isBlocked.set(true);
+    
+    this.snackBar.open(
+      'Too many failed login attempts. Please try again in 5 minutes.',
+      'Close',
+      {
+        duration: 10000,
+        panelClass: ['error-snackbar'],
+        horizontalPosition: 'center',
+        verticalPosition: 'top'
+      }
+    );
+
+    setTimeout(() => {
+      this.isBlocked.set(false);
+      this.loginAttempts.set(0);
+      this.localStorage.removeItem('loginBlockedUntil');
+    }, this.blockDuration);
+  }
+
+  /**
+   * Show blocked message
+   */
+  private showBlockedMessage(): void {
+    const blockUntil = this.localStorage.getItem<number>('loginBlockedUntil');
+    if (blockUntil) {
+      const remainingMinutes = Math.ceil((blockUntil - Date.now()) / 60000);
+      this.snackBar.open(
+        `Account temporarily blocked. Please try again in ${remainingMinutes} minute(s).`,
+        'Close',
+        {
+          duration: 5000,
+          panelClass: ['warning-snackbar'],
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        }
+      );
+    }
+  }
+
+  /**
+   * Trigger shake animation on form
+   */
+  private shakeForm(): void {
+    this.shakeAnimation.set('shake');
+    setTimeout(() => this.shakeAnimation.set(''), 600);
+  }
+
+  /**
+   * Mark all form controls as touched to show validation errors
+   */
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+
+>>>>>>> feature/SPM-016-projects-tasks
   /**
    * Toggle password visibility
    */
   togglePasswordVisibility(): void {
     this.hidePassword.update(hide => !hide);
   }
+<<<<<<< HEAD
   
   /**
    * Navigate to forgot password
@@ -438,3 +726,48 @@ export class LoginComponent implements OnInit, OnDestroy {
     return colors[strength];
   }
 }
+=======
+
+  /**
+   * Handle social login
+   */
+  socialLogin(provider: 'google' | 'github'): void {
+    this.store.dispatch(AuthActions.socialLogin({ provider }));
+  }
+
+  /**
+   * Get error message for a form control
+   */
+  getErrorMessage(controlName: string): string {
+    const control = this.loginForm.get(controlName);
+    if (control?.errors && control.touched) {
+      const errors = this.errorMessages[controlName as keyof typeof this.errorMessages];
+      const errorKey = Object.keys(control.errors)[0];
+      return errors[errorKey as keyof typeof errors] || 'Invalid input';
+    }
+    return '';
+  }
+
+  /**
+   * Check if form control has error
+   */
+  hasError(controlName: string): boolean {
+    const control = this.loginForm.get(controlName);
+    return !!(control?.invalid && control?.touched);
+  }
+
+  /**
+   * Get remaining login attempts
+   */
+  getRemainingAttempts(): number {
+    return Math.max(0, this.maxLoginAttempts - this.loginAttempts());
+  }
+
+  /**
+   * Check if login button should be disabled
+   */
+  isLoginDisabled(): boolean {
+    return this.loginForm.invalid || this.isLoading() || this.isBlocked();
+  }
+}
+>>>>>>> feature/SPM-016-projects-tasks
