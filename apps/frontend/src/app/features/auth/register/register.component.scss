@@ -1,12 +1,27 @@
+<<<<<<< HEAD
+@import 'variables';
+@import 'mixins';
+@import 'animations';
+=======
 @use '@angular/material' as mat;
 @use 'apps/frontend/src/styles/variables' as vars;
 @use 'apps/frontend/src/styles/mixins' as mixins;
+>>>>>>> feature/SPM-016-projects-tasks
 
 .register-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+<<<<<<< HEAD
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%);
+  position: relative;
+  overflow: hidden;
+
+  :host-context(.dark-theme) & {
+    background: linear-gradient(135deg, var(--surface-dark) 0%, var(--background-dark) 100%);
+=======
   background: linear-gradient(135deg, vars.$secondary-color 0%, vars.$primary-color 100%);
   position: relative;
   overflow: hidden;
@@ -14,11 +29,30 @@
 
   @include mixins.mobile {
     padding: 0.5rem;
+>>>>>>> feature/SPM-016-projects-tasks
   }
 }
 
 .register-card {
   width: 100%;
+<<<<<<< HEAD
+  max-width: 600px;
+  z-index: 10;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  overflow: visible;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+
+  :host-context(.dark-theme) & {
+    background: rgba(var(--surface-dark-rgb), 0.98);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  @include respond-to('mobile') {
+    max-width: 100%;
+    margin: 0;
+=======
   max-width: 680px;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
@@ -54,11 +88,252 @@
     @include mixins.mobile {
       padding: 0 1.5rem 1.5rem;
     }
+>>>>>>> feature/SPM-016-projects-tasks
   }
 }
 
 .register-header {
   text-align: center;
+<<<<<<< HEAD
+  padding: 2rem 2rem 1rem;
+  background: transparent;
+
+  .logo-container {
+    margin-bottom: 1rem;
+
+    .logo {
+      width: 60px;
+      height: 60px;
+      transition: transform 0.3s ease;
+
+      &:hover {
+        transform: scale(1.1) rotate(5deg);
+      }
+    }
+  }
+
+  .register-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+  }
+
+  .register-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+    opacity: 0.8;
+  }
+
+  .progress-container {
+    position: relative;
+    margin-bottom: 1rem;
+
+    mat-progress-bar {
+      height: 8px;
+      border-radius: 4px;
+    }
+
+    .step-indicators {
+      display: flex;
+      justify-content: space-between;
+      position: absolute;
+      top: -6px;
+      left: 0;
+      right: 0;
+      padding: 0 20px;
+
+      .step-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 2px solid var(--divider);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+        &.active {
+          border-color: var(--primary);
+          background: var(--primary);
+          color: white;
+        }
+
+        &.completed {
+          background: var(--primary);
+          border-color: var(--primary);
+          color: white;
+
+          mat-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+          }
+        }
+
+        &:hover:not(.active) {
+          transform: scale(1.1);
+        }
+      }
+    }
+  }
+}
+
+.register-content {
+  padding: 1rem 2rem 2rem;
+  min-height: 400px;
+
+  .step-content {
+    .step-title {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem;
+    }
+
+    .step-description {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin: 0 0 1.5rem;
+    }
+
+    &.completion-step {
+      text-align: center;
+      padding: 3rem 0;
+
+      .success-icon {
+        margin-bottom: 1.5rem;
+
+        mat-icon {
+          font-size: 72px;
+          width: 72px;
+          height: 72px;
+          animation: bounce 1s ease;
+        }
+      }
+
+      .redirect-message {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin: 1rem 0;
+      }
+    }
+  }
+}
+
+.register-form {
+  .full-width {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .name-row,
+  .company-role-row,
+  .locale-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    @include respond-to('mobile') {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Profile picture upload
+  .profile-picture-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    .profile-picture-preview {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 3px dashed var(--divider);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      background: var(--background-light);
+
+      &:hover {
+        border-color: var(--primary);
+        transform: scale(1.05);
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: var(--text-secondary);
+      }
+    }
+
+    .profile-picture-hint {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+  }
+
+  // Password strength indicator
+  .password-strength {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: -0.75rem;
+    margin-bottom: 1rem;
+    padding: 0 0.5rem;
+
+    .strength-bars {
+      display: flex;
+      gap: 0.25rem;
+      flex: 1;
+
+      .strength-bar {
+        height: 4px;
+        flex: 1;
+        background: var(--divider);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+
+        &.active {
+          &.error {
+            background: var(--error);
+          }
+
+          &.warn {
+            background: var(--warn);
+          }
+
+          &.accent {
+            background: var(--accent);
+          }
+
+          &.primary {
+            background: var(--primary);
+          }
+
+          &.success {
+            background: var(--success);
+          }
+=======
   margin-bottom: 1.5rem;
 
   .logo {
@@ -214,11 +489,66 @@
 
         &.strong {
           background-color: vars.$success;
+>>>>>>> feature/SPM-016-projects-tasks
         }
       }
     }
 
     .strength-label {
+<<<<<<< HEAD
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+
+      &.error {
+        color: var(--error);
+      }
+
+      &.warn {
+        color: var(--warn);
+      }
+
+      &.accent {
+        color: var(--accent);
+      }
+
+      &.primary {
+        color: var(--primary);
+      }
+
+      &.success {
+        color: var(--success);
+      }
+    }
+  }
+
+  // Password requirements
+  .password-requirements {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--background-light);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    span {
+      color: var(--text-secondary);
+    }
+  }
+
+  // Sections
+  .preferences-section,
+  .legal-section {
+=======
       font-size: 0.85rem;
       color: vars.$text-secondary;
       font-weight: 500;
@@ -226,22 +556,37 @@
   }
 
   .notification-preferences {
+>>>>>>> feature/SPM-016-projects-tasks
     margin-bottom: 1.5rem;
 
     .section-title {
       font-size: 1rem;
       font-weight: 500;
+<<<<<<< HEAD
+      color: var(--text-primary);
+      margin: 0 0 1rem;
+=======
       color: vars.$text-primary;
       margin: 0 0 1rem;
 
       @include mixins.dark-mode {
         color: vars.$text-primary-dark;
       }
+>>>>>>> feature/SPM-016-projects-tasks
     }
 
     mat-checkbox {
       display: block;
       margin-bottom: 0.75rem;
+<<<<<<< HEAD
+    }
+
+    .legal-checkbox {
+      .legal-link {
+        color: var(--primary);
+        text-decoration: none;
+        cursor: pointer;
+=======
 
       .checkbox-label {
         display: flex;
@@ -279,12 +624,19 @@
         color: vars.$primary-color;
         text-decoration: none;
         font-weight: 500;
+>>>>>>> feature/SPM-016-projects-tasks
 
         &:hover {
           text-decoration: underline;
         }
       }
     }
+<<<<<<< HEAD
+  }
+}
+
+// Social buttons
+=======
 
     .checkbox-error {
       color: vars.$error;
@@ -339,6 +691,7 @@
   }
 }
 
+>>>>>>> feature/SPM-016-projects-tasks
 .divider-container {
   display: flex;
   align-items: center;
@@ -351,6 +704,18 @@
 
   .divider-text {
     padding: 0 1rem;
+<<<<<<< HEAD
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+}
+
+.social-buttons {
+  display: flex;
+  gap: 1rem;
+=======
     color: vars.$text-secondary;
     font-size: 0.85rem;
     font-weight: 500;
@@ -372,6 +737,7 @@
   @include mixins.mobile {
     flex-direction: column;
   }
+>>>>>>> feature/SPM-016-projects-tasks
 
   .social-button {
     flex: 1;
@@ -380,6 +746,15 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
+<<<<<<< HEAD
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+=======
     font-size: 0.95rem;
     font-weight: 500;
     border: 1px solid vars.$border-color;
@@ -390,6 +765,7 @@
       background-color: vars.$background-hover;
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+>>>>>>> feature/SPM-016-projects-tasks
     }
 
     .social-icon {
@@ -397,6 +773,28 @@
       height: 20px;
     }
 
+<<<<<<< HEAD
+    .button-spinner {
+      position: absolute;
+      left: 1rem;
+    }
+
+    &.google-button {
+      border-color: #4285f4;
+      color: #4285f4;
+
+      &:hover:not(:disabled) {
+        background: rgba(66, 133, 244, 0.05);
+      }
+    }
+
+    &.github-button {
+      border-color: var(--text-primary);
+      color: var(--text-primary);
+
+      &:hover:not(:disabled) {
+        background: rgba(var(--text-primary-rgb), 0.05);
+=======
     &.google-button:hover {
       border-color: #4285f4;
       background-color: rgba(66, 133, 244, 0.05);
@@ -412,11 +810,88 @@
 
       &:hover:not(:disabled) {
         background-color: vars.$background-hover-dark;
+>>>>>>> feature/SPM-016-projects-tasks
       }
     }
   }
 }
 
+<<<<<<< HEAD
+// Navigation buttons
+.navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+
+  .nav-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &.next-button {
+      position: relative;
+
+      .button-spinner {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// Keyboard shortcuts hint
+.shortcuts-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.register-footer {
+  padding: 1.5rem 2rem;
+  background: var(--background-light);
+  border-top: 1px solid var(--divider);
+  text-align: center;
+
+  :host-context(.dark-theme) & {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .login-prompt {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+
+    .login-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+
+      &:hover {
+        opacity: 0.8;
+        text-decoration: underline;
+      }
+    }
+=======
 .footer-links {
   text-align: center;
 
@@ -485,10 +960,22 @@
       transform: translate(-50%, -50%);
       animation: pulse 4s ease-in-out infinite;
     }
+>>>>>>> feature/SPM-016-projects-tasks
   }
 }
 
 // Animations
+<<<<<<< HEAD
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  60% {
+    transform: translateY(-10px);
+=======
 @keyframes rotate {
   from {
     transform: rotate(0deg);
@@ -528,11 +1015,20 @@
   50% {
     transform: translate(-50%, -50%) scale(1.1);
     opacity: 0.15;
+>>>>>>> feature/SPM-016-projects-tasks
   }
 }
 
 // Accessibility
 @media (prefers-reduced-motion: reduce) {
+<<<<<<< HEAD
+  .register-container,
+  .register-card,
+  .step-content,
+  .success-icon mat-icon {
+    animation: none !important;
+    transition: none !important;
+=======
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -541,12 +1037,32 @@
 
   .background-decoration {
     display: none;
+>>>>>>> feature/SPM-016-projects-tasks
   }
 }
 
 // High contrast mode
 @media (prefers-contrast: high) {
   .register-card {
+<<<<<<< HEAD
+    border: 2px solid var(--text-primary);
+  }
+
+  .nav-button,
+  .social-button {
+    border-width: 2px;
+  }
+}
+
+// Print styles
+@media print {
+  .navigation-buttons,
+  .shortcuts-hint,
+  .social-buttons {
+    display: none !important;
+  }
+}
+=======
     border: 2px solid currentColor;
   }
 
@@ -559,3 +1075,4 @@
     border-width: 2px;
   }
 }
+>>>>>>> feature/SPM-016-projects-tasks
