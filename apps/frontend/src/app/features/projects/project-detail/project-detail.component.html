@@ -1,0 +1,880 @@
+<!-- Project Detail Container -->
+<div class="project-detail-container" [@fadeIn] *ngIf="project$ | async as project">
+  <!-- Header Section -->
+  <header class="project-header">
+    <div class="header-background" [style.background]="'url(' + project.coverImage + ')'">
+      <div class="header-overlay"></div>
+    </div>
+    
+    <div class="header-content">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb" aria-label="breadcrumb">
+        <ol>
+          <li><a routerLink="/dashboard">{{ 'common.dashboard' | translate }}</a></li>
+          <li><a routerLink="/projects">{{ 'projects.title' | translate }}</a></li>
+          <li class="active">{{ project.name }}</li>
+        </ol>
+      </nav>
+
+      <!-- Project Info -->
+      <div class="project-info">
+        <div class="project-avatar">
+          <img [src]="project.logo" [alt]="project.name" />
+          <button mat-icon-button 
+                  class="favorite-btn"
+                  (click)="toggleFavorite()"
+                  [matTooltip]="(project.isFavorite ? 'projects.unfavorite' : 'projects.favorite') | translate">
+            <mat-icon>{{ project.isFavorite ? 'star' : 'star_border' }}</mat-icon>
+          </button>
+        </div>
+
+        <div class="project-details">
+          <div class="title-row">
+            <h1 class="project-name" *ngIf="!isEditMode()">
+              {{ project.name }}
+              <span class="project-key">({{ project.key }})</span>
+            </h1>
+            <mat-form-field appearance="outline" *ngIf="isEditMode()" class="name-field">
+              <input matInput [formControl]="editForm.get('name')!" />
+            </mat-form-field>
+
+            <div class="status-priority">
+              <mat-chip-listbox *ngIf="!isEditMode()">
+                <mat-chip [style.background]="getStatusColor(project.status)">
+                  <mat-icon>{{ getStatusIcon(project.status) }}</mat-icon>
+                  {{ project.status | translate }}
+                </mat-chip>
+                <mat-chip [style.background]="getPriorityColor(project.priority)">
+                  <mat-icon>flag</mat-icon>
+                  {{ project.priority | translate }}
+                </mat-chip>
+              </mat-chip-listbox>
+
+              <div *ngIf="isEditMode()" class="edit-status-priority">
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'projects.status' | translate }}</mat-label>
+                  <mat-select [formControl]="editForm.get('status')!">
+                    <mat-option *ngFor="let status of projectStatuses" [value]="status.value">
+                      <mat-icon [style.color]="status.color">{{ status.icon }}</mat-icon>
+                      {{ status.label | translate }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'projects.priority' | translate }}</mat-label>
+                  <mat-select [formControl]="editForm.get('priority')!">
+                    <mat-option *ngFor="let priority of priorities" [value]="priority.value">
+                      <mat-icon [style.color]="priority.color">flag</mat-icon>
+                      {{ priority.label | translate }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+
+          <p class="project-description" *ngIf="!isEditMode()">
+            {{ project.description }}
+          </p>
+          <mat-form-field appearance="outline" *ngIf="isEditMode()" class="description-field">
+            <mat-label>{{ 'projects.description' | translate }}</mat-label>
+            <textarea matInput 
+                      [formControl]="editForm.get('description')!" 
+                      rows="3"
+                      cdkTextareaAutosize></textarea>
+          </mat-form-field>
+
+          <div class="project-meta">
+            <div class="meta-item">
+              <mat-icon>person</mat-icon>
+              <span>{{ 'projects.owner' | translate }}: <strong>{{ project.owner.name }}</strong></span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>calendar_today</mat-icon>
+              <span>{{ project.startDate | date:dateFormat }} - {{ project.dueDate | date:dateFormat }}</span>
+              <mat-chip *ngIf="isOverdue(project.dueDate)" color="warn" class="overdue-chip">
+                {{ 'projects.overdue' | translate }}
+              </mat-chip>
+            </div>
+            <div class="meta-item">
+              <mat-icon>group</mat-icon>
+              <span>{{ project.teamSize }} {{ 'projects.members' | translate }}</span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>update</mat-icon>
+              <span>{{ 'common.lastUpdated' | translate }}: {{ project.updatedAt | timeAgo }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="header-actions">
+          <button mat-raised-button 
+                  color="primary"
+                  *ngIf="!isEditMode() && canEdit()"
+                  (click)="toggleEditMode()">
+            <mat-icon>edit</mat-icon>
+            {{ 'common.edit' | translate }}
+          </button>
+
+          <button mat-raised-button 
+                  color="primary"
+                  *ngIf="isEditMode()"
+                  (click)="saveProject()"
+                  [disabled]="!editForm.valid">
+            <mat-icon>save</mat-icon>
+            {{ 'common.save' | translate }}
+          </button>
+
+          <button mat-button 
+                  *ngIf="isEditMode()"
+                  (click)="toggleEditMode()">
+            {{ 'common.cancel' | translate }}
+          </button>
+
+          <button mat-icon-button [matMenuTriggerFor]="projectMenu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+
+          <!-- Project Menu -->
+          <mat-menu #projectMenu="matMenu">
+            <button mat-menu-item (click)="shareProject()">
+              <mat-icon>share</mat-icon>
+              {{ 'projects.share' | translate }}
+            </button>
+            <button mat-menu-item (click)="duplicateProject()">
+              <mat-icon>content_copy</mat-icon>
+              {{ 'projects.duplicate' | translate }}
+            </button>
+            <button mat-menu-item (click)="exportProject()">
+              <mat-icon>download</mat-icon>
+              {{ 'projects.export' | translate }}
+            </button>
+            <button mat-menu-item (click)="archiveProject()">
+              <mat-icon>archive</mat-icon>
+              {{ project.isArchived ? 'projects.unarchive' : 'projects.archive' | translate }}
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item 
+                    *ngIf="canDelete()"
+                    (click)="deleteProject()" 
+                    class="danger-action">
+              <mat-icon color="warn">delete</mat-icon>
+              <span color="warn">{{ 'projects.delete' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+      </div>
+
+      <!-- Progress Overview -->
+      <div class="progress-overview">
+        <div class="progress-header">
+          <h3>{{ 'projects.overallProgress' | translate }}</h3>
+          <span class="progress-percentage">{{ projectProgress() | number:'1.0-0' }}%</span>
+        </div>
+        <mat-progress-bar 
+          [value]="projectProgress()" 
+          [color]="getProgressColor(projectProgress())">
+        </mat-progress-bar>
+        <div class="progress-details">
+          <div class="detail-item">
+            <span class="label">{{ 'projects.tasks' | translate }}:</span>
+            <span class="value">{{ project.completedTaskCount }}/{{ project.taskCount }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">{{ 'projects.sprints' | translate }}:</span>
+            <span class="value">{{ project.completedSprintCount }}/{{ project.sprintCount }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">{{ 'projects.velocity' | translate }}:</span>
+            <span class="value">{{ project.velocity }} {{ 'projects.pointsPerSprint' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Quick Stats Bar -->
+  <section class="quick-stats" *ngIf="showStatistics()" [@slideIn]>
+    <div class="stats-container">
+      <div class="stat-card" *ngFor="let stat of projectStats" [@fadeIn]>
+        <mat-icon [style.color]="stat.color">{{ stat.icon }}</mat-icon>
+        <div class="stat-content">
+          <div class="stat-value">{{ stat.value }}</div>
+          <div class="stat-label">{{ stat.label | translate }}</div>
+        </div>
+        <mat-progress-bar 
+          *ngIf="stat.progress !== undefined"
+          [value]="stat.progress"
+          [color]="stat.progressColor">
+        </mat-progress-bar>
+      </div>
+    </div>
+
+    <button mat-icon-button 
+            class="toggle-stats"
+            (click)="showStatistics.set(false)"
+            matTooltip="{{ 'common.hide' | translate }}">
+      <mat-icon>close</mat-icon>
+    </button>
+  </section>
+
+  <!-- Main Content -->
+  <div class="project-content">
+    <!-- Tabs Navigation -->
+    <mat-tab-group 
+      [selectedIndex]="activeTabIndex"
+      (selectedTabChange)="onTabChange($event)"
+      animationDuration="300ms"
+      [dynamicHeight]="true">
+
+      <!-- Overview Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">dashboard</mat-icon>
+          <span class="tab-label">{{ 'projects.tabs.overview' | translate }}</span>
+        </ng-template>
+
+        <div class="tab-content overview-content">
+          <!-- Charts Section -->
+          <div class="charts-section">
+            <mat-card class="chart-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>trending_down</mat-icon>
+                  {{ 'projects.charts.burndown' | translate }}
+                </mat-card-title>
+                <button mat-icon-button [matMenuTriggerFor]="burndownMenu">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+              </mat-card-header>
+              <mat-card-content>
+                <canvas baseChart
+                        #burndownChart
+                        [data]="burndownChartData"
+                        [options]="chartOptions"
+                        [type]="'line'"
+                        height="300">
+                </canvas>
+              </mat-card-content>
+              <mat-menu #burndownMenu="matMenu">
+                <button mat-menu-item (click)="exportChart('burndown')">
+                  <mat-icon>download</mat-icon>
+                  {{ 'common.export' | translate }}
+                </button>
+                <button mat-menu-item (click)="fullscreenChart('burndown')">
+                  <mat-icon>fullscreen</mat-icon>
+                  {{ 'common.fullscreen' | translate }}
+                </button>
+              </mat-menu>
+            </mat-card>
+
+            <mat-card class="chart-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>speed</mat-icon>
+                  {{ 'projects.charts.velocity' | translate }}
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <canvas baseChart
+                        #velocityChart
+                        [data]="velocityChartData"
+                        [options]="chartOptions"
+                        [type]="'bar'"
+                        height="300">
+                </canvas>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="chart-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>donut_large</mat-icon>
+                  {{ 'projects.charts.taskDistribution' | translate }}
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <canvas baseChart
+                        #taskChart
+                        [data]="taskChartData"
+                        [options]="chartOptions"
+                        [type]="'doughnut'"
+                        height="300">
+                </canvas>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Activity Timeline -->
+          <div class="timeline-section" *ngIf="showTimeline()">
+            <h3 class="section-title">
+              <mat-icon>timeline</mat-icon>
+              {{ 'projects.recentActivity' | translate }}
+            </h3>
+            
+            <div class="timeline" [@listAnimation]>
+              <div class="timeline-item" 
+                   *ngFor="let activity of (activities$ | async | slice:0:10); trackBy: trackById"
+                   [@fadeIn]>
+                <div class="timeline-marker" [style.background]="getActivityColor(activity.type)">
+                  <mat-icon>{{ getActivityIcon(activity.type) }}</mat-icon>
+                </div>
+                <div class="timeline-content">
+                  <div class="activity-header">
+                    <img [src]="activity.user.avatar" [alt]="activity.user.name" class="user-avatar">
+                    <span class="activity-text" [innerHTML]="activity.description | safeHtml"></span>
+                  </div>
+                  <time class="activity-time">{{ activity.timestamp | timeAgo }}</time>
+                </div>
+              </div>
+            </div>
+
+            <button mat-stroked-button class="load-more" (click)="loadMoreActivities()">
+              {{ 'common.loadMore' | translate }}
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Sprints Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">loop</mat-icon>
+          <span class="tab-label">{{ 'projects.tabs.sprints' | translate }}</span>
+          <span class="tab-badge" *ngIf="(sprints$ | async)?.length > 0">
+            {{ (sprints$ | async)?.length }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content sprints-content">
+          <div class="content-header">
+            <h2>{{ 'sprints.title' | translate }}</h2>
+            <button mat-raised-button color="primary" (click)="createSprint()">
+              <mat-icon>add</mat-icon>
+              {{ 'sprints.create' | translate }}
+            </button>
+          </div>
+
+          <div class="sprints-timeline">
+            <mat-accordion multi>
+              <mat-expansion-panel 
+                *ngFor="let sprint of sprints$ | async; trackBy: trackById"
+                [expanded]="sprint.id === selectedSprint?.id"
+                (opened)="selectedSprint = sprint"
+                [@fadeIn]>
+                <mat-expansion-panel-header>
+                  <mat-panel-title>
+                    <mat-icon [style.color]="getSprintStatusColor(sprint.status)">{{ getSprintIcon(sprint.status) }}</mat-icon>
+                    {{ sprint.name }}
+                    <mat-chip *ngIf="sprint.isActive" color="primary" class="active-chip">
+                      {{ 'sprints.active' | translate }}
+                    </mat-chip>
+                  </mat-panel-title>
+                  <mat-panel-description>
+                    {{ sprint.startDate | date:'MMM d' }} - {{ sprint.endDate | date:'MMM d, y' }}
+                    <span class="sprint-progress">{{ sprint.completedPoints }}/{{ sprint.totalPoints }} {{ 'common.points' | translate }}</span>
+                  </mat-panel-description>
+                </mat-expansion-panel-header>
+
+                <div class="sprint-content">
+                  <div class="sprint-metrics">
+                    <div class="metric">
+                      <span class="metric-label">{{ 'sprints.velocity' | translate }}</span>
+                      <span class="metric-value">{{ sprint.velocity }}</span>
+                    </div>
+                    <div class="metric">
+                      <span class="metric-label">{{ 'sprints.completion' | translate }}</span>
+                      <span class="metric-value">{{ sprint.completionRate }}%</span>
+                    </div>
+                    <div class="metric">
+                      <span class="metric-label">{{ 'sprints.remaining' | translate }}</span>
+                      <span class="metric-value">{{ getRemainingDays(sprint.endDate) }} {{ 'common.days' | translate }}</span>
+                    </div>
+                  </div>
+
+                  <mat-progress-bar 
+                    [value]="sprint.progress" 
+                    [color]="getProgressColor(sprint.progress)">
+                  </mat-progress-bar>
+
+                  <div class="sprint-actions">
+                    <button mat-button (click)="viewSprintBoard(sprint)">
+                      <mat-icon>view_kanban</mat-icon>
+                      {{ 'sprints.viewBoard' | translate }}
+                    </button>
+                    <button mat-button (click)="editSprint(sprint)">
+                      <mat-icon>edit</mat-icon>
+                      {{ 'common.edit' | translate }}
+                    </button>
+                    <button mat-button (click)="startSprint(sprint)" *ngIf="!sprint.isActive">
+                      <mat-icon>play_arrow</mat-icon>
+                      {{ 'sprints.start' | translate }}
+                    </button>
+                    <button mat-button (click)="completeSprint(sprint)" *ngIf="sprint.isActive">
+                      <mat-icon>check_circle</mat-icon>
+                      {{ 'sprints.complete' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </mat-expansion-panel>
+            </mat-accordion>
+          </div>
+
+          <div class="empty-state" *ngIf="!(sprints$ | async)?.length" [@fadeIn]>
+            <img src="assets/images/empty-sprints.svg" alt="No sprints">
+            <h3>{{ 'sprints.empty.title' | translate }}</h3>
+            <p>{{ 'sprints.empty.description' | translate }}</p>
+            <button mat-raised-button color="primary" (click)="createSprint()">
+              <mat-icon>add</mat-icon>
+              {{ 'sprints.create' | translate }}
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tasks Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">assignment</mat-icon>
+          <span class="tab-label">{{ 'projects.tabs.tasks' | translate }}</span>
+          <span class="tab-badge" *ngIf="(tasks$ | async)?.length > 0">
+            {{ (tasks$ | async)?.length }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content tasks-content">
+          <div class="content-header">
+            <h2>{{ 'tasks.title' | translate }}</h2>
+            <div class="header-actions">
+              <mat-button-toggle-group [(value)]="viewMode" class="view-toggle">
+                <mat-button-toggle value="kanban">
+                  <mat-icon>view_kanban</mat-icon>
+                  {{ 'common.kanban' | translate }}
+                </mat-button-toggle>
+                <mat-button-toggle value="list">
+                  <mat-icon>view_list</mat-icon>
+                  {{ 'common.list' | translate }}
+                </mat-button-toggle>
+                <mat-button-toggle value="calendar">
+                  <mat-icon>calendar_view_month</mat-icon>
+                  {{ 'common.calendar' | translate }}
+                </mat-button-toggle>
+              </mat-button-toggle-group>
+
+              <button mat-raised-button color="primary" (click)="createTask()">
+                <mat-icon>add</mat-icon>
+                {{ 'tasks.create' | translate }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Kanban View -->
+          <div class="kanban-board" *ngIf="viewMode === 'kanban'">
+            <div class="kanban-column" 
+                 *ngFor="let status of taskStatuses"
+                 cdkDropList
+                 [cdkDropListData]="getTasksByStatus(status)"
+                 (cdkDropListDropped)="onTaskDrop($event, status)">
+              <div class="column-header">
+                <h3>
+                  <mat-icon [style.color]="status.color">{{ status.icon }}</mat-icon>
+                  {{ status.label | translate }}
+                </h3>
+                <span class="task-count">{{ getTasksByStatus(status).length }}</span>
+              </div>
+
+              <div class="task-card" 
+                   *ngFor="let task of getTasksByStatus(status); trackBy: trackById"
+                   cdkDrag
+                   [@cardAnimation]
+                   (click)="viewTask(task)">
+                <div class="task-header">
+                  <span class="task-key">{{ task.key }}</span>
+                  <mat-icon class="task-type" [style.color]="getTaskTypeColor(task.type)">{{ getTaskTypeIcon(task.type) }}</mat-icon>
+                </div>
+                <h4 class="task-title">{{ task.title }}</h4>
+                <div class="task-footer">
+                  <img [src]="task.assignee?.avatar" 
+                       [alt]="task.assignee?.name" 
+                       [matTooltip]="task.assignee?.name"
+                       class="assignee-avatar" 
+                       *ngIf="task.assignee">
+                  <div class="task-meta">
+                    <mat-chip *ngIf="task.priority === 'high'" color="warn" class="priority-chip">
+                      <mat-icon>flag</mat-icon>
+                    </mat-chip>
+                    <span class="story-points" *ngIf="task.storyPoints">
+                      {{ task.storyPoints }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List View -->
+          <div class="tasks-list" *ngIf="viewMode === 'list'">
+            <!-- Task list implementation -->
+          </div>
+
+          <!-- Calendar View -->
+          <div class="tasks-calendar" *ngIf="viewMode === 'calendar'">
+            <!-- Calendar implementation -->
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Team Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">group</mat-icon>
+          <span class="tab-label">{{ 'projects.tabs.team' | translate }}</span>
+          <span class="tab-badge" *ngIf="(team$ | async)?.length > 0">
+            {{ (team$ | async)?.length }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content team-content">
+          <div class="content-header">
+            <h2>{{ 'team.title' | translate }}</h2>
+            <button mat-raised-button color="primary" (click)="addTeamMember()" *ngIf="canEdit()">
+              <mat-icon>person_add</mat-icon>
+              {{ 'team.addMember' | translate }}
+            </button>
+          </div>
+
+          <div class="team-grid">
+            <mat-card class="member-card" 
+                      *ngFor="let member of team$ | async; trackBy: trackById"
+                      [@fadeIn]>
+              <mat-card-header>
+                <img mat-card-avatar [src]="member.avatar" [alt]="member.name">
+                <mat-card-title>{{ member.name }}</mat-card-title>
+                <mat-card-subtitle>
+                  <mat-icon>{{ getRoleIcon(member.role) }}</mat-icon>
+                  {{ member.role | translate }}
+                </mat-card-subtitle>
+              </mat-card-header>
+
+              <mat-card-content>
+                <div class="member-stats">
+                  <div class="stat">
+                    <span class="stat-value">{{ member.tasksAssigned || 0 }}</span>
+                    <span class="stat-label">{{ 'team.tasksAssigned' | translate }}</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-value">{{ member.tasksCompleted || 0 }}</span>
+                    <span class="stat-label">{{ 'team.tasksCompleted' | translate }}</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-value">{{ member.availability || 100 }}%</span>
+                    <span class="stat-label">{{ 'team.availability' | translate }}</span>
+                  </div>
+                </div>
+
+                <mat-chip-listbox class="member-skills">
+                  <mat-chip *ngFor="let skill of member.skills">
+                    {{ skill }}
+                  </mat-chip>
+                </mat-chip-listbox>
+              </mat-card-content>
+
+              <mat-card-actions *ngIf="canEdit()">
+                <button mat-button (click)="viewMemberProfile(member)">
+                  <mat-icon>visibility</mat-icon>
+                  {{ 'common.view' | translate }}
+                </button>
+                <button mat-button (click)="editMemberRole(member)">
+                  <mat-icon>edit</mat-icon>
+                  {{ 'team.editRole' | translate }}
+                </button>
+                <button mat-button (click)="removeTeamMember(member)" color="warn">
+                  <mat-icon>remove_circle</mat-icon>
+                  {{ 'team.remove' | translate }}
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Files Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">folder</mat-icon>
+          <span class="tab-label">{{ 'projects.tabs.files' | translate }}</span>
+          <span class="tab-badge" *ngIf="(files$ | async)?.length > 0">
+            {{ (files$ | async)?.length }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content files-content">
+          <div class="content-header">
+            <h2>{{ 'files.title' | translate }}</h2>
+            <button mat-raised-button color="primary" (click)="uploadFile()">
+              <mat-icon>cloud_upload</mat-icon>
+              {{ 'files.upload' | translate }}
+            </button>
+          </div>
+
+          <div class="files-grid">
+            <div class="file-card" 
+                 *ngFor="let file of files$ | async; trackBy: trackById"
+                 [@fadeIn]>
+              <div class="file-icon">
+                <mat-icon [style.color]="getFileIconColor(file.type)">{{ getFileIcon(file.type) }}</mat-icon>
+              </div>
+              <div class="file-info">
+                <h4 class="file-name">{{ file.name }}</h4>
+                <div class="file-meta">
+                  <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                  <span class="file-date">{{ file.uploadedAt | date:dateFormat }}</span>
+                  <span class="file-uploader">{{ file.uploadedBy.name }}</span>
+                </div>
+              </div>
+              <div class="file-actions">
+                <button mat-icon-button (click)="downloadFile(file)" matTooltip="{{ 'files.download' | translate }}">
+                  <mat-icon>download</mat-icon>
+                </button>
+                <button mat-icon-button (click)="shareFile(file)" matTooltip="{{ 'files.share' | translate }}">
+                  <mat-icon>share</mat-icon>
+                </button>
+                <button mat-icon-button (click)="deleteFile(file)" *ngIf="canEdit()" matTooltip="{{ 'files.delete' | translate }}">
+                  <mat-icon color="warn">delete</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" *ngIf="!(files$ | async)?.length" [@fadeIn]>
+            <img src="assets/images/empty-files.svg" alt="No files">
+            <h3>{{ 'files.empty.title' | translate }}</h3>
+            <p>{{ 'files.empty.description' | translate }}</p>
+            <button mat-raised-button color="primary" (click)="uploadFile()">
+              <mat-icon>cloud_upload</mat-icon>
+              {{ 'files.upload' | translate }}
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Settings Tab -->
+      <mat-tab *ngIf="canEdit()">
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">settings</mat-icon>
+          <span class="tab-label">{{ 'projects.tabs.settings' | translate }}</span>
+        </ng-template>
+
+        <div class="tab-content settings-content">
+          <h2>{{ 'settings.projectSettings' | translate }}</h2>
+
+          <mat-accordion>
+            <!-- General Settings -->
+            <mat-expansion-panel [expanded]="isPanelExpanded('general')">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>tune</mat-icon>
+                  {{ 'settings.general' | translate }}
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+
+              <form [formGroup]="editForm" class="settings-form">
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'projects.budget' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="budget">
+                  <mat-icon matPrefix>attach_money</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'projects.tags' | translate }}</mat-label>
+                  <mat-chip-grid #chipGrid>
+                    <mat-chip-row *ngFor="let tag of editForm.get('tags')?.value"
+                                [removable]="true"
+                                (removed)="removeTag(tag)">
+                      {{ tag }}
+                      <mat-icon matChipRemove>cancel</mat-icon>
+                    </mat-chip-row>
+                    <input [matChipInputFor]="chipGrid"
+                           [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                           [matChipInputAddOnBlur]="true"
+                           (matChipInputTokenEnd)="addTag($event)"
+                           placeholder="{{ 'projects.addTag' | translate }}">
+                  </mat-chip-grid>
+                </mat-form-field>
+              </form>
+            </mat-expansion-panel>
+
+            <!-- Permissions -->
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>security</mat-icon>
+                  {{ 'settings.permissions' | translate }}
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+
+              <div class="permissions-section">
+                <mat-slide-toggle formControlName="isPublic">
+                  {{ 'settings.publicProject' | translate }}
+                </mat-slide-toggle>
+                <mat-slide-toggle formControlName="allowComments">
+                  {{ 'settings.allowComments' | translate }}
+                </mat-slide-toggle>
+                <mat-slide-toggle formControlName="requireApproval">
+                  {{ 'settings.requireApproval' | translate }}
+                </mat-slide-toggle>
+              </div>
+            </mat-expansion-panel>
+
+            <!-- Notifications -->
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>notifications</mat-icon>
+                  {{ 'settings.notifications' | translate }}
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+
+              <div class="notifications-section">
+                <mat-slide-toggle formControlName="notifyOnUpdate">
+                  {{ 'settings.notifyOnUpdate' | translate }}
+                </mat-slide-toggle>
+              </div>
+            </mat-expansion-panel>
+          </mat-accordion>
+
+          <div class="settings-actions">
+            <button mat-raised-button color="primary" (click)="saveSettings()" [disabled]="!editForm.dirty">
+              <mat-icon>save</mat-icon>
+              {{ 'common.saveChanges' | translate }}
+            </button>
+            <button mat-button (click)="resetSettings()">
+              {{ 'common.reset' | translate }}
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+
+    <!-- Comments Section -->
+    <section class="comments-section" *ngIf="activeTabIndex === 0">
+      <h3 class="section-title">
+        <mat-icon>comment</mat-icon>
+        {{ 'comments.title' | translate }}
+        <span class="comment-count">({{ (comments$ | async)?.length || 0 }})</span>
+      </h3>
+
+      <div class="comment-form" *ngIf="currentUser">
+        <img [src]="currentUser.avatar" [alt]="currentUser.name" class="user-avatar">
+        <form [formGroup]="commentForm" (ngSubmit)="postComment()">
+          <mat-form-field appearance="outline" class="comment-input">
+            <textarea matInput 
+                      formControlName="content"
+                      placeholder="{{ 'comments.placeholder' | translate }}"
+                      rows="3"
+                      cdkTextareaAutosize></textarea>
+          </mat-form-field>
+          <div class="comment-actions">
+            <button mat-icon-button type="button" (click)="attachFile()" matTooltip="{{ 'comments.attach' | translate }}">
+              <mat-icon>attach_file</mat-icon>
+            </button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="!commentForm.valid">
+              {{ 'comments.post' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="comments-list" [@listAnimation]>
+        <div class="comment" *ngFor="let comment of comments$ | async; trackBy: trackById" [@fadeIn]>
+          <img [src]="comment.user.avatar" [alt]="comment.user.name" class="user-avatar">
+          <div class="comment-content">
+            <div class="comment-header">
+              <span class="user-name">{{ comment.user.name }}</span>
+              <time class="comment-time">{{ comment.timestamp | timeAgo }}</time>
+            </div>
+            <p class="comment-text" [innerHTML]="comment.content | safeHtml"></p>
+            <div class="comment-attachments" *ngIf="comment.attachments?.length">
+              <mat-chip *ngFor="let attachment of comment.attachments" (click)="downloadFile(attachment)">
+                <mat-icon>attach_file</mat-icon>
+                {{ attachment.name }}
+              </mat-chip>
+            </div>
+            <div class="comment-footer">
+              <button mat-button (click)="replyToComment(comment)">
+                <mat-icon>reply</mat-icon>
+                {{ 'comments.reply' | translate }}
+              </button>
+              <button mat-button (click)="editComment(comment)" *ngIf="comment.user.id === currentUser?.id">
+                <mat-icon>edit</mat-icon>
+                {{ 'common.edit' | translate }}
+              </button>
+              <button mat-button (click)="deleteComment(comment)" *ngIf="comment.user.id === currentUser?.id || canEdit()">
+                <mat-icon>delete</mat-icon>
+                {{ 'common.delete' | translate }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Floating Action Buttons -->
+  <div class="fab-container">
+    <button mat-fab color="accent" 
+            [matMenuTriggerFor]="fabMenu"
+            matTooltip="{{ 'common.quickActions' | translate }}"
+            matTooltipPosition="left">
+      <mat-icon>flash_on</mat-icon>
+    </button>
+
+    <mat-menu #fabMenu="matMenu" class="fab-menu">
+      <button mat-menu-item (click)="createSprint()">
+        <mat-icon>loop</mat-icon>
+        {{ 'sprints.create' | translate }}
+      </button>
+      <button mat-menu-item (click)="createTask()">
+        <mat-icon>add_task</mat-icon>
+        {{ 'tasks.create' | translate }}
+      </button>
+      <button mat-menu-item (click)="addTeamMember()">
+        <mat-icon>person_add</mat-icon>
+        {{ 'team.addMember' | translate }}
+      </button>
+      <button mat-menu-item (click)="uploadFile()">
+        <mat-icon>cloud_upload</mat-icon>
+        {{ 'files.upload' | translate }}
+      </button>
+    </mat-menu>
+  </div>
+
+  <!-- Auto-refresh indicator -->
+  <div class="refresh-indicator" *ngIf="autoRefresh()" [@fadeIn]>
+    <mat-spinner diameter="20"></mat-spinner>
+    <span>{{ 'common.autoRefresh' | translate }}</span>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-container" *ngIf="loading$ | async">
+  <mat-spinner></mat-spinner>
+  <p>{{ 'common.loading' | translate }}</p>
+</div>
+
+<!-- Error State -->
+<div class="error-container" *ngIf="error$ | async as error" [@fadeIn]>
+  <mat-card class="error-card">
+    <mat-card-content>
+      <mat-icon color="warn">error</mat-icon>
+      <h2>{{ 'error.title' | translate }}</h2>
+      <p>{{ error }}</p>
+      <button mat-raised-button color="primary" (click)="refreshData()">
+        <mat-icon>refresh</mat-icon>
+        {{ 'common.retry' | translate }}
+      </button>
+    </mat-card-content>
+  </mat-card>
+</div>
