@@ -1,5 +1,53 @@
-<<<<<<< HEAD
-node_modules
-=======
-node_modules
->>>>>>> feature/SPM-017-projects-module
+# Node modules
+node_modules/
+
+# Nx build outputs
+/dist/
+/tmp/
+/.nx/
+
+# Angular build outputs
+apps/**/dist/
+apps/**/out-tsc/
+apps/**/.angular/
+
+# Compodoc documentation outputs
+apps/**/documentation/
+libs/**/documentation/
+docs/documentation/
+
+# Coverage reports
+coverage/
+apps/**/coverage/
+libs/**/coverage/
+
+# Environment files
+apps/**/src/environments/*.local.ts
+apps/**/src/environments/*.dev.ts
+apps/**/src/environments/*.prod.ts
+
+# IDE/editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Others
+.cursors/
+
+# Ignore Nx instructions and rules
+.cursor\rules\nx-rules.mdc
+.github\instructions\nx.instructions.md
