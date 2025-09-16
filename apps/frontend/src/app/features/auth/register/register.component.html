@@ -1,3 +1,347 @@
+<<<<<<< HEAD
+<div class="register-container" [@fadeIn]>
+  <mat-card class="register-card">
+    <!-- Header -->
+    <mat-card-header class="register-header">
+      <div class="logo-container">
+        <img src="assets/images/logo.svg" alt="{{ 'app.name' | translate }}" class="logo" />
+      </div>
+      <h1 class="register-title">{{ 'auth.register.title' | translate }}</h1>
+      <p class="register-subtitle">{{ 'auth.register.subtitle' | translate }}</p>
+      
+      <!-- Progress Bar -->
+      <div class="progress-container">
+        <mat-progress-bar
+          mode="determinate"
+          [value]="registrationProgress()"
+          color="primary"
+        ></mat-progress-bar>
+        <div class="step-indicators">
+          <div 
+            class="step-indicator" 
+            *ngFor="let step of [0, 1, 2]; let i = index"
+            [class.active]="currentStep() >= i"
+            [class.completed]="currentStep() > i"
+            (click)="goToStep(i)"
+          >
+            <mat-icon *ngIf="currentStep() > i">check_circle</mat-icon>
+            <span *ngIf="currentStep() <= i">{{ i + 1 }}</span>
+          </div>
+        </div>
+      </div>
+    </mat-card-header>
+
+    <!-- Registration Steps -->
+    <mat-card-content class="register-content">
+      <!-- Step 1: Account Information -->
+      <div class="step-content" *ngIf="currentStep() === 0" [@slideIn]>
+        <h2 class="step-title">{{ 'auth.register.steps.account.title' | translate }}</h2>
+        <p class="step-description">{{ 'auth.register.steps.account.description' | translate }}</p>
+        
+        <form [formGroup]="accountForm" class="register-form">
+          <!-- Email Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'auth.register.email.label' | translate }}</mat-label>
+            <input
+              matInput
+              type="email"
+              formControlName="email"
+              placeholder="{{ 'auth.register.email.placeholder' | translate }}"
+              autocomplete="email"
+            />
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-spinner 
+              matSuffix 
+              *ngIf="emailAvailable() === null && accountForm.get('email')?.value"
+              diameter="20"
+            ></mat-spinner>
+            <mat-icon 
+              matSuffix 
+              *ngIf="emailAvailable() === true"
+              color="primary"
+            >check_circle</mat-icon>
+            <mat-icon 
+              matSuffix 
+              *ngIf="emailAvailable() === false"
+              color="warn"
+            >cancel</mat-icon>
+            <mat-error *ngIf="accountForm.get('email')?.touched">
+              {{ getErrorMessage(accountForm, 'email') }}
+            </mat-error>
+            <mat-hint *ngIf="accountForm.get('email')?.errors?.['suggestion']">
+              {{ 'auth.register.email.suggestion' | translate: { domain: accountForm.get('email')?.errors?.['suggestion'] } }}
+            </mat-hint>
+          </mat-form-field>
+
+          <!-- Username Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'auth.register.username.label' | translate }}</mat-label>
+            <input
+              matInput
+              type="text"
+              formControlName="username"
+              placeholder="{{ 'auth.register.username.placeholder' | translate }}"
+              autocomplete="username"
+            />
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-spinner 
+              matSuffix 
+              *ngIf="usernameAvailable() === null && accountForm.get('username')?.value"
+              diameter="20"
+            ></mat-spinner>
+            <mat-icon 
+              matSuffix 
+              *ngIf="usernameAvailable() === true"
+              color="primary"
+            >check_circle</mat-icon>
+            <mat-icon 
+              matSuffix 
+              *ngIf="usernameAvailable() === false"
+              color="warn"
+            >cancel</mat-icon>
+            <mat-error *ngIf="accountForm.get('username')?.touched">
+              {{ getErrorMessage(accountForm, 'username') }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Password Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'auth.register.password.label' | translate }}</mat-label>
+            <input
+              matInput
+              [type]="hidePassword() ? 'password' : 'text'"
+              formControlName="password"
+              placeholder="{{ 'auth.register.password.placeholder' | translate }}"
+              autocomplete="new-password"
+            />
+            <mat-icon matPrefix>lock</mat-icon>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility('password')"
+              [matTooltip]="hidePassword() ? ('auth.register.password.show' | translate) : ('auth.register.password.hide' | translate)"
+            >
+              <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="accountForm.get('password')?.touched">
+              {{ getErrorMessage(accountForm, 'password') }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Password Strength Indicator -->
+          <div class="password-strength" *ngIf="accountForm.get('password')?.value">
+            <div class="strength-bars">
+              <div
+                class="strength-bar"
+                *ngFor="let i of [1,2,3,4,5]"
+                [class.active]="passwordStrength() >= i"
+                [class]="passwordStrength() >= i ? getPasswordStrengthColor() : ''"
+              ></div>
+            </div>
+            <span class="strength-label" [class]="getPasswordStrengthColor()">
+              {{ getPasswordStrengthLabel() }}
+            </span>
+          </div>
+
+          <!-- Password Requirements -->
+          <div class="password-requirements" *ngIf="accountForm.get('password')?.touched && accountForm.get('password')?.errors">
+            <mat-icon 
+              [color]="!accountForm.get('password')?.errors?.['lowercase'] ? 'primary' : 'warn'"
+            >{{ !accountForm.get('password')?.errors?.['lowercase'] ? 'check' : 'close' }}</mat-icon>
+            <span>{{ 'auth.register.password.requirements.lowercase' | translate }}</span>
+            
+            <mat-icon 
+              [color]="!accountForm.get('password')?.errors?.['uppercase'] ? 'primary' : 'warn'"
+            >{{ !accountForm.get('password')?.errors?.['uppercase'] ? 'check' : 'close' }}</mat-icon>
+            <span>{{ 'auth.register.password.requirements.uppercase' | translate }}</span>
+            
+            <mat-icon 
+              [color]="!accountForm.get('password')?.errors?.['number'] ? 'primary' : 'warn'"
+            >{{ !accountForm.get('password')?.errors?.['number'] ? 'check' : 'close' }}</mat-icon>
+            <span>{{ 'auth.register.password.requirements.number' | translate }}</span>
+            
+            <mat-icon 
+              [color]="!accountForm.get('password')?.errors?.['special'] ? 'primary' : 'warn'"
+            >{{ !accountForm.get('password')?.errors?.['special'] ? 'check' : 'close' }}</mat-icon>
+            <span>{{ 'auth.register.password.requirements.special' | translate }}</span>
+          </div>
+
+          <!-- Confirm Password Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'auth.register.confirmPassword.label' | translate }}</mat-label>
+            <input
+              matInput
+              [type]="hideConfirmPassword() ? 'password' : 'text'"
+              formControlName="confirmPassword"
+              placeholder="{{ 'auth.register.confirmPassword.placeholder' | translate }}"
+              autocomplete="new-password"
+            />
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility('confirm')"
+              [matTooltip]="hideConfirmPassword() ? ('auth.register.password.show' | translate) : ('auth.register.password.hide' | translate)"
+            >
+              <mat-icon>{{ hideConfirmPassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+            <mat-icon 
+              matSuffix 
+              *ngIf="passwordMatch() && accountForm.get('confirmPassword')?.value"
+              color="primary"
+            >check_circle</mat-icon>
+            <mat-error *ngIf="accountForm.hasError('passwordMismatch') && accountForm.get('confirmPassword')?.touched">
+              {{ 'auth.register.errors.passwordMismatch' | translate }}
+            </mat-error>
+          </mat-form-field>
+        </form>
+
+        <!-- Social Registration -->
+        <div class="divider-container">
+          <mat-divider></mat-divider>
+          <span class="divider-text">{{ 'auth.register.or' | translate }}</span>
+          <mat-divider></mat-divider>
+        </div>
+
+        <div class="social-buttons">
+          <button
+            mat-stroked-button
+            class="social-button google-button"
+            (click)="socialRegister('google')"
+            [disabled]="socialRegistrationLoading() === 'google'"
+          >
+            <mat-spinner
+              *ngIf="socialRegistrationLoading() === 'google'"
+              diameter="20"
+              class="button-spinner"
+            ></mat-spinner>
+            <img
+              *ngIf="socialRegistrationLoading() !== 'google'"
+              src="assets/images/google-logo.svg"
+              alt="Google"
+              class="social-icon"
+            />
+            <span>{{ 'auth.register.social.google' | translate }}</span>
+          </button>
+
+          <button
+            mat-stroked-button
+            class="social-button github-button"
+            (click)="socialRegister('github')"
+            [disabled]="socialRegistrationLoading() === 'github'"
+          >
+            <mat-spinner
+              *ngIf="socialRegistrationLoading() === 'github'"
+              diameter="20"
+              class="button-spinner"
+            ></mat-spinner>
+            <img
+              *ngIf="socialRegistrationLoading() !== 'github'"
+              src="assets/images/github-logo.svg"
+              alt="GitHub"
+              class="social-icon"
+            />
+            <span>{{ 'auth.register.social.github' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Profile Information -->
+      <div class="step-content" *ngIf="currentStep() === 1" [@slideIn]>
+        <h2 class="step-title">{{ 'auth.register.steps.profile.title' | translate }}</h2>
+        <p class="step-description">{{ 'auth.register.steps.profile.description' | translate }}</p>
+        
+        <form [formGroup]="profileForm" class="register-form">
+          <!-- Profile Picture -->
+          <div class="profile-picture-container">
+            <div class="profile-picture-preview" (click)="profilePictureInput.click()">
+              <img 
+                *ngIf="profilePicturePreview()" 
+                [src]="profilePicturePreview()" 
+                alt="Profile preview"
+              />
+              <mat-icon *ngIf="!profilePicturePreview()">add_a_photo</mat-icon>
+            </div>
+            <input 
+              #profilePictureInput
+              type="file" 
+              accept="image/*" 
+              (change)="onProfilePictureChange($event)"
+              hidden
+            />
+            <p class="profile-picture-hint">{{ 'auth.register.profile.pictureHint' | translate }}</p>
+          </div>
+
+          <div class="name-row">
+            <!-- First Name -->
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'auth.register.firstName.label' | translate }}</mat-label>
+              <input
+                matInput
+                type="text"
+                formControlName="firstName"
+                placeholder="{{ 'auth.register.firstName.placeholder' | translate }}"
+                autocomplete="given-name"
+              />
+              <mat-icon matPrefix>badge</mat-icon>
+              <mat-error *ngIf="profileForm.get('firstName')?.touched">
+                {{ getErrorMessage(profileForm, 'firstName') }}
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Last Name -->
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'auth.register.lastName.label' | translate }}</mat-label>
+              <input
+                matInput
+                type="text"
+                formControlName="lastName"
+                placeholder="{{ 'auth.register.lastName.placeholder' | translate }}"
+                autocomplete="family-name"
+              />
+              <mat-error *ngIf="profileForm.get('lastName')?.touched">
+                {{ getErrorMessage(profileForm, 'lastName') }}
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Phone Number -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'auth.register.phone.label' | translate }}</mat-label>
+            <input
+              matInput
+              type="tel"
+              formControlName="phoneNumber"
+              placeholder="{{ 'auth.register.phone.placeholder' | translate }}"
+              autocomplete="tel"
+            />
+            <mat-icon matPrefix>phone</mat-icon>
+            <mat-error *ngIf="profileForm.get('phoneNumber')?.touched">
+              {{ getErrorMessage(profileForm, 'phoneNumber') }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Date of Birth -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'auth.register.dateOfBirth.label' | translate }}</mat-label>
+            <input
+              matInput
+              [matDatepicker]="picker"
+              formControlName="dateOfBirth"
+              placeholder="{{ 'auth.register.dateOfBirth.placeholder' | translate }}"
+            />
+            <mat-icon matPrefix>cake</mat-icon>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+
+          <div class="company-role-row">
+            <!-- Company -->
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'auth.register.company.label' | translate }}</mat-label>
+=======
 <div class="register-container" @fadeInOut>
   <mat-card class="register-card">
     <mat-card-header>
@@ -184,10 +528,189 @@
             <!-- Company Field -->
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Company (Optional)</mat-label>
+>>>>>>> feature/SPM-016-projects-tasks
               <input
                 matInput
                 type="text"
                 formControlName="company"
+<<<<<<< HEAD
+                placeholder="{{ 'auth.register.company.placeholder' | translate }}"
+                autocomplete="organization"
+              />
+              <mat-icon matPrefix>business</mat-icon>
+            </mat-form-field>
+
+            <!-- Role -->
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'auth.register.role.label' | translate }}</mat-label>
+              <mat-select formControlName="role">
+                <mat-option *ngFor="let role of roles()" [value]="role">
+                  {{ 'auth.register.roles.' + role | translate }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>work</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Bio -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'auth.register.bio.label' | translate }}</mat-label>
+            <textarea
+              matInput
+              formControlName="bio"
+              placeholder="{{ 'auth.register.bio.placeholder' | translate }}"
+              rows="4"
+              maxlength="500"
+            ></textarea>
+            <mat-icon matPrefix>description</mat-icon>
+            <mat-hint align="end">
+              {{ profileForm.get('bio')?.value?.length || 0 }}/500
+            </mat-hint>
+            <mat-error *ngIf="profileForm.get('bio')?.touched">
+              {{ getErrorMessage(profileForm, 'bio') }}
+            </mat-error>
+          </mat-form-field>
+        </form>
+      </div>
+
+      <!-- Step 3: Preferences -->
+      <div class="step-content" *ngIf="currentStep() === 2" [@slideIn]>
+        <h2 class="step-title">{{ 'auth.register.steps.preferences.title' | translate }}</h2>
+        <p class="step-description">{{ 'auth.register.steps.preferences.description' | translate }}</p>
+        
+        <form [formGroup]="preferencesForm" class="register-form">
+          <div class="locale-row">
+            <!-- Timezone -->
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'auth.register.timezone.label' | translate }}</mat-label>
+              <mat-select formControlName="timezone">
+                <mat-option *ngFor="let tz of timezones()" [value]="tz">
+                  {{ tz }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>schedule</mat-icon>
+            </mat-form-field>
+
+            <!-- Locale -->
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'auth.register.locale.label' | translate }}</mat-label>
+              <mat-select formControlName="locale">
+                <mat-option *ngFor="let locale of locales()" [value]="locale.code">
+                  {{ locale.name }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>language</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Notification Preferences -->
+          <div class="preferences-section">
+            <h3 class="section-title">{{ 'auth.register.notifications.title' | translate }}</h3>
+            
+            <mat-checkbox formControlName="newsletter" color="primary">
+              {{ 'auth.register.notifications.newsletter' | translate }}
+            </mat-checkbox>
+            
+            <mat-checkbox formControlName="notifications" color="primary">
+              {{ 'auth.register.notifications.updates' | translate }}
+            </mat-checkbox>
+            
+            <mat-checkbox formControlName="marketingEmails" color="primary">
+              {{ 'auth.register.notifications.marketing' | translate }}
+            </mat-checkbox>
+          </div>
+
+          <!-- Legal Agreements -->
+          <div class="legal-section">
+            <h3 class="section-title">{{ 'auth.register.legal.title' | translate }}</h3>
+            
+            <mat-checkbox formControlName="termsAccepted" color="primary" class="legal-checkbox">
+              <span>
+                {{ 'auth.register.legal.terms.prefix' | translate }}
+                <a (click)="openTerms()" class="legal-link">
+                  {{ 'auth.register.legal.terms.link' | translate }}
+                </a>
+              </span>
+            </mat-checkbox>
+            
+            <mat-checkbox formControlName="privacyAccepted" color="primary" class="legal-checkbox">
+              <span>
+                {{ 'auth.register.legal.privacy.prefix' | translate }}
+                <a (click)="openPrivacy()" class="legal-link">
+                  {{ 'auth.register.legal.privacy.link' | translate }}
+                </a>
+              </span>
+            </mat-checkbox>
+          </div>
+        </form>
+      </div>
+
+      <!-- Step 4: Completion -->
+      <div class="step-content completion-step" *ngIf="currentStep() === 3" [@bounce]>
+        <div class="success-icon">
+          <mat-icon color="primary">check_circle</mat-icon>
+        </div>
+        <h2 class="step-title">{{ 'auth.register.completion.title' | translate }}</h2>
+        <p class="step-description">{{ 'auth.register.completion.description' | translate }}</p>
+        <p class="redirect-message">{{ 'auth.register.completion.redirect' | translate }}</p>
+        <mat-spinner diameter="30" color="primary"></mat-spinner>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="navigation-buttons" *ngIf="currentStep() < 3">
+        <button
+          mat-button
+          class="nav-button prev-button"
+          (click)="previousStep()"
+          [disabled]="currentStep() === 0"
+        >
+          <mat-icon>arrow_back</mat-icon>
+          {{ 'auth.register.buttons.previous' | translate }}
+        </button>
+
+        <button
+          mat-raised-button
+          color="primary"
+          class="nav-button next-button"
+          (click)="currentStep() === 2 ? onSubmit() : nextStep()"
+          [disabled]="!canProceed() || isSubmitting()"
+        >
+          <mat-spinner
+            *ngIf="isSubmitting()"
+            diameter="20"
+            class="button-spinner"
+          ></mat-spinner>
+          <span *ngIf="!isSubmitting()">
+            {{ currentStep() === 2 ? ('auth.register.buttons.submit' | translate) : ('auth.register.buttons.next' | translate) }}
+          </span>
+          <mat-icon *ngIf="!isSubmitting() && currentStep() < 2">arrow_forward</mat-icon>
+        </button>
+      </div>
+
+      <!-- Keyboard Shortcuts -->
+      <div class="shortcuts-hint" *ngIf="currentStep() < 3">
+        <mat-icon>keyboard</mat-icon>
+        <span>
+          {{ currentStep() === 2 ? ('auth.register.shortcuts.submit' | translate) : ('auth.register.shortcuts.navigate' | translate) }}
+        </span>
+      </div>
+    </mat-card-content>
+
+    <!-- Footer -->
+    <mat-card-footer class="register-footer" *ngIf="currentStep() < 3">
+      <p class="login-prompt">
+        {{ 'auth.register.hasAccount' | translate }}
+        <a
+          class="login-link"
+          (click)="navigateToLogin()"
+        >
+          {{ 'auth.register.login' | translate }}
+        </a>
+      </p>
+    </mat-card-footer>
+  </mat-card>
+</div>
+=======
                 placeholder="Enter your company name"
                 autocomplete="organization"
                 [attr.aria-label]="'Company name'"
@@ -393,3 +916,4 @@
     <div class="shape shape-3"></div>
   </div>
 </div>
+>>>>>>> feature/SPM-016-projects-tasks

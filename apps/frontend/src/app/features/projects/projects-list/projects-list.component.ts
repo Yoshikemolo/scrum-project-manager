@@ -157,6 +157,10 @@ interface User {
   ]
 })
 export class ProjectsListComponent implements OnInit {
+<<<<<<< HEAD
+  // Component implementation continues...
+}
+=======
   @ViewChild('projectDialog') projectDialog!: TemplateRef<any>;
   
   private store = inject(Store);
@@ -782,3 +786,4 @@ export class ProjectsListComponent implements OnInit {
     return user.name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
 }
+>>>>>>> feature/SPM-016-projects-tasks
